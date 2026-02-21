@@ -1,0 +1,166 @@
+:host {
+    --primary: #3b82f6;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --surface: #ffffff;
+    --background: #f8fafc;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --radius: 1.25rem;
+    --shadow-sm: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+/* Stats Cards */
+.stat-card {
+    border: none;
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* Search Bar */
+.search-wrapper {
+    max-width: 500px;
+}
+
+.search-input {
+    border-radius: 1rem;
+    padding: 0.8rem 1rem 0.8rem 3rem;
+    border: 2px solid transparent;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+/* Table Cards */
+.table-card {
+    border: none;
+    border-radius: var(--radius);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: white;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.table-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.table-card.disponible {
+    border-bottom: 5px solid var(--success);
+}
+
+.table-card.ocupada {
+    border-bottom: 5px solid var(--danger);
+}
+
+.table-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table-icon-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    transition: all 0.3s ease;
+}
+
+.disponible .table-icon-box {
+    background: #ecfdf5;
+    color: var(--success);
+}
+
+.ocupada .table-icon-box {
+    background: #fef2f2;
+    color: var(--danger);
+}
+
+/* Occupied Status Info */
+.occupied-overlay {
+    background: rgba(239, 68, 68, 0.03);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    border: 1px dashed rgba(239, 68, 68, 0.2);
+}
+
+/* Buttons */
+.btn-action {
+    border-radius: 1rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-action-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+}
+
+.btn-action-primary:hover {
+    background: #2563eb;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+    transform: scale(1.02);
+}
+
+.btn-action-outline {
+    border: 2px solid #e2e8f0;
+    color: var(--text-main);
+    background: white;
+}
+
+.btn-action-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #eff6ff;
+}
+
+/* Dropdown */
+.dots-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.dots-btn:hover {
+    background: #f1f5f9;
+    color: var(--text-main);
+}

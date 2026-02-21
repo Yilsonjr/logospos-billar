@@ -1,0 +1,29 @@
+<div class="app-layout">
+  <!-- Loading inicial -->
+  <div *ngIf="isInitializing" class="loading-screen">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <h2>Iniciando DolvinPOS...</h2>
+      <p>Preparando interfaz</p>
+      <div class="loading-progress">
+        <div class="progress-bar"></div>
+      </div>
+      <small>Cargando en modo rápido</small>
+    </div>
+  </div>
+
+  <!-- Aplicación normal -->
+  <div *ngIf="!isInitializing">
+    <!-- Sidebar solo si está autenticado -->
+    <app-navbar *ngIf="isAuthenticated"></app-navbar>
+
+    <!-- Topbar solo si está autenticado -->
+    <app-topbar *ngIf="isAuthenticated"></app-topbar>
+
+    <!-- Contenido principal -->
+    <main class="main-content" [class.main-content--no-sidebar]="!isAuthenticated"
+      [class.main-content--sidebar-collapsed]="sidebarCollapsed && isAuthenticated">
+      <router-outlet />
+    </main>
+  </div>
+</div>
