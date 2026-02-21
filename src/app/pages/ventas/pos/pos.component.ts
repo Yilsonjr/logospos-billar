@@ -257,23 +257,41 @@ export class PosComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Búsqueda de productos con autocompletado
+  // Búsqueda y filtrado de productos
+  seleccionarCategoria(categoriaId: string) {
+    this.categoriaSeleccionada = categoriaId;
+    this.filtrarProductos();
+  }
+
   buscarProducto() {
-    if (!this.busquedaProducto.trim()) {
-      this.productosFiltrados = [];
-      this.selectedAutocompleteIndex = 0;
-      return;
+    this.filtrarProductos();
+  }
+
+  filtrarProductos() {
+    let filtrados = this.productos;
+
+    // 1. Filtrar por categoría
+    if (this.categoriaSeleccionada !== 'all') {
+      filtrados = filtrados.filter(p => p.categoria === this.categoriaSeleccionada);
     }
 
-    const busqueda = this.busquedaProducto.toLowerCase();
-    this.productosFiltrados = this.productos.filter(p =>
-      p.nombre.toLowerCase().includes(busqueda) ||
-      p.sku?.toLowerCase().includes(busqueda) ||
-      p.codigo_barras?.toLowerCase().includes(busqueda)
-    );
+    // 2. Filtrar por texto de búsqueda
+    if (this.busquedaProducto.trim()) {
+      const busqueda = this.busquedaProducto.toLowerCase();
+      filtrados = filtrados.filter(p =>
+        p.nombre.toLowerCase().includes(busqueda) ||
+        p.sku?.toLowerCase().includes(busqueda) ||
+        p.codigo_barras?.toLowerCase().includes(busqueda)
+      );
 
+      this.mostrarAutocomplete = true;
+    } else {
+      this.mostrarAutocomplete = false;
+    }
+
+    this.productosFiltrados = filtrados;
     this.selectedAutocompleteIndex = 0;
-    this.mostrarAutocomplete = true;
+    this.cdr.detectChanges();
   }
 
   // Manejar teclas en búsqueda

@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "dolvinPOS": {
+    "logosPOS": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -17,6 +17,9 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "allowedCommonJsDependencies": [
+              "sweetalert2"
+            ],
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
@@ -35,8 +38,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1MB",
-                  "maximumError": "2MB"
+                  "maximumWarning": "2MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -58,10 +61,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "dolvinPOS:build:production"
+              "buildTarget": "logosPOS:build:production"
             },
             "development": {
-              "buildTarget": "dolvinPOS:build:development"
+              "buildTarget": "logosPOS:build:development"
             }
           },
           "defaultConfiguration": "development"

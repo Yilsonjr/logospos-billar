@@ -60,7 +60,6 @@
 .modal-body {
     overflow-y: auto;
     padding: 0;
-    /* padding handled inside p-4 div */
 }
 
 /* Estilos específicos de pago */
@@ -89,4 +88,91 @@
 .form-control:focus {
     box-shadow: none;
     border-color: #ced4da;
+}
+
+/* === TECLADO NUMÉRICO (FASE 9) === */
+.keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    max-width: 320px;
+    margin: 1rem auto;
+}
+
+.keypad-btn {
+    height: 64px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    transition: all 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.keypad-btn:active {
+    background: #f1f5f9;
+    transform: scale(0.95);
+    border-color: #cbd5e1;
+}
+
+.keypad-btn.action {
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.keypad-btn.confirm {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+
+/* Billetes Rápidos */
+.bills-container {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.bill-btn {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    border-radius: 10px;
+    font-weight: 800;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+}
+
+.bill-100 {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.bill-200 {
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.bill-500 {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.bill-1000 {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.bill-btn:active {
+    transform: translateY(2px);
+    filter: brightness(0.9);
 }

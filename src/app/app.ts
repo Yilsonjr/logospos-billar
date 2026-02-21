@@ -15,7 +15,7 @@ import { NotificacionesAutoService } from './services/notificaciones-auto.servic
   styleUrl: './app.css'
 })
 export class App implements OnInit {
-  protected readonly title = signal('dolvinPOS');
+  protected readonly title = signal('LogosPOS');
   isAuthenticated = false;
   isInitializing = true;
   sidebarCollapsed = false;
@@ -29,7 +29,7 @@ export class App implements OnInit {
   ) { }
 
   async ngOnInit() {
-    console.log('🚀 Iniciando aplicación DolvinPOS...');
+    console.log('🚀 Iniciando aplicación LogosPOS...');
 
     // 1. Configurar suscripción al estado de autenticación
     this.authService.authState$.subscribe(authState => {

@@ -88,6 +88,39 @@ export class ModalPagoComponent implements OnInit, OnChanges {
         }).format(valor);
     }
 
+    // === KEYPAD LOGIC (FASE 9) ===
+    pulsarNumero(num: string) {
+        const actual = this.montoEfectivo?.toString() || '';
+        this.montoEfectivo = parseFloat(actual + num);
+        this.calcularCambio();
+    }
+
+    borrarNumero() {
+        const actual = this.montoEfectivo?.toString() || '';
+        if (actual.length <= 1) {
+            this.montoEfectivo = null;
+        } else {
+            this.montoEfectivo = parseFloat(actual.slice(0, -1));
+        }
+        this.calcularCambio();
+    }
+
+    limpiarNumero() {
+        this.montoEfectivo = null;
+        this.calcularCambio();
+    }
+
+    setMontoExacto() {
+        this.montoEfectivo = this.total;
+        this.calcularCambio();
+    }
+
+    sumarMontoRapido(monto: number) {
+        this.montoEfectivo = (this.montoEfectivo || 0) + monto;
+        this.calcularCambio();
+    }
+    // =============================
+
     onConfirmar() {
         this.confirmarPago.emit({
             metodoPago: this.metodoPago,

@@ -22,10 +22,10 @@
       </div>
 
       <!-- Barra de Búsqueda -->
-      <div class="position-relative">
-        <div class="input-group input-group-lg shadow-sm">
-          <span class="input-group-text bg-white border-end-0 text-muted"> <i class="fa-solid fa-search"></i> </span>
-          <input #searchInput type="text" class="form-control border-start-0 ps-0 text-dark"
+      <div class="position-relative mb-3">
+        <div class="input-group input-group-lg shadow-sm border rounded-3 overflow-hidden">
+          <span class="input-group-text bg-white border-0 text-muted"> <i class="fa-solid fa-search"></i> </span>
+          <input #searchInput type="text" class="form-control border-0 ps-0 text-dark"
             placeholder="Buscar productos (F5)..." [(ngModel)]="busquedaProducto" (input)="buscarProducto()"
             (keydown)="handleSearchKeydown($event)" (focus)="mostrarAutocomplete = true" autocomplete="off">
         </div>
@@ -54,6 +54,19 @@
             </li>
           </ul>
         </div>
+      </div>
+
+      <!-- Fase 9: Barra de Categorías Táctil -->
+      <div class="category-scroll-container d-flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <button class="btn category-pill shadow-sm flex-shrink-0 d-flex align-items-center gap-2"
+          [class.active]="categoriaSeleccionada === 'all'" (click)="seleccionarCategoria('all')">
+          <i class="fa-solid fa-layer-group"></i> Todos
+        </button>
+        <button *ngFor="let cat of categorias.slice(1)"
+          class="btn category-pill shadow-sm flex-shrink-0 d-flex align-items-center gap-2"
+          [class.active]="categoriaSeleccionada === cat.id" (click)="seleccionarCategoria(cat.id)">
+          <i [class]="cat.icono"></i> {{ cat.nombre }}
+        </button>
       </div>
     </div>
 
@@ -166,21 +179,24 @@
               <div class="fw-bold text-dark text-truncate">{{ item.producto_nombre }}</div>
               <div class="small text-muted">{{ formatearMoneda(item.precio_unitario) }}</div>
             </div>
-            <!-- Controles -->
+            <!-- Controles Táctiles -->
             <div class="d-flex flex-column align-items-end">
-              <div class="d-flex align-items-center bg-light rounded border mb-1">
-                <button class="btn btn-sm px-2 py-0 text-muted hover-danger"
+              <div class="d-flex align-items-center bg-light rounded-pill border mb-1 overflow-hidden shadow-sm"
+                style="height: 36px;">
+                <button class="btn btn-sm h-100 px-3 text-muted border-end hover-danger d-flex align-items-center"
                   (click)="actualizarCantidad(item, item.cantidad - 1)">
-                  <i class="fa-solid fa-minus" style="font-size: 0.7rem;"></i>
+                  <i class="fa-solid fa-minus"></i>
                 </button>
-                <span class="px-2 fw-bold text-dark" style="min-width: 1.5rem; text-align: center;">{{ item.cantidad
-                  }}</span>
-                <button class="btn btn-sm px-2 py-0 text-muted hover-success"
+                <span class="px-3 fw-bold text-dark fs-5 d-flex align-items-center h-100"
+                  style="min-width: 40px; justify-content: center;">
+                  {{ item.cantidad }}
+                </span>
+                <button class="btn btn-sm h-100 px-3 text-muted border-start hover-success d-flex align-items-center"
                   (click)="actualizarCantidad(item, item.cantidad + 1)">
-                  <i class="fa-solid fa-plus" style="font-size: 0.7rem;"></i>
+                  <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
-              <div class="fw-bold text-primary">{{ formatearMoneda(item.subtotal) }}</div>
+              <div class="fw-bold text-primary fs-5">{{ formatearMoneda(item.subtotal) }}</div>
             </div>
           </div>
           <!-- Notas del Item: Característica de Restaurante -->
