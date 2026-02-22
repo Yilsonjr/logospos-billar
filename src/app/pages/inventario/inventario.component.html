@@ -117,8 +117,7 @@
         <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">
           <i class="fa-solid fa-search small"></i>
         </span>
-        <input type="text" placeholder="Buscar..."
-          class="form-control form-control-sm ps-5 border-0 bg-light shadow-sm">
+        <input type="text" placeholder="Buscar..." class="form-control ps-5 border-0 bg-light shadow-sm search-touch">
       </div>
 
       <div class="d-flex gap-2">
@@ -133,7 +132,7 @@
 
     <!-- Table Body (Scrollable) -->
     <div class="table-responsive flex-grow-1 overflow-auto bg-white position-relative">
-      <table class="table table-hover table-sm align-middle mb-0 w-100" style="font-size: 0.9rem;">
+      <table class="table table-hover align-middle mb-0 w-100 table-touch" style="font-size: 0.95rem;">
         <thead class="bg-light text-secondary text-uppercase small fw-bold sticky-top"
           style="position: sticky; top: 0; z-index: 10;">
           <tr>
@@ -194,8 +193,9 @@
               {{prod.nombre}}</td>
 
             <!-- Categoria (Badge) -->
-            <td class="px-3 py-1">
-              <span [className]="getBadgeClass(prod.categoria)" style="font-size: 0.7rem;">{{prod.categoria}}</span>
+            <td class="px-3">
+              <span [className]="getBadgeClass(prod.categoria)" class="badge-touch"
+                style="font-size: 0.75rem;">{{prod.categoria}}</span>
             </td>
 
             <!-- Precios -->
@@ -205,18 +205,19 @@
               currency:'USD':'symbol':'1.0-0'}}</td>
 
             <!-- Stock -->
-            <td class="px-3 py-1 text-center">
-              <span [class]="getStockMin(prod.stock)">{{prod.stock}} <small class="text-muted fw-normal ms-1"
-                  style="font-size: 0.65rem;">{{prod.stock < 20 ? '(Bajo)' : '' }}</small></span>
+            <td class="px-3 text-center">
+              <span [class]="getStockMin(prod.stock)" class="fw-semibold">{{prod.stock}} <small
+                  class="text-muted fw-normal ms-1" style="font-size: 0.65rem;">{{prod.stock < 10 ? '(Crítico)' :
+                    (prod.stock < 20 ? '(Bajo)' : '' ) }}</small></span>
             </td>
 
             <!-- Acciones -->
-            <td class="px-3 py-1 text-end">
-              <div class="btn-group">
-                <button (click)="editarProducto(prod)" class="btn btn-sm btn-link text-primary p-0 me-2" title="Editar">
+            <td class="px-3 text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <button (click)="editarProducto(prod)" class="btn-touch-action btn-touch-edit" title="Editar">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-                <button (click)="eliminarProducto(prod)" class="btn btn-sm btn-link text-danger p-0" title="Eliminar">
+                <button (click)="eliminarProducto(prod)" class="btn-touch-action btn-touch-delete" title="Eliminar">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
@@ -229,12 +230,12 @@
     </div>
 
     <!-- Pagination Compacta -->
-    <div class="card-footer bg-white border-top p-2 d-flex justify-content-between align-items-center flex-shrink-0"
-      style="font-size: 0.8rem;">
-      <span class="text-muted">Total: {{productos.length}}</span>
-      <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-secondary disabled py-0 px-2">Ant</button>
-        <button class="btn btn-outline-secondary py-0 px-2">Sig</button>
+    <div class="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center flex-shrink-0"
+      style="font-size: 0.9rem;">
+      <span class="text-muted fw-medium">Total: {{productos.length}} productos</span>
+      <div class="btn-group pagination-touch">
+        <button class="btn btn-outline-secondary disabled px-3">Anterior</button>
+        <button class="btn btn-outline-secondary px-3">Siguiente</button>
       </div>
     </div>
 

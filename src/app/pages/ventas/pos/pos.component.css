@@ -110,9 +110,73 @@
 /* Footer Carrito */
 .cart-footer {
   flex-shrink: 0;
-  padding: 1rem;
+  padding: 1.25rem;
+  /* Aumentado */
   border-top: 1px solid #e5e7eb;
   background: white;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.03);
+}
+
+/* --- ADICIONES TÁCTILES POS --- */
+
+/* Productos en grid más legibles */
+.product-card .card-title {
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.product-card .fw-bold.text-primary {
+  font-size: 1.1rem !important;
+}
+
+/* Ítems del carrito con más aire */
+.cart-items-container .list-group-item {
+  padding: 1.25rem 1rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* Controles de cantidad GIGANTES para dedos */
+.qty-control-touch {
+  height: 48px !important;
+  /* De 36px a 48px */
+  border-radius: 12px;
+  background-color: #f8fafc;
+}
+
+.qty-btn-touch {
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 1.2rem;
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.qty-btn-touch:active {
+  background-color: #e2e8f0;
+  transform: scale(0.9);
+}
+
+/* Inputs de búsqueda para POS (más altos) */
+.pos-input-lg {
+  height: 54px !important;
+  font-size: 1.1rem !important;
+}
+
+/* El botón de COBRAR supremo */
+.btn-cobrar-touch {
+  padding: 1.1rem !important;
+  font-size: 1.25rem !important;
+  border-radius: 15px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-cobrar-touch:active {
+  transform: scale(0.97);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* =========================================
@@ -235,7 +299,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
 
   /* En móvil, apilar vertical o usar tabs/modal */
   .pos-layout {
@@ -249,5 +313,12 @@
     /* Carrito abajo */
     border-left: none;
     border-top: 1px solid #e5e7eb;
+  }
+
+  .pos-layout {
+    left: 0 !important;
+    top: 64px !important;
+    /* Debajo del topbar siempre */
+    width: 100% !important;
   }
 }

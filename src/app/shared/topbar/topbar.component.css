@@ -26,10 +26,10 @@
 }
 
 /* Ajustes responsive */
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .navbar {
     left: 0 !important;
-    /* Siempre full width en móvil */
+    /* Siempre full width en móvil/tablet */
   }
 }
 

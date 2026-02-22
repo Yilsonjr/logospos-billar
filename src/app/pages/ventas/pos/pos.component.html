@@ -14,18 +14,60 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <i class="fa-solid fa-box text-primary me-2"></i>Productos
-          <span *ngIf="mesaId" class="badge ms-3 py-2 px-3 fw-bold rounded-pill"
+
+          <span *ngIf="mesaId" class="badge ms-3 py-2 px-3 fw-bold rounded-pill animate__animated animate__fadeIn"
             style="background:#fef2f2; color:#ef4444; border: 1px solid #fecaca;">
             <i class="fa-solid fa-table-tennis-paddle-ball me-2"></i> Mesa {{ mesaActual?.numero || mesaId }}
           </span>
+
+          <!-- Selector de Contexto (Mesas / Nueva Venta) -->
+          <div class="dropdown ms-3 d-inline-block dropdown-context">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle rounded-pill px-3"
+              [class.show]="mostrarDropdownMesa" type="button" (click)="toggleDropdownMesa($event)">
+              <i class="fa-solid fa-shuffle me-1"></i> <span class="d-none d-sm-inline">Cambiar Orden</span>
+            </button>
+            <ul class="dropdown-menu shadow-lg border-0 mt-2" [class.show]="mostrarDropdownMesa">
+              <li>
+                <a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)"
+                  (click)="irANuevaVenta()">
+                  <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3 text-primary">
+                    <i class="fa-solid fa-plus fs-6"></i>
+                  </div>
+                  <div>
+                    <div class="fw-bold small">Nueva Venta</div>
+                    <small class="text-muted">Cliente sin mesa</small>
+                  </div>
+                </a>
+              </li>
+              <li *ngIf="pedidosActivos.length > 0">
+                <hr class="dropdown-divider">
+              </li>
+              <li *ngIf="pedidosActivos.length > 0">
+                <h6 class="dropdown-header text-uppercase small fw-bold text-muted">Mesas Ocupadas</h6>
+              </li>
+              <li *ngFor="let pedido of pedidosActivos">
+                <a class="dropdown-item py-2 d-flex align-items-center" href="javascript:void(0)"
+                  (click)="cambiarAMesa(pedido)">
+                  <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-3 text-danger">
+                    <i class="fa-solid fa-table-tennis-paddle-ball fs-6"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold small">Mesa {{ pedido.mesas?.numero }}</div>
+                    <small class="text-muted">{{ formatearMoneda(pedido.total) }}</small>
+                  </div>
+                  <span *ngIf="pedido.id === pedidoId" class="badge bg-success ms-3">Actual</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </h4>
       </div>
 
       <!-- Barra de Búsqueda -->
       <div class="position-relative mb-3">
-        <div class="input-group input-group-lg shadow-sm border rounded-3 overflow-hidden">
+        <div class="input-group shadow-sm border rounded-3 overflow-hidden">
           <span class="input-group-text bg-white border-0 text-muted"> <i class="fa-solid fa-search"></i> </span>
-          <input #searchInput type="text" class="form-control border-0 ps-0 text-dark"
+          <input #searchInput type="text" class="form-control border-0 ps-0 text-dark pos-input-lg"
             placeholder="Buscar productos (F5)..." [(ngModel)]="busquedaProducto" (input)="buscarProducto()"
             (keydown)="handleSearchKeydown($event)" (focus)="mostrarAutocomplete = true" autocomplete="off">
         </div>
@@ -181,9 +223,9 @@
             </div>
             <!-- Controles Táctiles -->
             <div class="d-flex flex-column align-items-end">
-              <div class="d-flex align-items-center bg-light rounded-pill border mb-1 overflow-hidden shadow-sm"
-                style="height: 36px;">
-                <button class="btn btn-sm h-100 px-3 text-muted border-end hover-danger d-flex align-items-center"
+              <div
+                class="d-flex align-items-center bg-light rounded-pill border mb-1 overflow-hidden shadow-sm qty-control-touch">
+                <button class="qty-btn-touch text-muted border-end hover-danger"
                   (click)="actualizarCantidad(item, item.cantidad - 1)">
                   <i class="fa-solid fa-minus"></i>
                 </button>
@@ -191,7 +233,7 @@
                   style="min-width: 40px; justify-content: center;">
                   {{ item.cantidad }}
                 </span>
-                <button class="btn btn-sm h-100 px-3 text-muted border-start hover-success d-flex align-items-center"
+                <button class="qty-btn-touch text-muted border-start hover-success"
                   (click)="actualizarCantidad(item, item.cantidad + 1)">
                   <i class="fa-solid fa-plus"></i>
                 </button>
@@ -242,7 +284,7 @@
         <span class="fs-5 fw-bold text-dark">Total:</span>
         <span class="fs-5 fw-bold text-success">{{ formatearMoneda(total) }}</span>
       </div>
-      <button class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm" (click)="mostrarPago = true"
+      <button class="btn btn-primary w-100 shadow-sm btn-cobrar-touch" (click)="mostrarPago = true"
         [disabled]="carrito.length === 0">
         <i class="fa-regular fa-credit-card me-2"></i> COBRAR
       </button>
@@ -263,3 +305,7 @@
   (tipoComprobanteChange)="tipoComprobante = $event" (rncClienteChange)="rncCliente = $event"
   (confirmarPago)="onPagoConfirmado($event)" (cancelar)="mostrarPago = false">
 </app-modal-pago>
+
+<!-- Simulación de Factura después de la venta -->
+<app-factura *ngIf="mostrarFactura && ventaParaFactura" [venta]="ventaParaFactura" (cerrar)="mostrarFactura = false">
+</app-factura>

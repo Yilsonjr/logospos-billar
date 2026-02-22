@@ -9,11 +9,12 @@ import { TIPOS_COMPROBANTE } from '../../../models/fiscal.model';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { FacturaComponent } from '../../../shared/factura/factura.component';
 
 @Component({
   selector: 'app-historial-ventas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FacturaComponent],
   templateUrl: './historial-ventas.component.html',
   styleUrl: './historial-ventas.component.css'
 })
@@ -39,6 +40,8 @@ export class HistorialVentasComponent implements OnInit, OnDestroy {
   mostrarFiltros: boolean = false;
   modoFiscalActivo: boolean = false;
   isLoading: boolean = true;
+  mostrarFactura: boolean = false;
+  ventaParaFactura?: VentaCompleta;
 
   tiposNcf = TIPOS_COMPROBANTE;
 
@@ -235,14 +238,17 @@ export class HistorialVentasComponent implements OnInit, OnDestroy {
     }
   }
 
-  imprimirFactura(venta: Venta) {
-    Swal.fire({
-      title: 'Imprimiendo...',
-      text: `Factura ${venta.numero_venta} enviada a la impresora.`,
-      icon: 'info',
-      timer: 2000,
-      showConfirmButton: false
-    });
+  async imprimirFactura(venta: Venta) {
+    try {
+      const ventaCompleta = await this.ventasService.obtenerVentaCompleta(venta.id!);
+      if (ventaCompleta) {
+        this.ventaParaFactura = ventaCompleta;
+        this.mostrarFactura = true;
+      }
+    } catch (error) {
+      console.error('Error al cargar factura:', error);
+      Swal.fire('Error', 'No se pudo cargar la factura para imprimir', 'error');
+    }
   }
 
   exportarCSV() {

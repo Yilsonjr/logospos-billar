@@ -29,6 +29,8 @@ export interface Venta {
   monto_efectivo?: number;
   /** No existe en DB - solo para cálculos en front */
   monto_tarjeta?: number;
+  /** No existe en DB - solo para cálculos en front */
+  cambio?: number;
   created_at?: string;
   updated_at?: string;
 }

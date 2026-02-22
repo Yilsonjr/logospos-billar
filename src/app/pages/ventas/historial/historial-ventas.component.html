@@ -482,3 +482,7 @@
   </div><!-- /card -->
 </div><!-- /overlay -->
 }
+
+<!-- Simulación de Factura para imprimir -->
+<app-factura *ngIf="mostrarFactura && ventaParaFactura" [venta]="ventaParaFactura" (cerrar)="mostrarFactura = false">
+</app-factura>

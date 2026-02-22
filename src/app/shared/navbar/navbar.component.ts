@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -15,6 +15,7 @@ import { Usuario } from '../../models/usuario.model';
 export class NavbarComponent implements OnInit, OnDestroy {
   isMobileMenuOpen = false;
   isCollapsed = false;
+  isMobile = false;
   usuario: Usuario | null = null;
   subscriptions: Subscription[] = [];
 
@@ -28,6 +29,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.checkMobile();
     // Suscribirse al estado del sidebar
     const sidebarSub = this.sidebarService.isCollapsed$.subscribe(collapsed => {
       this.isCollapsed = collapsed;
@@ -209,7 +211,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   toggleSubmenu(item: any) {
-    item.expanded = !this.isCollapsed && !item.expanded;
+    // Permitir expansión si no está colapsado O si es móvil (drawer abierto)
+    item.expanded = (!this.isCollapsed || this.isMobile) && !item.expanded;
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.checkMobile();
+  }
+
+  private checkMobile() {
+    this.isMobile = window.innerWidth <= 992;
   }
 
   handleMenuClick(event: Event, item: any) {

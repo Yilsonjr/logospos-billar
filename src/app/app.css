@@ -62,6 +62,17 @@ body {
   padding-bottom: 0 !important;
 }
 
+/* =========================================
+   RESPONSIVE FIXES
+   ========================================= */
+@media (max-width: 992px) {
+  .main-content {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
 /* Pantalla de Carga */
 .loading-screen {
   position: fixed;

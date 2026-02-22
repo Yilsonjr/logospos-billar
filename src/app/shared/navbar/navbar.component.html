@@ -1,5 +1,9 @@
+<!-- Overlay para el menú móvil -->
+<div class="sidebar-overlay" [class.show]="!isCollapsed" (click)="toggleSidebar()"></div>
+
 <div class="sidebar-container d-flex flex-column flex-shrink-0 p-2 h-100 position-fixed overflow-y-auto"
-  style="width: 240px; top: 0; left: 0; z-index: 9999;" [style.width.px]="isCollapsed ? 70 : 250">
+  [class.show]="!isCollapsed" style="top: 0; left: 0; z-index: 9999;"
+  [style.width.px]="isMobile ? 260 : (isCollapsed ? 70 : 250)">
 
   <!-- Header: Logo y Toggle -->
   <div class="sidebar-header d-flex align-items-center mb-4 pb-3">
@@ -8,7 +12,7 @@
       <i class="fa-solid fa-store text-white fs-5"></i>
     </div>
 
-    @if (!isCollapsed) {
+    @if (!isCollapsed || isMobile) {
     <div class="ms-3 lh-1 overflow-hidden" style="white-space: nowrap;">
       <h5 class="mb-0 fw-bold brand-text" style="font-size: 1.1rem;">LogosPOS</h5>
       <small class="text-muted" style="font-size: 0.75rem; opacity: 0.7;">Sistema de Ventas</small>
@@ -36,7 +40,7 @@
 
         <i [class]="item.icon" class="fs-5 flex-shrink-0 d-flex justify-content-center" style="width: 24px;"></i>
 
-        @if (!isCollapsed) {
+        @if (!isCollapsed || isMobile) {
         <span class="ms-3 flex-grow-1 text-truncate" style="font-size: 0.95rem;">{{ item.label }}</span>
 
         @if (item.submenu) {
@@ -48,7 +52,7 @@
       </a>
 
       <!-- Submenú -->
-      @if (item.submenu && item.expanded && !isCollapsed) {
+      @if (item.submenu && item.expanded && (!isCollapsed || isMobile)) {
       <div class="submenu-container ms-2 ps-2"> <!-- Contenedor oscuro -->
         <ul class="nav flex-column gap-1">
           @for (subitem of item.submenu; track subitem.label) {
@@ -69,7 +73,7 @@
 
   <!-- Footer: Usuario -->
   <div class="user-footer pt-3 mt-3">
-    @if (isCollapsed) {
+    @if (isCollapsed && !isMobile) {
     <div class="text-center">
       <div
         class="avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold mb-2 mx-auto"

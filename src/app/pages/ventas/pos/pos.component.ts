@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { PedidosMesaService } from '../../../services/pedidos-mesa.service';
+import { MesasService } from '../../../services/mesas.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { VentasService } from '../../../services/ventas.service';
 import { ProductosService } from '../../../services/productos.service';
@@ -19,13 +20,15 @@ import { SidebarService } from '../../../services/sidebar.service';
 import { FiscalService } from '../../../services/fiscal.service';
 import { ConfiguracionFiscal, TIPOS_COMPROBANTE } from '../../../models/fiscal.model';
 import { ModalPagoComponent } from '../modal.pago/modal.pago';
+import { FacturaComponent } from '../../../shared/factura/factura.component';
+import { VentaCompleta } from '../../../models/ventas.model';
 import { CajaService } from '../../../services/caja.service';
 import { Caja } from '../../../models/caja.model';
 
 @Component({
   selector: 'app-pos',
   standalone: true, // Asegurar que sea standalone si no lo era (aunque parece que sí)
-  imports: [CommonModule, FormsModule, ModalPagoComponent],
+  imports: [CommonModule, FormsModule, ModalPagoComponent, FacturaComponent],
   templateUrl: './pos.component.html',
   styleUrl: './pos.component.css'
 })
@@ -79,6 +82,8 @@ export class PosComponent implements OnInit, OnDestroy {
   mostrarPago: boolean = false;
   mostrarDescuento?: number; // ID del producto para mostrar descuento
   cargando: boolean = true;
+  mostrarFactura: boolean = false;
+  ventaParaFactura?: VentaCompleta;
 
   // Fiscal
   configFiscal: ConfiguracionFiscal | null = null;
@@ -98,6 +103,7 @@ export class PosComponent implements OnInit, OnDestroy {
     private fiscalService: FiscalService,
     private cajaService: CajaService, // Inyectar CajaService
     private pedidosMesaService: PedidosMesaService, // Inyectar PedidosMesa
+    private mesasService: MesasService, // Inyectar MesasService
     private supabaseService: SupabaseService, // Inyectar Supabase
     private cdr: ChangeDetectorRef,
     private router: Router,
@@ -108,6 +114,7 @@ export class PosComponent implements OnInit, OnDestroy {
   mesaId?: number;
   pedidoId?: number;
   mesaActual?: any;
+  mostrarDropdownMesa: boolean = false;
 
   async ngOnInit() {
     // 0. Suscribirse al estado del sidebar
@@ -148,7 +155,12 @@ export class PosComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub);
+    const mesaActivaSub = this.pedidosMesaService.pedidosActivos$.subscribe(pedidos => {
+      this.pedidosActivos = pedidos;
+      this.cdr.detectChanges();
+    });
+
+    this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub, mesaActivaSub);
 
     // Contexto de Mesa
     this.route.queryParams.subscribe(params => {
@@ -156,6 +168,8 @@ export class PosComponent implements OnInit, OnDestroy {
         this.mesaId = +params['mesaId'];
         this.pedidoId = +params['pedidoId'];
         this.cargarContextoMesa();
+      } else {
+        this.limpiarContextoMesa();
       }
     });
 
@@ -193,6 +207,10 @@ export class PosComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLElement;
     if (!target.closest('.search-box')) {
       this.mostrarAutocomplete = false;
+    }
+    // Cerrar dropdown de mesa si se hace click fuera
+    if (!target.closest('.dropdown-context')) {
+      this.mostrarDropdownMesa = false;
     }
   }
 
@@ -486,7 +504,13 @@ export class PosComponent implements OnInit, OnDestroy {
 
     // Calcular impuesto (18% ITBIS en RD, ajusta según tu país)
     const baseImponible = this.subtotal - this.descuentoTotal;
-    this.impuesto = baseImponible * 0.18;
+
+    // Solo calcular impuesto si el modo fiscal está activo
+    if (this.configFiscal?.modo_fiscal) {
+      this.impuesto = baseImponible * 0.18;
+    } else {
+      this.impuesto = 0;
+    }
 
     this.total = baseImponible + this.impuesto;
 
@@ -628,6 +652,19 @@ export class PosComponent implements OnInit, OnDestroy {
 
       const ventaCreada = await this.ventasService.crearVenta(venta);
 
+      // Cargar la venta completa para la factura
+      const ventaObtenida = await this.ventasService.obtenerVentaCompleta(ventaCreada.id!);
+      if (ventaObtenida) {
+        // Enriquecer con datos que no se guardan en DB para la factura inmediata
+        this.ventaParaFactura = {
+          ...ventaObtenida,
+          monto_efectivo: venta.monto_efectivo,
+          monto_tarjeta: venta.monto_tarjeta,
+          cambio: venta.cambio
+        };
+        this.mostrarFactura = true;
+      }
+
       // Si es venta de mesa, finalizar el pedido
       if (this.pedidoId && this.mesaId) {
         await this.pedidosMesaService.finalizarPedido(this.pedidoId, this.mesaId);
@@ -718,6 +755,36 @@ export class PosComponent implements OnInit, OnDestroy {
       });
     }
   }
+  // Billar Logic
+  pedidosActivos: any[] = [];
+
+  limpiarContextoMesa() {
+    this.mesaId = undefined;
+    this.pedidoId = undefined;
+    this.mesaActual = null;
+    this.carrito = [];
+    this.calcularTotales();
+  }
+
+  cambiarAMesa(pedido: any) {
+    this.mostrarDropdownMesa = false;
+    this.router.navigate(['/ventas/nueva'], {
+      queryParams: {
+        mesaId: pedido.mesa_id,
+        pedidoId: pedido.id
+      }
+    });
+  }
+
+  irANuevaVenta() {
+    this.mostrarDropdownMesa = false;
+    this.router.navigate(['/ventas/nueva']);
+  }
+
+  toggleDropdownMesa(event: Event) {
+    event.stopPropagation();
+    this.mostrarDropdownMesa = !this.mostrarDropdownMesa;
+  }
 
   // Billar Logic
   async cargarContextoMesa() {
@@ -736,7 +803,13 @@ export class PosComponent implements OnInit, OnDestroy {
       if (this.pedidoId) {
         const { data: detalles } = await this.supabaseService.client
           .from('pedidos_mesa_detalle')
-          .select('*')
+          .select(`
+            *,
+            productos (
+              imagen_url,
+              categoria
+            )
+          `)
           .eq('pedido_id', this.pedidoId);
 
         // Convertir detalles de mesa a items de carrito
@@ -749,7 +822,9 @@ export class PosComponent implements OnInit, OnDestroy {
           subtotal: d.subtotal,
           stock_disponible: 0, // No relevante para items ya servidos
           esPedidoExistente: true, // Flag para saber que ya estaba en la mesa
-          notas: d.notas
+          notas: d.notas,
+          imagen_url: d.productos?.imagen_url,
+          categoria: d.productos?.categoria
         }));
 
         this.calcularTotales();

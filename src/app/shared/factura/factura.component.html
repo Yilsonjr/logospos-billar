@@ -1,0 +1,137 @@
+<!-- Overlay de Simulación (solo se ve en pantalla) -->
+<div class="factura-simulation-overlay" *ngIf="simulation" (click)="onCerrar()">
+    <div class="factura-modal" (click)="$event.stopPropagation()">
+        <div class="modal-actions no-print">
+            <button class="btn-print" (click)="imprimir()">
+                <i class="fa-solid fa-print me-2"></i>Imprimir Factura
+            </button>
+            <button class="btn-close-custom" (click)="onCerrar()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- El contenido de la factura real -->
+        <div class="factura-content" id="print-section">
+            <ng-container *ngTemplateOutlet="receiptTemplate"></ng-container>
+        </div>
+    </div>
+</div>
+
+<!-- Versión para impresión directa (oculta en pantalla si no es simulación) -->
+<div class="factura-print-only" *ngIf="!simulation">
+    <ng-container *ngTemplateOutlet="receiptTemplate"></ng-container>
+</div>
+
+<!-- Template Reutilizable de la Factura -->
+<ng-template #receiptTemplate>
+    <div class="receipt-container">
+        <!-- Header -->
+        <div class="receipt-header">
+            <h2 class="business-name">{{ negocio.nombre }}</h2>
+            <p class="business-info">RNC: {{ negocio.rnc }}</p>
+            <p class="business-info">{{ negocio.direccion }}</p>
+            <p class="business-info">Tel: {{ negocio.telefono }}</p>
+            <div class="separator-double"></div>
+            <h3 class="receipt-title">FACTURA DE VENTA</h3>
+            <div class="separator"></div>
+        </div>
+
+        <!-- Info Venta -->
+        <div class="receipt-info">
+            <table class="info-table">
+                <tr>
+                    <td>FACTURA:</td>
+                    <td class="text-right fw-bold">{{ venta.numero_venta }}</td>
+                </tr>
+                <tr>
+                    <td>FECHA:</td>
+                    <td class="text-right">{{ formatearFecha(venta.created_at || '') }}</td>
+                </tr>
+                <tr *ngIf="venta.ncf">
+                    <td>NCF:</td>
+                    <td class="text-right fw-bold">{{ venta.ncf }}</td>
+                </tr>
+                <tr>
+                    <td>CLIENTE:</td>
+                    <td class="text-right">{{ venta.cliente_nombre || 'CONSUMIDOR FINAL' }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Items -->
+        <div class="separator"></div>
+        <div class="receipt-items">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="text-left">CANT. DETALLE</th>
+                        <th class="text-right">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of venta.detalles">
+                        <td colspan="2">
+                            <div class="item-row">
+                                <span class="item-qty">{{ item.cantidad }}x</span>
+                                <span class="item-name">{{ item.producto_nombre }}</span>
+                                <span class="item-total">{{ formatearMoneda(item.subtotal) }}</span>
+                            </div>
+                            <div class="item-price-row" *ngIf="item.cantidad > 1">
+                                <small>Precio Unit: {{ formatearMoneda(item.precio_unitario) }}</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="separator"></div>
+        <div class="receipt-totals">
+            <table class="totals-table">
+                <tr>
+                    <td>SUBTOTAL:</td>
+                    <td class="text-right">{{ formatearMoneda(venta.subtotal) }}</td>
+                </tr>
+                <tr *ngIf="venta.descuento > 0">
+                    <td>DESCUENTO:</td>
+                    <td class="text-right">-{{ formatearMoneda(venta.descuento) }}</td>
+                </tr>
+                <tr *ngIf="venta.impuestos > 0">
+                    <td>ITBIS (18%):</td>
+                    <td class="text-right">{{ formatearMoneda(venta.impuestos) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL A PAGAR:</td>
+                    <td class="text-right">{{ formatearMoneda(venta.total) }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Pago Informacion -->
+        <div class="separator"></div>
+        <div class="receipt-payment" *ngIf="venta">
+            <table class="info-table">
+                <tr>
+                    <td>METODO PAGO:</td>
+                    <td class="text-right text-uppercase">{{ venta.metodo_pago }}</td>
+                </tr>
+                <tr *ngIf="venta.monto_efectivo && venta.monto_efectivo > 0">
+                    <td>EFECTIVO:</td>
+                    <td class="text-right">{{ formatearMoneda(venta.monto_efectivo) }}</td>
+                </tr>
+                <tr *ngIf="venta.cambio && venta.cambio > 0">
+                    <td>CAMBIO:</td>
+                    <td class="text-right">{{ formatearMoneda(venta.cambio) }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="receipt-footer">
+            <div class="separator"></div>
+            <p class="lema">{{ negocio.lema }}</p>
+            <p class="footer-msg">Desarrollado por LogosPOS</p>
+        </div>
+    </div>
+</ng-template>
