@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "logosPOS": {
+    "logospos": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -61,10 +61,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "logosPOS:build:production"
+              "buildTarget": "logospos:build:production"
             },
             "development": {
-              "buildTarget": "logosPOS:build:development"
+              "buildTarget": "logospos:build:development"
             }
           },
           "defaultConfiguration": "development"
