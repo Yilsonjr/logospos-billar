@@ -359,16 +359,17 @@ export class RolesComponent implements OnInit, OnDestroy {
         } else {
           await this.usuariosService.activarRol(rol.id!);
         }
+        const estadoFinal = rol.activo ? 'Desactivado' : 'Activado';
 
         Swal.fire({
-          title: `✅ Rol ${accion.charAt(0).toUpperCase() + accion.slice(1)}do`,
-          text: `El rol ha sido ${accion}do exitosamente`,
+          title: `✅ Rol ${estadoFinal}`,
+          text: `El rol ha sido ${estadoFinal.toLowerCase()} exitosamente`,
           icon: 'success',
           timer: 2000,
           showConfirmButton: false
         });
       } catch (error: any) {
-        console.error(`Error al ${accion} rol:`, error);
+        console.error(`Error al intentar cambiar el estado del rol:`, error);
         Swal.fire({
           title: '❌ Error',
           text: error.message || `Error al ${accion} el rol`,
@@ -425,5 +426,32 @@ export class RolesComponent implements OnInit, OnDestroy {
   contarUsuariosConRol(rolId: number): number {
     // Esta función se implementaría con datos reales de usuarios
     return 0; // Placeholder
+  }
+
+  // Comprobar si un color es claro para ajustar el contraste del texto (YIQ standard)
+  esColorClaro(color: string): boolean {
+    if (!color) return false;
+
+    // Quitar el # si existe
+    let hex = color.replace('#', '');
+
+    // Normalizar hex de 3 dígitos (ej: #FFF -> #FFFFFF)
+    if (hex.length === 3) {
+      hex = hex.split('').map(char => char + char).join('');
+    }
+
+    // Si no es un hex válido, devolver oscuro por precaución
+    if (hex.length !== 6) return false;
+
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+
+    // Fórmula YIQ (Industry standard para legibilidad)
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+
+    // Un umbral más alto (150) hace que los colores claros cambien a texto oscuro antes,
+    // garantizando visibilidad en colores como amarillo claro o gris claro.
+    return yiq >= 150;
   }
 }

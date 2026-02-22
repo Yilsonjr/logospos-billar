@@ -4,10 +4,7 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Premium Gradients */
-.bg-gradient-roles {
-  background: linear-gradient(135deg, #6610f2 0%, #520dc2 100%);
-}
+
 
 .text-white-50 {
   color: rgba(255, 255, 255, 0.65) !important;
@@ -15,19 +12,23 @@
 
 /* Card Styles & Hover */
 .role-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 280px;
+  border: 1px solid #e2e8f0 !important;
 }
 
 .role-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, .175) !important;
+  transform: translateY(-6px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-color: #2563eb !important;
 }
 
 .role-color-indicator {
-  width: 16px;
-  height: 16px;
-  border: 2px solid white;
+  width: 22px;
+  height: 22px;
+  border: 3px solid white;
+  display: block;
+  flex-shrink: 0;
 }
 
 /* Permission Card Styles */
@@ -45,42 +46,41 @@
   background-color: #cfe2ff !important;
 }
 
-/* Modal Enhancements - Fixed Overlay with Content Centering */
+/* Standardize fixed modal behavior */
 .modal.d-block {
-  background-color: rgba(0, 0, 0, 0.5);
-  display: block;
-  overflow-x: hidden;
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
   overflow-y: auto;
-
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 10000;
-
-  /* Center dialog relative to content area */
-  padding-left: 0;
-  transition: padding-left 0.3s ease;
-}
-
-/* Desktop: Adjust padding based on sidebar state */
-@media (min-width: 768px) {
-  :host-context(.main-content) .modal.d-block {
-    padding-left: 260px;
-  }
-
-  :host-context(.main-content--sidebar-collapsed) .modal.d-block {
-    padding-left: 70px !important;
-  }
+  backdrop-filter: blur(8px);
 }
 
 .modal-content {
-  border-radius: 1rem;
+  border-radius: 1.25rem;
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.btn-close {
+  background-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.btn-close:hover {
+  transform: rotate(90deg);
 }
 
 .btn-close-white {
-  filter: invert(1) grayscale(100%) brightness(200%);
+  filter: brightness(0) invert(1) drop-shadow(0 0 2px rgba(0, 0, 0, 0.3)) !important;
 }
 
 /* Floating Labels Tweaks for Roles */
@@ -123,4 +123,184 @@
 
 .hover-scale:hover {
   transform: scale(1.2);
+}
+
+.text-dark-contrast {
+  color: #0f172a !important;
+  /* Darker slate for better contrast */
+  text-shadow: none !important;
+}
+
+.text-white {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* =========================================
+   ROLES PREMIUM UI (LogosPOS Design System)
+   ========================================= */
+
+:host {
+  --primary-gradient: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  --premium-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+}
+
+.bg-premium-blue {
+  background-color: #2563eb !important;
+}
+
+.text-white-50 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Base Modal Standardized */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: white;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.5rem;
+  box-shadow: var(--premium-shadow);
+  animation: premiumIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes premiumIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  padding: 1.75rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glassmorphism Icon Container */
+.premium-icon-box {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.modal-card:hover .premium-icon-box {
+  transform: rotate(5deg) scale(1.05);
+}
+
+/* Custom stats cards */
+.stat-card-premium {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.stat-card-premium:hover {
+  background: white;
+  border-color: #2563eb;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1);
+}
+
+/* Permission groups modules look */
+.permission-module-header {
+  background: #f1f5f9;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.permission-tag-premium {
+  background: white;
+  color: #1e293b;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: default;
+  font-size: 0.8rem;
+}
+
+.permission-tag-premium:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.permission-tag-premium i {
+  transition: transform 0.3s ease;
+}
+
+.permission-tag-premium:hover i {
+  transform: scale(1.2);
+}
+
+/* Custom Scrollbar Premium */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Typography refinement */
+.text-slate-800 {
+  color: #1e293b;
+}
+
+.text-slate-500 {
+  color: #64748b;
 }
