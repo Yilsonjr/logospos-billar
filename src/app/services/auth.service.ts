@@ -336,8 +336,7 @@ export class AuthService {
       await this.supabaseService.client
         .from('usuarios')
         .update({
-          password: contrasenaNueva,
-          updated_at: new Date().toISOString()
+          password: contrasenaNueva
         })
         .eq('id', usuario.id);
 

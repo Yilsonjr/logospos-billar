@@ -84,8 +84,7 @@ export class UsuariosService {
       const { data, error } = await this.supabaseService.client
         .from('usuarios')
         .update({
-          ...usuario,
-          updated_at: new Date().toISOString()
+          ...usuario
         })
         .eq('id', id)
         .select(`
@@ -122,8 +121,7 @@ export class UsuariosService {
       const { error } = await this.supabaseService.client
         .from('usuarios')
         .update({
-          activo: false,
-          updated_at: new Date().toISOString()
+          activo: false
         })
         .eq('id', id);
 
@@ -148,8 +146,7 @@ export class UsuariosService {
       const { error } = await this.supabaseService.client
         .from('usuarios')
         .update({
-          activo: true,
-          updated_at: new Date().toISOString()
+          activo: true
         })
         .eq('id', id);
 
@@ -167,8 +164,7 @@ export class UsuariosService {
       const { error } = await this.supabaseService.client
         .from('usuarios')
         .update({
-          password: nuevaContrasena,
-          updated_at: new Date().toISOString()
+          password: nuevaContrasena
         })
         .eq('id', id);
 
@@ -254,8 +250,7 @@ export class UsuariosService {
       const { data, error } = await this.supabaseService.client
         .from('roles')
         .update({
-          ...rol,
-          updated_at: new Date().toISOString()
+          ...rol
         })
         .eq('id', id)
         .select()
@@ -288,8 +283,7 @@ export class UsuariosService {
       const { error } = await this.supabaseService.client
         .from('roles')
         .update({
-          activo: false,
-          updated_at: new Date().toISOString()
+          activo: false
         })
         .eq('id', id);
 
@@ -307,8 +301,7 @@ export class UsuariosService {
       const { error } = await this.supabaseService.client
         .from('roles')
         .update({
-          activo: true,
-          updated_at: new Date().toISOString()
+          activo: true
         })
         .eq('id', id);
 
