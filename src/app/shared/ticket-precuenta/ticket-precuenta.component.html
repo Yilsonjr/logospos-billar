@@ -1,0 +1,93 @@
+<div class="ticket-overlay no-print" (click)="onCerrar()">
+    <div class="ticket-modal animate__animated animate__slideInUp" (click)="$event.stopPropagation()">
+        <div class="modal-header-actions mb-3 d-flex gap-2">
+            <button class="btn btn-primary flex-grow-1 py-2 fw-bold" (click)="imprimir()">
+                <i class="fa-solid fa-print me-2"></i>Imprimir Pre-cuenta
+            </button>
+            <button class="btn btn-danger px-3 py-2" (click)="onCerrar()">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div id="print-section" class="ticket-wrapper">
+            <div class="ticket-container">
+                <!-- Encabezado -->
+                <div class="ticket-header text-center">
+                    <h1 class="business-name">{{ negocio.nombre }}</h1>
+                    <p class="business-info">{{ negocio.direccion }}</p>
+                    <p class="business-info">Tel: {{ negocio.telefono }}</p>
+                    <div class="separator-double"></div>
+                    <h2 class="receipt-title">PRE-CUENTA (NO FISCAL)</h2>
+                    <div class="separator"></div>
+                </div>
+
+                <!-- Info Mesa -->
+                <table class="info-table">
+                    <tr>
+                        <td><strong>MESA:</strong></td>
+                        <td class="text-right fw-bold">{{ pedido.mesa_numero }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CLIENTE:</strong></td>
+                        <td class="text-right">{{ pedido.nombre_cliente || 'GENERAL' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FECHA:</strong></td>
+                        <td class="text-right">{{ formatearFecha() }}</td>
+                    </tr>
+                </table>
+
+                <div class="separator"></div>
+
+                <!-- Detalles -->
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left">CANT/DETALLE</th>
+                            <th class="text-right">IMPORTE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of pedido.detalles">
+                            <td colspan="2">
+                                <div class="item-row">
+                                    <span class="item-qty">{{ item.cantidad }}x</span>
+                                    <span class="item-name">{{ item.producto_nombre }}</span>
+                                    <span class="item-total">{{ formatearMoneda(item.subtotal) }}</span>
+                                </div>
+                                <div class="item-price-row" *ngIf="item.cantidad > 1">
+                                    <small>Prec. Unit: {{ formatearMoneda(item.precio_unitario) }}</small>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="separator-double"></div>
+
+                <!-- Totales -->
+                <table class="totals-table">
+                    <tr class="fw-bold fs-large">
+                        <td>TOTAL CONSUMIDO:</td>
+                        <td class="text-right">{{ formatearMoneda(pedido.total) }}</td>
+                    </tr>
+                </table>
+
+                <div class="separator"></div>
+
+                <!-- Aviso -->
+                <div class="notice text-center my-3">
+                    <p class="m-0 fw-bold">ESTE TICKET NO ES VALIDO</p>
+                    <p class="m-0 fw-bold">COMO COMPROBANTE FISCAL</p>
+                    <p class="small opacity-75 mt-2">Favor solicitar su factura formal en caja.</p>
+                </div>
+
+                <!-- Pie de página -->
+                <div class="ticket-footer text-center mt-4">
+                    <p class="small m-0">LogosPOS - Control de Mesa</p>
+                    <p class="small m-0">{{ formatearFecha() }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

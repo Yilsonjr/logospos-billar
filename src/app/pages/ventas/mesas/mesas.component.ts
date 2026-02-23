@@ -8,11 +8,12 @@ import { AuthService } from '../../../services/auth.service';
 import { Mesa, PedidoMesa, ESTADOS_MESA } from '../../../models/mesa.model';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
+import { TicketPrecuentaComponent } from '../../../shared/ticket-precuenta/ticket-precuenta.component';
 
 @Component({
     selector: 'app-mesas',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, TicketPrecuentaComponent],
     templateUrl: './mesas.component.html',
     styleUrls: ['./mesas.component.css']
 })
@@ -24,6 +25,10 @@ export class MesasComponent implements OnInit, OnDestroy {
     private subscriptions: Subscription[] = [];
     menuAbierto: number | null = null; // ID de la mesa con el menú abierto
     busquedaMesa: string = '';
+
+    // Pre-cuenta
+    mostrarPrecuenta: boolean = false;
+    pedidoParaPrecuenta?: PedidoMesa;
 
     constructor(
         private mesasService: MesasService,
@@ -138,6 +143,11 @@ export class MesasComponent implements OnInit, OnDestroy {
                             <span class="fw-bold">Cerrar Cuenta</span>
                             <small class="opacity-75">Ir a facturación y pago</small>
                         </button>
+                        <button id="print-precuenta" class="btn btn-outline-info btn-lg py-3 d-flex flex-column align-items-center">
+                            <i class="fa-solid fa-print fa-2x mb-2"></i>
+                            <span class="fw-bold">Imprimir Pre-cuenta</span>
+                            <small class="opacity-75">Ticket informativo para el mesa</small>
+                        </button>
                         <hr class="my-1">
                         <button id="release-error" class="btn btn-outline-warning btn-lg py-2 rounded-3 fw-bold">
                             <i class="fa-solid fa-unlock me-2"></i>
@@ -163,6 +173,12 @@ export class MesasComponent implements OnInit, OnDestroy {
                         this.verCuenta(mesa.id!);
                     });
 
+                    const printBtn = document.getElementById('print-precuenta');
+                    printBtn?.addEventListener('click', () => {
+                        Swal.close();
+                        this.imprimirPrecuenta(mesa.id!);
+                    });
+
                     releaseBtn?.addEventListener('click', () => {
                         Swal.close();
                         this.liberarMesa(mesa);
@@ -177,6 +193,15 @@ export class MesasComponent implements OnInit, OnDestroy {
         if (pedido) {
             // Redirigir al POS con el contexto de la mesa
             this.router.navigate(['/ventas/nueva'], { queryParams: { mesaId, pedidoId: pedido.id } });
+        }
+    }
+
+    imprimirPrecuenta(mesaId: number) {
+        const pedido = this.getPedidoMesa(mesaId);
+        if (pedido) {
+            this.pedidoParaPrecuenta = pedido;
+            this.mostrarPrecuenta = true;
+            this.cdr.detectChanges();
         }
     }
 

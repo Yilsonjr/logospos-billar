@@ -1,19 +1,19 @@
 <!-- Overlay para el menú móvil -->
 <div class="sidebar-overlay" [class.show]="!isCollapsed" (click)="toggleSidebar()"></div>
 
-<div class="sidebar-container d-flex flex-column flex-shrink-0 p-2 h-100 position-fixed overflow-y-auto"
-  [class.show]="!isCollapsed" style="top: 0; left: 0; z-index: 9999;"
+<div class="sidebar-container d-flex flex-column flex-shrink-0 position-fixed h-100 shadow-lg"
+  [class.show]="!isCollapsed" style="top: 0; left: 0; z-index: 9999; overflow: hidden;"
   [style.width.px]="isMobile ? 260 : (isCollapsed ? 70 : 250)">
 
-  <!-- Header: Logo y Toggle -->
-  <div class="sidebar-header d-flex align-items-center mb-4 pb-3">
+  <!-- Header: Logo y Toggle (Siempre Visible) -->
+  <div class="sidebar-header d-flex align-items-center p-3">
     <div class="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0 gradient-logo shadow-sm"
       style="width: 42px; height: 42px; background: linear-gradient(135deg, #3699ff 0%, #007bff 100%);">
       <i class="fa-solid fa-store text-white fs-5"></i>
     </div>
 
     @if (!isCollapsed || isMobile) {
-    <div class="ms-3 lh-1 overflow-hidden" style="white-space: nowrap;">
+    <div class="ms-3 lh-1 overflow-hidden animate__animated animate__fadeIn" style="white-space: nowrap;">
       <h5 class="mb-0 fw-bold brand-text" style="font-size: 1.1rem;">LogosPOS</h5>
       <small class="text-muted" style="font-size: 0.75rem; opacity: 0.7;">Sistema de Ventas</small>
     </div>
@@ -28,84 +28,87 @@
     </button>
   </div>
 
-  <!-- Acciones Rápidas (A un solo clic) -->
-  @if (!isCollapsed || isMobile) {
-  <div class="mb-4 px-2 animate__animated animate__fadeIn">
-    <div class="small fw-bold text-muted mb-2 ps-1 text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">
-      Operaciones Rápidas
-    </div>
-    <div class="d-flex flex-wrap gap-2">
-      @for (action of quickActions; track action.label) {
-      <a [routerLink]="action.link"
-        class="btn btn-quick-action d-flex flex-column align-items-center justify-content-center border-0 rounded-3 p-2 flex-grow-1"
-        [style.background-color]="action.color + '15'" [style.color]="action.color" [title]="action.label">
-        <i [class]="action.icon" class="fs-5 mb-1"></i>
-        <span style="font-size: 0.65rem; font-weight: 600;">{{ action.label.split(' ')[0] }}</span>
-      </a>
-      }
-    </div>
-  </div>
-  }
+  <!-- Contenido Scrollable (Acciones y Menús) -->
+  <div class="sidebar-scroll-area flex-grow-1 overflow-y-auto px-2 py-3">
 
-  <!-- Navegación -->
-  <ul class="nav nav-pills flex-column mb-auto gap-1">
-    @for (item of menuItemsFiltrados; track item.label) {
-    <li class="nav-item">
-      <!-- Item Principal -->
-      <a [routerLink]="item.submenu ? null : item.link" class="nav-link d-flex align-items-center text-truncate"
-        routerLinkActive="active" [routerLinkActiveOptions]="{exact: item.link === '/dashboard'}"
-        [title]="isCollapsed ? item.label : ''" (click)="handleMenuClick($event, item)"
-        style="cursor: pointer; height: 44px;">
-
-        <i [class]="item.icon" class="fs-5 flex-shrink-0 d-flex justify-content-center" style="width: 24px;"></i>
-
-        @if (!isCollapsed || isMobile) {
-        <span class="ms-3 flex-grow-1 text-truncate" style="font-size: 0.95rem;">{{ item.label }}</span>
-
-        @if (item.submenu) {
-        <i class="fa-solid fa-chevron-down ms-auto transition-transform"
-          [style.transform]="item.expanded ? 'rotate(180deg)' : 'rotate(0deg)'"
-          style="font-size: 0.7rem; opacity: 0.7;"></i>
-        }
-        }
-      </a>
-
-      <!-- Submenú -->
-      @if (item.submenu && item.expanded && (!isCollapsed || isMobile)) {
-      <div class="submenu-container ms-2 ps-2"> <!-- Contenedor oscuro -->
-        <ul class="nav flex-column gap-1">
-          @for (subitem of item.submenu; track subitem.label) {
-          <li class="nav-item">
-            <a [routerLink]="subitem.link" class="nav-sublink rounded-2 d-flex align-items-center"
-              routerLinkActive="active" style="padding: 8px 12px 8px 16px;">
-              <i [class]="subitem.icon" class="me-3" style="font-size: 0.9rem; opacity: 0.8;"></i>
-              <span style="font-size: 0.9rem;">{{ subitem.label }}</span>
-            </a>
-          </li>
-          }
-        </ul>
+    <!-- Acciones Rápidas (A un solo clic) -->
+    @if (!isCollapsed || isMobile) {
+    <div class="mb-4 px-2 animate__animated animate__fadeIn">
+      <div class="small fw-bold text-muted mb-2 ps-1 text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">
+        Operaciones Rápidas
       </div>
-      }
-    </li>
+      <div class="d-flex flex-wrap gap-2">
+        @for (action of quickActions; track action.label) {
+        <a [routerLink]="action.link"
+          class="btn btn-quick-action d-flex flex-column align-items-center justify-content-center border-0 rounded-3 p-2 flex-grow-1"
+          [style.background-color]="action.color + '15'" [style.color]="action.color" [title]="action.label">
+          <i [class]="action.icon" class="fs-5 mb-1"></i>
+          <span style="font-size: 0.65rem; font-weight: 600;">{{ action.label.split(' ')[0] }}</span>
+        </a>
+        }
+      </div>
+    </div>
     }
-  </ul>
 
-  <!-- Footer: Usuario -->
-  <div class="user-footer pt-3 mt-3">
+    <!-- Navegación -->
+    <ul class="nav nav-pills flex-column mb-auto gap-1">
+      @for (item of menuItemsFiltrados; track item.label) {
+      <li class="nav-item">
+        <!-- Item Principal -->
+        <a [routerLink]="item.submenu ? null : item.link" class="nav-link d-flex align-items-center text-truncate"
+          routerLinkActive="active" [routerLinkActiveOptions]="{exact: item.link === '/dashboard'}"
+          [title]="isCollapsed ? item.label : ''" (click)="handleMenuClick($event, item)"
+          style="cursor: pointer; height: 44px;">
+
+          <i [class]="item.icon" class="fs-5 flex-shrink-0 d-flex justify-content-center" style="width: 24px;"></i>
+
+          @if (!isCollapsed || isMobile) {
+          <span class="ms-3 flex-grow-1 text-truncate" style="font-size: 0.95rem;">{{ item.label }}</span>
+
+          @if (item.submenu) {
+          <i class="fa-solid fa-chevron-down ms-auto transition-transform"
+            [style.transform]="item.expanded ? 'rotate(180deg)' : 'rotate(0deg)'"
+            style="font-size: 0.7rem; opacity: 0.7;"></i>
+          }
+          }
+        </a>
+
+        <!-- Submenú -->
+        @if (item.submenu && item.expanded && (!isCollapsed || isMobile)) {
+        <div class="submenu-container ms-2 ps-2">
+          <ul class="nav flex-column gap-1">
+            @for (subitem of item.submenu; track subitem.label) {
+            <li class="nav-item">
+              <a [routerLink]="subitem.link" class="nav-sublink rounded-2 d-flex align-items-center"
+                routerLinkActive="active" style="padding: 8px 12px 8px 16px;">
+                <i [class]="subitem.icon" class="me-3" style="font-size: 0.9rem; opacity: 0.8;"></i>
+                <span style="font-size: 0.9rem;">{{ subitem.label }}</span>
+              </a>
+            </li>
+            }
+          </ul>
+        </div>
+        }
+      </li>
+      }
+    </ul>
+  </div>
+
+  <!-- Footer: Usuario (Siempre Visible al fondo) -->
+  <div class="user-footer p-3 border-top">
     @if (isCollapsed && !isMobile) {
-    <div class="text-center">
+    <div class="text-center animate__animated animate__fadeIn">
       <div
-        class="avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold mb-2 mx-auto"
+        class="avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold mb-3 mx-auto shadow-sm"
         style="width: 38px; height: 38px; font-size: 0.9rem;" [style.background-color]="obtenerColorRol()">
         {{ obtenerIniciales() }}
       </div>
-      <button class="btn btn-sm btn-outline-danger w-100 p-1 rounded-circle" style="width: 32px; height: 32px;"
-        (click)="cerrarSesion()" title="Cerrar Sesión">
+      <button class="btn btn-sm btn-outline-danger w-100 p-2 rounded-3" (click)="cerrarSesion()" title="Cerrar Sesión">
         <i class="fa-solid fa-power-off"></i>
       </button>
     </div>
     } @else {
-    <div class="d-flex align-items-center p-2 rounded-3 hover-bg-dark transition-all">
+    <div class="d-flex align-items-center p-2 rounded-3 hover-bg-dark transition-all animate__animated animate__fadeIn">
       <div class="avatar rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
         style="width: 40px; height: 40px; min-width: 40px; font-size: 1rem;"
         [style.background-color]="obtenerColorRol()">
@@ -115,7 +118,7 @@
         <div class="fw-bold user-name text-truncate lh-1 mb-1">{{ obtenerPrimerNombre() }}</div>
         <div class="user-role text-truncate small lh-1">{{ usuario?.rol?.nombre }}</div>
       </div>
-      <button class="btn btn-sm btn-icon btn-active-light-primary ms-auto text-muted hover-text-danger"
+      <button class="btn btn-sm btn-icon btn-active-light-primary ms-auto text-muted hover-text-danger p-2"
         (click)="cerrarSesion()" title="Cerrar Sesión">
         <i class="fa-solid fa-arrow-right-from-bracket fs-5"></i>
       </button>

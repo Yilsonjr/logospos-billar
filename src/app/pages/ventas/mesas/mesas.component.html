@@ -175,3 +175,8 @@
         </div>
     </div>
 </div>
+
+<!-- Componente de Pre-cuenta -->
+@if (mostrarPrecuenta && pedidoParaPrecuenta) {
+<app-ticket-precuenta [pedido]="pedidoParaPrecuenta" (cerrar)="mostrarPrecuenta = false"></app-ticket-precuenta>
+}
