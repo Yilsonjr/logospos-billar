@@ -219,3 +219,21 @@
 .animate__fadeIn {
   animation-duration: 0.5s;
 }
+
+/* Estilos específicos para el botón de logout */
+.btn-logout {
+  color: rgba(255, 255, 255, 0.6) !important;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.btn-logout:hover {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  transform: scale(1.1);
+}
+
+.user-footer {
+  background-color: rgba(0, 0, 0, 0.2);
+}

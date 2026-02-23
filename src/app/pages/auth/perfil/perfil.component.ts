@@ -15,31 +15,33 @@ import Swal from 'sweetalert2';
 })
 export class PerfilComponent implements OnInit, OnDestroy {
   usuario: Usuario | null = null;
+  tokenActual: string | null = null;
   sesionesActivas: Sesion[] = [];
-  
+
   // Formulario de cambio de contraseña
   cambioContrasena = {
     actual: '',
     nueva: '',
     confirmar: ''
   };
-  
+
   // Estados
   isLoading = false;
   mostrarCambioContrasena = false;
   subscriptions: Subscription[] = [];
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   async ngOnInit() {
-    // Suscribirse al estado de autenticación
-    const authSub = this.authService.authState$.subscribe(authState => {
+    // Suscribirse al estado de autenticación y cargar sesiones cuando el usuario esté listo
+    const authSub = this.authService.authState$.subscribe(async authState => {
       this.usuario = authState.usuario;
+      this.tokenActual = authState.token;
+      if (this.usuario) {
+        await this.cargarSesionesActivas();
+      }
     });
     this.subscriptions.push(authSub);
-
-    // Cargar sesiones activas
-    await this.cargarSesionesActivas();
   }
 
   ngOnDestroy() {
@@ -80,7 +82,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
         this.cambioContrasena.actual,
         this.cambioContrasena.nueva
       );
-      
+
       this.limpiarFormularioContrasena();
       this.mostrarCambioContrasena = false;
     } catch (error: any) {
@@ -137,7 +139,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
       try {
         await this.authService.cerrarSesion(sesion.id!);
         await this.cargarSesionesActivas();
-        
+
         Swal.fire({
           title: '✅ Sesión Cerrada',
           text: 'La sesión ha sido cerrada exitosamente',
@@ -185,13 +187,17 @@ export class PerfilComponent implements OnInit, OnDestroy {
   // ==================== UTILIDADES ====================
 
   formatearFecha(fecha: string): string {
-    return new Date(fecha).toLocaleDateString('es-ES', {
+    return new Date(fecha).toLocaleDateString('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      month: 'short',
-      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  esSesionActual(sesion: Sesion): boolean {
+    return sesion.token === this.tokenActual;
   }
 
   obtenerIniciales(nombre: string, apellido: string): string {
@@ -209,7 +215,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   obtenerDispositivo(userAgent: string): string {
     if (!userAgent) return 'Desconocido';
-    
+
     if (userAgent.includes('Mobile')) return 'Móvil';
     if (userAgent.includes('Tablet')) return 'Tablet';
     return 'Escritorio';
@@ -217,7 +223,7 @@ export class PerfilComponent implements OnInit, OnDestroy {
 
   obtenerNavegador(userAgent: string): string {
     if (!userAgent) return 'Desconocido';
-    
+
     if (userAgent.includes('Chrome')) return 'Chrome';
     if (userAgent.includes('Firefox')) return 'Firefox';
     if (userAgent.includes('Safari')) return 'Safari';

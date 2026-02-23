@@ -118,8 +118,7 @@
         <div class="fw-bold user-name text-truncate lh-1 mb-1">{{ obtenerPrimerNombre() }}</div>
         <div class="user-role text-truncate small lh-1">{{ usuario?.rol?.nombre }}</div>
       </div>
-      <button class="btn btn-sm btn-icon btn-active-light-primary ms-auto text-muted hover-text-danger p-2"
-        (click)="cerrarSesion()" title="Cerrar Sesión">
+      <button class="btn btn-sm btn-logout ms-auto p-2" (click)="cerrarSesion()" title="Cerrar Sesión">
         <i class="fa-solid fa-arrow-right-from-bracket fs-5"></i>
       </button>
     </div>
