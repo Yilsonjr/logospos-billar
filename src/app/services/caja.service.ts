@@ -360,48 +360,38 @@ export class CajaService {
     }
   }
 
-  // Calcular totales de ventas del día para cierre
+  // Calcular totales de ventas de la caja para el cierre
   async calcularVentasDelDia(cajaId: number): Promise<{ efectivo: number; tarjeta: number }> {
     try {
-      // Obtener fecha de apertura de la caja
-      const { data: caja } = await this.supabaseService.client
-        .from('cajas')
-        .select('fecha_apertura')
-        .eq('id', cajaId)
-        .single();
+      console.log('📊 [CajaService] Calculando ventas para el cierre de la caja:', cajaId);
 
-      if (!caja) return { efectivo: 0, tarjeta: 0 };
-
-      const fechaApertura = new Date(caja.fecha_apertura).toISOString();
-      const fechaActual = new Date().toISOString();
-
-      // Obtener ventas entre apertura y ahora
-      const { data: ventas, error } = await this.supabaseService.client
-        .from('ventas')
-        .select('metodo_pago, total, monto_efectivo, monto_tarjeta')
-        .gte('fecha', fechaApertura)
-        .lte('fecha', fechaActual)
-        .eq('estado', 'completada');
+      // Obtener todos los movimientos de tipo 'venta' para esta caja
+      const { data: movimientos, error } = await this.supabaseService.client
+        .from('movimientos_caja')
+        .select('concepto, monto')
+        .eq('caja_id', cajaId)
+        .eq('tipo', 'venta');
 
       if (error) throw error;
 
       let totalEfectivo = 0;
       let totalTarjeta = 0;
 
-      ventas?.forEach(venta => {
-        if (venta.metodo_pago === 'efectivo') {
-          totalEfectivo += venta.total;
-        } else if (venta.metodo_pago === 'tarjeta') {
-          totalTarjeta += venta.total;
-        } else if (venta.metodo_pago === 'mixto') {
-          totalEfectivo += venta.monto_efectivo || 0;
-          totalTarjeta += venta.monto_tarjeta || 0;
+      // Desglosar por el concepto (que indica el método de pago)
+      movimientos?.forEach(mov => {
+        const concepto = mov.concepto.toLowerCase();
+        if (concepto.includes('(efectivo)')) {
+          totalEfectivo += mov.monto;
+        } else if (concepto.includes('(tarjeta)')) {
+          totalTarjeta += mov.monto;
         }
       });
 
+      console.log(`✅ [CajaService] Ventas calculadas para caja #${cajaId}:`, { totalEfectivo, totalTarjeta });
       return { efectivo: totalEfectivo, tarjeta: totalTarjeta };
+
     } catch (error) {
-      console.error('Error al calcular ventas del día:', error);
+      console.error('❌ [CajaService] Error al calcular ventas de la caja:', error);
       return { efectivo: 0, tarjeta: 0 };
     }
   }
