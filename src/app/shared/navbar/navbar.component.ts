@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { Usuario } from '../../models/usuario.model';
@@ -18,6 +19,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isMobile = false;
   usuario: Usuario | null = null;
   subscriptions: Subscription[] = [];
+
+  quickActions = [
+    { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff' },
+    { label: 'Mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', link: '/ventas/mesas', permissions: ['ventas.crear'], color: '#ef4444' },
+    { label: 'Cierre', icon: 'fa-solid fa-door-closed', link: '/caja/cierre', permissions: ['caja.cerrar'], color: '#f59e0b' }
+  ];
 
   constructor(
     private authService: AuthService,
@@ -39,9 +46,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
     const authSub = this.authService.authState$.subscribe(authState => {
       this.usuario = authState.usuario;
       this.filtrarMenuPorPermisos();
+      this.autoExpandActualRoute();
     });
 
-    this.subscriptions.push(sidebarSub, authSub);
+    // Suscribirse a cambios de ruta para auto-expandir
+    const routerSub = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.autoExpandActualRoute();
+    });
+
+    this.subscriptions.push(sidebarSub, authSub, routerSub);
   }
 
   ngOnDestroy() {
@@ -63,8 +78,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       active: false,
       permissions: ['inventario.ver'],
       submenu: [
-        { label: 'Productos', link: '/inventario', icon: 'fa-solid fa-box', permissions: ['inventario.ver'] },
-        { label: 'Proveedores', link: '/inventario/proveedores', icon: 'fa-solid fa-truck', permissions: ['proveedores.ver'] }
+        { label: 'Productos', link: '/inventario', icon: 'fa-solid fa-box', permissions: ['inventario.ver'] }
       ],
       expanded: false
     },
@@ -76,7 +90,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
       permissions: ['inventario.ver'],
       submenu: [
         { label: 'Lista de Compras', link: '/compras', icon: 'fa-solid fa-list', permissions: ['inventario.ver'] },
-        { label: 'Nueva Compra', link: '/compras/nueva', icon: 'fa-solid fa-plus-circle', permissions: ['inventario.crear'] }
+        { label: 'Nueva Compra', link: '/compras/nueva', icon: 'fa-solid fa-plus-circle', permissions: ['inventario.crear'] },
+        { label: 'Proveedores', link: '/inventario/proveedores', icon: 'fa-solid fa-truck', permissions: ['proveedores.ver'] }
       ],
       expanded: false
     },
@@ -202,6 +217,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Auto-expandir el menú basado en la ruta actual
+  autoExpandActualRoute() {
+    const currentUrl = this.router.url;
+    this.menuItemsFiltrados.forEach(item => {
+      if (item.submenu) {
+        const isChildActive = item.submenu.some((sub: any) => currentUrl.startsWith(sub.link));
+        if (isChildActive) {
+          item.expanded = true;
+        }
+      }
+    });
+  }
+
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
@@ -227,7 +255,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
   handleMenuClick(event: Event, item: any) {
     if (item.submenu) {
       event.preventDefault(); // Prevenir navegación si tiene submenu
-      this.toggleSubmenu(item);
+
+      // Si está colapsado, expandir primero el sidebar
+      if (this.isCollapsed) {
+        this.sidebarService.setCollapsed(false);
+        // Pequeño delay para que la animación de expansión permita ver el submenu
+        setTimeout(() => {
+          item.expanded = true;
+        }, 100);
+      } else {
+        this.toggleSubmenu(item);
+      }
     }
   }
 

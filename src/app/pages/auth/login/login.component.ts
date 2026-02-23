@@ -45,9 +45,9 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Si ya está autenticado, redirigir al mapa de mesas
+    // Si ya está autenticado, redirigir al dashboard
     if (this.authService.isAuthenticated) {
-      this.router.navigate(['/ventas/mesas']);
+      this.router.navigate(['/dashboard']);
     }
   }
 
@@ -83,7 +83,7 @@ export class LoginComponent implements OnInit {
         showConfirmButton: false
       });
 
-      this.router.navigate(['/ventas/mesas']);
+      this.router.navigate(['/dashboard']);
 
     } catch (error: any) {
       // Resetear el estado de loading ANTES de mostrar el error

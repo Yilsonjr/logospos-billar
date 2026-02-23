@@ -263,6 +263,6 @@ export const routes: Routes = [
     },
 
     // Redirecciones
-    { path: '', redirectTo: 'ventas/mesas', pathMatch: 'full' },
-    { path: '**', redirectTo: 'ventas/mesas' }
+    { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+    { path: '**', redirectTo: 'dashboard' }
 ];
