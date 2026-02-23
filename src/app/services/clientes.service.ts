@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { Cliente, CrearCliente } from '../models/clientes.model';
 import { BehaviorSubject } from 'rxjs';
+import { OfflineService } from './offline.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,15 +11,36 @@ export class ClientesService {
   private clientesSubject = new BehaviorSubject<Cliente[]>([]);
   public clientes$ = this.clientesSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
-    // NO cargar automáticamente en el constructor
+  constructor(
+    private supabaseService: SupabaseService,
+    private offlineService: OfflineService
+  ) {
+    this.iniciarCargaHibrida();
+  }
+
+  private async iniciarCargaHibrida() {
+    try {
+      // 1. Cargar desde Dexie para velocidad instantánea
+      const clientesLocales = await this.offlineService.obtenerClientesLocales();
+      if (clientesLocales.length > 0) {
+        console.log('📦 Loaded clients from local Dexie cache');
+        this.clientesSubject.next(clientesLocales);
+      }
+
+      // 2. Refrescar desde Supabase si hay conexión
+      if (this.offlineService.isOnline) {
+        await this.cargarClientes();
+      }
+    } catch (error) {
+      console.error('Error during hybrid load of clients:', error);
+    }
   }
 
   // Cargar clientes activos
   async cargarClientes(): Promise<void> {
     try {
-      console.log('🔄 Cargando clientes...');
-      
+      console.log('🔄 Cargando clientes de Supabase...');
+
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .select('*')
@@ -26,13 +48,16 @@ export class ClientesService {
         .order('nombre', { ascending: true });
 
       if (error) {
-        console.error('❌ Error al cargar clientes:', error);
         throw error;
       }
 
-      console.log('✅ Clientes cargados:', data?.length || 0);
+      console.log('✅ Clientes sincronizados:', data?.length || 0);
+
+      // Actualizar caché local
+      await this.offlineService.actualizarClientesLocales(data || []);
+
       this.clientesSubject.next(data || []);
-      
+
     } catch (error) {
       console.error('💥 Error en cargarClientes:', error);
       throw error;
@@ -43,7 +68,7 @@ export class ClientesService {
   async cargarTodosClientes(): Promise<Cliente[]> {
     try {
       console.log('🔄 Cargando todos los clientes...');
-      
+
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .select('*')
@@ -56,7 +81,7 @@ export class ClientesService {
 
       console.log('✅ Todos los clientes cargados:', data?.length || 0);
       return data || [];
-      
+
     } catch (error) {
       console.error('💥 Error en cargarTodosClientes:', error);
       throw error;
@@ -67,7 +92,7 @@ export class ClientesService {
   async crearCliente(cliente: CrearCliente): Promise<Cliente> {
     try {
       console.log('🔄 Creando cliente:', cliente.nombre);
-      
+
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .insert([{
@@ -85,7 +110,7 @@ export class ClientesService {
       console.log('✅ Cliente creado:', data.nombre);
       await this.cargarClientes();
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en crearCliente:', error);
       throw error;
@@ -96,7 +121,7 @@ export class ClientesService {
   async actualizarCliente(id: number, cliente: Partial<Cliente>): Promise<Cliente> {
     try {
       console.log('🔄 Actualizando cliente ID:', id);
-      
+
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .update({
@@ -115,7 +140,7 @@ export class ClientesService {
       console.log('✅ Cliente actualizado:', data.nombre);
       await this.cargarClientes();
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en actualizarCliente:', error);
       throw error;
@@ -126,10 +151,10 @@ export class ClientesService {
   async desactivarCliente(id: number): Promise<void> {
     try {
       console.log('🔄 Desactivando cliente ID:', id);
-      
+
       const { error } = await this.supabaseService.client
         .from('clientes')
-        .update({ 
+        .update({
           activo: false,
           updated_at: new Date().toISOString()
         })
@@ -142,7 +167,7 @@ export class ClientesService {
 
       console.log('✅ Cliente desactivado');
       await this.cargarClientes();
-      
+
     } catch (error) {
       console.error('💥 Error en desactivarCliente:', error);
       throw error;
@@ -153,7 +178,7 @@ export class ClientesService {
   async eliminarClienteFisicamente(id: number): Promise<void> {
     try {
       console.log('🔄 Eliminando físicamente cliente ID:', id);
-      
+
       const { error } = await this.supabaseService.client
         .from('clientes')
         .delete()
@@ -166,7 +191,7 @@ export class ClientesService {
 
       console.log('✅ Cliente eliminado físicamente');
       await this.cargarClientes();
-      
+
     } catch (error) {
       console.error('💥 Error en eliminarClienteFisicamente:', error);
       throw error;
@@ -177,10 +202,10 @@ export class ClientesService {
   async actualizarBalance(id: number, nuevoBalance: number): Promise<void> {
     try {
       console.log('🔄 Actualizando balance cliente ID:', id);
-      
+
       const { error } = await this.supabaseService.client
         .from('clientes')
-        .update({ 
+        .update({
           balance_pendiente: nuevoBalance,
           updated_at: new Date().toISOString()
         })
@@ -193,7 +218,7 @@ export class ClientesService {
 
       console.log('✅ Balance actualizado');
       await this.cargarClientes();
-      
+
     } catch (error) {
       console.error('💥 Error en actualizarBalance:', error);
       throw error;
@@ -233,7 +258,7 @@ export class ClientesService {
       }
 
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en getClienteGeneral:', error);
       return null;

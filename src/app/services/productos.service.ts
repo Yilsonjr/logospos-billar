@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { Productos } from '../models/productos.model';
 import { Observable, from, BehaviorSubject } from 'rxjs';
+import { OfflineService } from './offline.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,14 +11,62 @@ export class ProductosService {
   private productosSubject = new BehaviorSubject<Productos[]>([]);
   public productos$ = this.productosSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
-    // Carga inicial para que el inventario y POS estén listos
-    this.cargarProductos().catch(err => console.error('Error in initial cargarProductos:', err));
+  constructor(
+    private supabaseService: SupabaseService,
+    private offlineService: OfflineService
+  ) {
+    // Carga inicial: Primero desde caché local, luego desde Supabase
+    this.iniciarCarga().catch(err => console.error('Error in initial load:', err));
+  }
+
+  // Lógica de carga híbrida
+  private async iniciarCarga() {
+    try {
+      // 1. Cargar lo que tengamos en Dexie inmediatamente
+      const [productosLocales, categoriasLocales] = await Promise.all([
+        this.offlineService.obtenerProductosLocales(),
+        this.offlineService.obtenerCategoriasLocales()
+      ]);
+
+      if (productosLocales.length > 0) {
+        console.log('📦 Loaded products from local Dexie cache');
+        this.productosSubject.next(productosLocales);
+      }
+
+      // 2. Intentar refrescar desde Supabase si hay conexión
+      if (this.offlineService.isOnline) {
+        await this.cargarProductos();
+        await this.cargarCategorias();
+      }
+    } catch (error) {
+      console.error('Error during hybrid load:', error);
+    }
+  }
+
+  // Obtener categorías y sincronizar
+  async cargarCategorias(): Promise<void> {
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('categorias')
+        .select('*');
+
+      if (error) throw error;
+
+      await this.offlineService.actualizarCategoriasLocales(data || []);
+      console.log('✅ Local categories mirror updated');
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
+    }
   }
 
   // Obtener todos los productos
   async cargarProductos(): Promise<void> {
     try {
+      if (!this.offlineService.isOnline) {
+        console.warn('⚠️ Offline: Serving from local cache only');
+        return;
+      }
+
       const { data, error } = await this.supabaseService.client
         .from('productos')
         .select(`
@@ -40,7 +89,13 @@ export class ProductosService {
         stock: prod.stock_actual
       }));
 
+      // Actualizar BehaviorSubject
       this.productosSubject.next(productosMapeados);
+
+      // Actualizar Espejo Local (Dexie)
+      await this.offlineService.actualizarProductosLocales(productosMapeados);
+      console.log('✅ Local product mirror updated');
+
     } catch (error) {
       console.error('Error en cargarProductos:', error);
       throw error;

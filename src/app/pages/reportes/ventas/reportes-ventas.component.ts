@@ -27,6 +27,8 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
     totalTarjeta = 0;
     totalTransacciones = 0;
     ticketPromedio = 0;
+    topProductos: { nombre: string, cantidad: number, total: number }[] = [];
+    distribucionMetodos: { nombre: string, valor: number, color: string }[] = [];
 
     private subscriptions: Subscription[] = [];
 
@@ -121,7 +123,67 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
         });
 
         this.ticketPromedio = this.totalTransacciones > 0 ? this.totalVentas / this.totalTransacciones : 0;
+
+        this.calcularTopProductos(ventasInteres);
+        this.calcularDistribucionMetodos(ventasInteres);
+
         this.cdr.detectChanges();
+    }
+
+    private async calcularTopProductos(ventas: Venta[]) {
+        const productMap = new Map<number, { nombre: string, cantidad: number, total: number }>();
+
+        // Necesitamos los detalles de estas ventas. 
+        // Para optimizar, podríamos hacer una sola petición a Supabase para todos los detalles de estas ventas
+        const ventaIds = ventas.filter(v => v.estado === 'completada').map(v => v.id);
+
+        if (ventaIds.length === 0) {
+            this.topProductos = [];
+            return;
+        }
+
+        try {
+            const { data: detalles, error } = await this.ventasService['supabaseService'].client
+                .from('ventas_detalle')
+                .select('producto_id, producto_nombre, cantidad, subtotal')
+                .in('venta_id', ventaIds);
+
+            if (error) throw error;
+
+            (detalles || []).forEach((d: any) => {
+                const current = productMap.get(d.producto_id) || { nombre: d.producto_nombre, cantidad: 0, total: 0 };
+                current.cantidad += d.cantidad;
+                current.total += d.subtotal;
+                productMap.set(d.producto_id, current);
+            });
+
+            this.topProductos = Array.from(productMap.values())
+                .sort((a, b) => b.cantidad - a.cantidad)
+                .slice(0, 5);
+
+        } catch (error) {
+            console.error('Error calculando top productos:', error);
+            this.topProductos = [];
+        }
+    }
+
+    private calcularDistribucionMetodos(ventas: Venta[]) {
+        const metodos = [
+            { id: 'efectivo', nombre: 'Efectivo', color: '#10b981' },
+            { id: 'tarjeta', nombre: 'Tarjeta', color: '#3699ff' },
+            { id: 'mixto', nombre: 'Mixto', color: '#f6ad55' },
+            { id: 'credito', nombre: 'Crédito', color: '#7e8299' }
+        ];
+
+        this.distribucionMetodos = metodos.map(m => {
+            const count = ventas.filter(v => v.estado === 'completada' && v.metodo_pago === m.id).length;
+            const porcentaje = ventas.length > 0 ? (count / ventas.length) * 100 : 0;
+            return {
+                nombre: m.nombre,
+                valor: porcentaje,
+                color: m.color
+            };
+        }).filter(m => m.valor > 0);
     }
 
     exportarReporte() {

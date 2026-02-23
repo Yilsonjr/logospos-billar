@@ -4,6 +4,7 @@ import { ProductosService } from './productos.service';
 import { ClientesService } from './clientes.service';
 import { AuthService } from './auth.service'; // Import AuthService
 import { CajaService } from './caja.service'; // Import CajaService
+import { OfflineService } from './offline.service'; // Import OfflineService
 import { Venta, VentaDetalle, CrearVenta, VentaCompleta } from '../models/ventas.model';
 import { BehaviorSubject } from 'rxjs';
 import { CrearMovimientoCaja } from '../models/caja.model';
@@ -20,10 +21,47 @@ export class VentasService {
     private productosService: ProductosService,
     private clientesService: ClientesService,
     private authService: AuthService, // Inject AuthService
-    private cajaService: CajaService // Inject CajaService
+    private cajaService: CajaService, // Inject CajaService
+    private offlineService: OfflineService // Inject OfflineService
   ) {
     // Carga inicial inmediata para que los reportes se sientan reactivos
     this.cargarVentas().catch(err => console.error('Error in initial cargarVentas:', err));
+
+    // Iniciar escucha para sincronización automática
+    this.offlineService.online$.subscribe(isOnline => {
+      if (isOnline) {
+        this.syncPendientes().catch(err => console.error('Error syncing sales:', err));
+      }
+    });
+  }
+
+  // Sincronizar ventas pendientes del modo offline
+  async syncPendientes(): Promise<void> {
+    const pendientes = await this.offlineService.obtenerVentasPendientes();
+    if (pendientes.length === 0) return;
+
+    console.log(`🔄 Syncing ${pendientes.length} pending sales...`);
+    this.offlineService.setSyncing(true);
+
+    for (const venta of pendientes) {
+      try {
+        await this.syncSale(venta.data);
+        await this.offlineService.eliminarVentaPendiente(venta.idLocal!);
+        console.log(`✅ Sale sync success: ${venta.idLocal}`);
+      } catch (error) {
+        console.error(`❌ Sync failed for sale ${venta.idLocal}:`, error);
+        // Detener sync si hay error (podría ser problema de datos o red inestable)
+        break;
+      }
+    }
+
+    this.offlineService.setSyncing(false);
+    await this.cargarVentas();
+  }
+
+  // Método específico para sincronizar una venta (omite chequeo de conexión del interceptor)
+  private async syncSale(venta: CrearVenta): Promise<Venta> {
+    return this.ejecutarCrearVentaEnSupabase(venta);
   }
 
   // Generar número de factura
@@ -43,10 +81,26 @@ export class VentasService {
     }
   }
 
-  // Crear venta completa (transacción)
+  // Crear venta completa (interceptor offline)
   async crearVenta(venta: CrearVenta): Promise<Venta> {
+    if (!this.offlineService.isOnline) {
+      console.warn('📵 Device is offline. Queueing sale in local Dexie database...');
+      await this.offlineService.guardarVentaOffline(venta);
+      // Retornar una venta temporal para no romper el flujo del frontend
+      return {
+        numero_venta: 'PENDIENTE-OFFLINE',
+        total: venta.total,
+        estado: 'pendiente'
+      } as Venta;
+    }
+
+    return this.ejecutarCrearVentaEnSupabase(venta);
+  }
+
+  // Ejecución real en Supabase (usado por el interceptor y por la sync automática)
+  private async ejecutarCrearVentaEnSupabase(venta: CrearVenta): Promise<Venta> {
     try {
-      console.log('🔄 Creando venta...');
+      console.log('🔄 Ejecutando venta en Supabase...');
 
       // Obtener usuario actual (id de tabla usuarios, bigint)
       const usuarioId = this.authService.usuarioActual?.id;
@@ -78,7 +132,6 @@ export class VentasService {
         mesa_id: venta.mesa_id || null,
         pedido_id: venta.pedido_id || null
       };
-      console.log('📦 Payload venta:', JSON.stringify(payload));
 
       // 3. Crear encabezado de venta
       const { data: ventaCreada, error: errorVenta } = await this.supabaseService.client
@@ -124,13 +177,11 @@ export class VentasService {
         await this.registrarMovimientosVentaCaja(venta, ventaCreada.id, numeroVenta);
       }
 
-      console.log('✅ Venta creada:', numeroVenta);
-      // Recargar ventas Y productos para reflejar el stock actualizado en el POS
-      await Promise.all([this.cargarVentas(), this.productosService.cargarProductos()]);
+      console.log('✅ Venta sincronizada con Supabase:', numeroVenta);
       return ventaCreada;
 
     } catch (error) {
-      console.error('💥 Error al crear venta:', error);
+      console.error('💥 Error al ejecutar venta en Supabase:', error);
       throw error;
     }
   }

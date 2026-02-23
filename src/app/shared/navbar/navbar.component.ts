@@ -1,14 +1,16 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { SidebarService } from '../../services/sidebar.service';
+import { OfflineService } from '../../services/offline.service';
 import { Usuario } from '../../models/usuario.model';
 
 @Component({
   selector: 'app-navbar',
+  standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.css',
@@ -19,6 +21,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isMobile = false;
   usuario: Usuario | null = null;
   subscriptions: Subscription[] = [];
+  online$: Observable<boolean>;
+  isSyncing$: Observable<boolean>;
 
   quickActions = [
     { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff' },
@@ -29,10 +33,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private sidebarService: SidebarService,
-    private router: Router
+    private router: Router,
+    private offlineService: OfflineService
   ) {
     // Cargar estado inicial del sidebar
     this.isCollapsed = this.sidebarService.getCollapsed();
+    this.online$ = this.offlineService.online$;
+    this.isSyncing$ = this.offlineService.syncing$;
   }
 
   ngOnInit() {
@@ -282,7 +289,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   // Obtener iniciales del usuario
   obtenerIniciales(): string {
     if (!this.usuario) return 'U';
-    return `${this.usuario.nombre.charAt(0)}${this.usuario.apellido.charAt(0)}`.toUpperCase();
+    return `${this.usuario.nombre.charAt(0)}${this.usuario.apellido.charAt(0)} `.toUpperCase();
   }
 
   // Obtener color del rol

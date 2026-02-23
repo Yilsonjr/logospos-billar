@@ -1,18 +1,65 @@
-/* Estilos específicos para el reporte de clientes */
-.card-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+/* Variable Definitions */
+:root {
+    --premium-bg: #f8fafc;
+    --premium-accent: #1e1e2d;
+    --premium-glass: rgba(255, 255, 255, 0.7);
+    --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
-.table th {
+.customer-report-container {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #334155;
+}
+
+.max-w-xxl {
+    max-width: 1400px;
+}
+
+.premium-card {
+    background: white;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+}
+
+.card-label {
     font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    display: block;
+    margin-bottom: 0.5rem;
 }
 
-.table td {
-    font-size: 0.9rem;
+.card-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.xsmall-text {
+    font-size: 0.7rem;
+}
+
+/* Table styling override */
+.table thead th {
+    background: #f8fafc;
+    padding: 1rem;
+    font-size: 0.75rem;
+}
+
+.table tbody td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .sticky-top {
     z-index: 10;
+}
+
+/* Animations */
+.animate__animated {
+    animation-duration: 0.6s;
 }

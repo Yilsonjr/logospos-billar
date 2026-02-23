@@ -651,18 +651,20 @@ export class PosComponent implements OnInit, OnDestroy {
       };
 
       const ventaCreada = await this.ventasService.crearVenta(venta);
+      const esOffline = ventaCreada.numero_venta === 'PENDIENTE-OFFLINE';
 
-      // Cargar la venta completa para la factura
-      const ventaObtenida = await this.ventasService.obtenerVentaCompleta(ventaCreada.id!);
-      if (ventaObtenida) {
-        // Enriquecer con datos que no se guardan en DB para la factura inmediata
-        this.ventaParaFactura = {
-          ...ventaObtenida,
-          monto_efectivo: venta.monto_efectivo,
-          monto_tarjeta: venta.monto_tarjeta,
-          cambio: venta.cambio
-        };
-        this.mostrarFactura = true;
+      if (!esOffline) {
+        // Solo intentar cargar factura si estamos online
+        const ventaObtenida = await this.ventasService.obtenerVentaCompleta(ventaCreada.id!);
+        if (ventaObtenida) {
+          this.ventaParaFactura = {
+            ...ventaObtenida,
+            monto_efectivo: venta.monto_efectivo,
+            monto_tarjeta: venta.monto_tarjeta,
+            cambio: venta.cambio
+          };
+          this.mostrarFactura = true;
+        }
       }
 
       // Si es venta de mesa, finalizar el pedido
@@ -676,22 +678,30 @@ export class PosComponent implements OnInit, OnDestroy {
       }
 
       // Mostrar mensaje de éxito con SweetAlert2
-      let mensaje = `Factura: ${ventaCreada.numero_venta}<br>Total: RD$${this.total.toFixed(2)}`;
+      let mensaje = '';
+      let titulo = '✅ Venta Completada';
 
-      if (this.configFiscal?.modo_fiscal && ncfGenerado) {
-        mensaje += `<br><strong>NCF: ${ncfGenerado}</strong>`;
-      }
+      if (esOffline) {
+        titulo = '💾 Venta Guardada Localmente';
+        mensaje = `La venta se ha guardado en la memoria local porque no hay conexión.<br><strong>Se sincronizará automáticamente cuando vuelvas a estar online.</strong>`;
+      } else {
+        mensaje = `Factura: ${ventaCreada.numero_venta}<br>Total: RD$${this.total.toFixed(2)}`;
 
-      if (this.metodoPago === 'credito') {
-        mensaje += `<br><br>💳 Cuenta por cobrar creada<br>Cliente: ${this.clienteSeleccionado?.nombre}`;
-      } else if ((this.metodoPago === 'efectivo' || this.metodoPago === 'mixto') && this.cambio > 0) {
-        mensaje += `<br><br>💵 Cambio: RD$${this.cambio.toFixed(2)}`;
+        if (this.configFiscal?.modo_fiscal && ncfGenerado) {
+          mensaje += `<br><strong>NCF: ${ncfGenerado}</strong>`;
+        }
+
+        if (this.metodoPago === 'credito') {
+          mensaje += `<br><br>💳 Cuenta por cobrar creada<br>Cliente: ${this.clienteSeleccionado?.nombre}`;
+        } else if ((this.metodoPago === 'efectivo' || this.metodoPago === 'mixto') && this.cambio > 0) {
+          mensaje += `<br><br>💵 Cambio: RD$${this.cambio.toFixed(2)}`;
+        }
       }
 
       await Swal.fire({
-        title: '✅ Venta Completada',
+        title: titulo,
         html: mensaje,
-        icon: 'success',
+        icon: esOffline ? 'info' : 'success',
         confirmButtonText: 'Aceptar'
       });
 

@@ -37,6 +37,59 @@
   letter-spacing: 0.5px;
 }
 
+/* Indicador de Estado (Online/Offline) */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  /* Rojo por defecto (Offline) */
+  transition: all 0.3s ease;
+  box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  animation: pulse-red 2s infinite;
+}
+
+.status-indicator.online {
+  background-color: #10b981;
+  /* Verde (Online) */
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  animation: none;
+}
+
+.status-indicator.syncing {
+  background-color: #f59e0b;
+  /* Naranja (Sincronizando) */
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  animation: spin-status 1s linear infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes spin-status {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Scrollbar personalizado oscuro */
 .overflow-y-auto::-webkit-scrollbar {
   width: 5px;

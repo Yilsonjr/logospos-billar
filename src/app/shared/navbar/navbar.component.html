@@ -15,7 +15,12 @@
     @if (!isCollapsed || isMobile) {
     <div class="ms-3 lh-1 overflow-hidden animate__animated animate__fadeIn" style="white-space: nowrap;">
       <h5 class="mb-0 fw-bold brand-text" style="font-size: 1.1rem;">LogosPOS</h5>
-      <small class="text-muted" style="font-size: 0.75rem; opacity: 0.7;">Sistema de Ventas</small>
+      <div class="d-flex align-items-center gap-1">
+        <div class="status-indicator" [class.online]="online$ | async" [class.syncing]="isSyncing$ | async"></div>
+        <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">
+          {{ (isSyncing$ | async) ? 'Sincronizando...' : ((online$ | async) ? 'Online' : 'Trabajando Offline') }}
+        </small>
+      </div>
     </div>
     }
 
