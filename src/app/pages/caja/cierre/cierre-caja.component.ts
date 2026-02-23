@@ -7,25 +7,26 @@ import { Caja, ArqueoCaja, DENOMINACIONES } from '../../../models/caja.model';
 import Swal from 'sweetalert2';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
+import { TicketCierreComponent, DatosCierreTicket } from '../../../shared/ticket-cierre/ticket-cierre.component';
 
 @Component({
   selector: 'app-cierre-caja',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TicketCierreComponent],
   templateUrl: './cierre-caja.component.html',
   styleUrl: './cierre-caja.component.css'
 })
 export class CierreCajaComponent implements OnInit, OnDestroy {
   cajaActual: Caja | null = null;
-  
+
   // Ventas del día
   ventasEfectivo: number = 0;
   ventasTarjeta: number = 0;
-  
+
   // Movimientos
   totalEntradas: number = 0;
   totalSalidas: number = 0;
-  
+
   // Arqueo
   denominaciones = DENOMINACIONES;
   arqueo: { [key: string]: number } = {
@@ -33,36 +34,39 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
     billetes_200: 0, billetes_100: 0, billetes_50: 0,
     monedas_25: 0, monedas_10: 0, monedas_5: 0, monedas_1: 0
   };
-  
+
   // Totales
   totalBilletes: number = 0;
   totalMonedas: number = 0;
   totalContado: number = 0;
   montoEsperado: number = 0;
   diferencia: number = 0;
-  
+
   // UI
   notasCierre: string = '';
   usuario: string = 'admin';
   mostrarConfirmacion: boolean = false;
   mostrarArqueo: boolean = false;
-  paso: number = 1;
   Math = Math;
-  
+
+  // Ticket de Cierre
+  mostrarTicket: boolean = false;
+  datosCierreTicket: DatosCierreTicket | null = null;
+
   private subscriptions: Subscription[] = [];
 
   constructor(
     private cajaService: CajaService,
     public router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   async ngOnInit() {
     console.log('🔄 Cierre Caja: Iniciando...');
-    
+
     // Cargar datos inmediatamente
     await this.cargarDatosCaja();
-    
+
     // Recargar cuando se navega al cierre
     const navSub = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
@@ -72,7 +76,7 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
         await this.cargarDatosCaja();
       }
     });
-    
+
     this.subscriptions.push(navSub);
     console.log('✅ Cierre Caja: Inicialización completada');
   }
@@ -84,14 +88,14 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
   async cargarDatosCaja() {
     try {
       console.log('🔄 Cierre: Verificando caja abierta...');
-      
+
       // Forzar verificación fresca de la base de datos (sin cache)
       const caja = await this.cajaService.verificarCajaAbierta(true);
       this.cajaActual = caja;
-      
+
       // Forzar detección de cambios
       this.cdr.detectChanges();
-      
+
       if (!this.cajaActual) {
         console.log('⚠️ No hay caja abierta');
         await Swal.fire({
@@ -128,10 +132,10 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
 
       // Calcular monto esperado
       this.calcularMontoEsperado();
-      
+
       // Forzar detección de cambios final
       this.cdr.detectChanges();
-      
+
       console.log('✅ Datos de cierre cargados completamente');
     } catch (error) {
       console.error('❌ Error al cargar datos de cierre:', error);
@@ -142,14 +146,14 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
 
   calcularMontoEsperado() {
     if (!this.cajaActual) return;
-    this.montoEsperado = this.cajaActual.monto_inicial + 
-                         this.ventasEfectivo + 
-                         this.totalEntradas - 
-                         this.totalSalidas;
+    this.montoEsperado = this.cajaActual.monto_inicial +
+      this.ventasEfectivo +
+      this.totalEntradas -
+      this.totalSalidas;
   }
 
   calcularArqueo() {
-    this.totalBilletes = 
+    this.totalBilletes =
       (this.arqueo['billetes_2000'] * 2000) +
       (this.arqueo['billetes_1000'] * 1000) +
       (this.arqueo['billetes_500'] * 500) +
@@ -157,7 +161,7 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
       (this.arqueo['billetes_100'] * 100) +
       (this.arqueo['billetes_50'] * 50);
 
-    this.totalMonedas = 
+    this.totalMonedas =
       (this.arqueo['monedas_25'] * 25) +
       (this.arqueo['monedas_10'] * 10) +
       (this.arqueo['monedas_5'] * 5) +
@@ -165,7 +169,7 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
 
     this.totalContado = this.totalBilletes + this.totalMonedas;
     this.diferencia = this.totalContado - this.montoEsperado;
-    
+
     // Forzar detección de cambios
     this.cdr.detectChanges();
   }
@@ -237,14 +241,48 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
 
       this.mostrarConfirmacion = false;
 
+      // Generar datos para el ticket
+      this.datosCierreTicket = {
+        id: this.cajaActual.id!,
+        usuario_apertura: this.cajaActual.usuario_apertura,
+        usuario_cierre: this.usuario,
+        fecha_apertura: this.cajaActual.fecha_apertura,
+        fecha_cierre: new Date().toISOString(),
+        monto_inicial: this.cajaActual.monto_inicial,
+        ventas_efectivo: this.ventasEfectivo,
+        ventas_tarjeta: this.ventasTarjeta,
+        total_entradas: this.totalEntradas,
+        total_salidas: this.totalSalidas,
+        monto_esperado: this.montoEsperado,
+        monto_real: this.totalContado,
+        diferencia: this.diferencia,
+        notas: this.notasCierre || undefined,
+        arqueo: {
+          billetes_2000: this.arqueo['billetes_2000'],
+          billetes_1000: this.arqueo['billetes_1000'],
+          billetes_500: this.arqueo['billetes_500'],
+          billetes_200: this.arqueo['billetes_200'],
+          billetes_100: this.arqueo['billetes_100'],
+          billetes_50: this.arqueo['billetes_50'],
+          monedas_25: this.arqueo['monedas_25'],
+          monedas_10: this.arqueo['monedas_10'],
+          monedas_5: this.arqueo['monedas_5'],
+          monedas_1: this.arqueo['monedas_1'],
+          total_billetes: this.totalBilletes,
+          total_monedas: this.totalMonedas
+        }
+      };
+
+      // Mostrar el ticket
+      this.mostrarTicket = true;
+      this.cdr.detectChanges();
+
       await Swal.fire({
         title: '✅ Caja Cerrada',
-        html: `Monto esperado: ${this.formatearMoneda(this.montoEsperado)}<br>Monto contado: ${this.formatearMoneda(this.totalContado)}<br>Diferencia: ${this.formatearMoneda(this.diferencia)}`,
+        html: `Monto contado: ${this.formatearMoneda(this.totalContado)}<br>Imprime el ticket de cierre antes de continuar.`,
         icon: 'success',
         confirmButtonText: 'Aceptar'
       });
-      
-      this.router.navigate(['/dashboard']);
 
     } catch (error) {
       console.error('Error al cerrar caja:', error);
@@ -280,5 +318,10 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
       minute: '2-digit',
       hour12: true
     });
+  }
+
+  onTicketCerrado() {
+    this.mostrarTicket = false;
+    this.router.navigate(['/dashboard']);
   }
 }

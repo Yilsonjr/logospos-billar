@@ -364,6 +364,11 @@
 </div>
 }
 
+<!-- Ticket de Cierre -->
+@if (mostrarTicket && datosCierreTicket) {
+<app-ticket-cierre [datos]="datosCierreTicket" (cerrar)="onTicketCerrado()"></app-ticket-cierre>
+}
+
 <!-- Modal Confirmacion -->
 @if (mostrarConfirmacion) {
 <div class="modal-backdrop fade show"></div>

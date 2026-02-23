@@ -1,0 +1,167 @@
+<div class="ticket-overlay no-print" *ngIf="showActions" (click)="onCerrar()">
+    <div class="ticket-modal animate__animated animate__slideInUp" (click)="$event.stopPropagation()">
+        <div class="modal-header-actions mb-3 d-flex gap-2">
+            <button class="btn btn-primary flex-grow-1 py-2 fw-bold" (click)="imprimir()">
+                <i class="fa-solid fa-print me-2"></i>Imprimir Ticket
+            </button>
+            <button class="btn btn-danger px-3 py-2" (click)="onCerrar()">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div id="print-section" class="ticket-wrapper">
+            <ng-container *ngTemplateOutlet="ticketContent"></ng-container>
+        </div>
+    </div>
+</div>
+
+<!-- Estructura solo para impresión directa si no hay overlay -->
+<div id="print-section" class="ticket-wrapper only-print" *ngIf="!showActions">
+    <ng-container *ngTemplateOutlet="ticketContent"></ng-container>
+</div>
+
+<ng-template #ticketContent>
+    <div class="ticket-container">
+        <!-- Encabezado -->
+        <div class="ticket-header text-center">
+            <h1 class="business-name">{{ negocio.nombre }}</h1>
+            <p class="business-info">RNC: {{ negocio.rnc }}</p>
+            <p class="business-info">{{ negocio.direccion }}</p>
+            <p class="business-info">Tel: {{ negocio.telefono }}</p>
+            <div class="separator-double"></div>
+            <h2 class="receipt-title">CIERRE DE CAJA #{{ datos.id }}</h2>
+            <div class="separator"></div>
+        </div>
+
+        <!-- Info General -->
+        <table class="info-table">
+            <tr>
+                <td><strong>Fecha Apertura:</strong></td>
+                <td class="text-right">{{ formatearFecha(datos.fecha_apertura) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Fecha Cierre:</strong></td>
+                <td class="text-right">{{ formatearFecha(datos.fecha_cierre) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Cajero:</strong></td>
+                <td class="text-right">{{ datos.usuario_cierre }}</td>
+            </tr>
+        </table>
+
+        <div class="separator"></div>
+
+        <!-- Totales Principales -->
+        <table class="totals-table">
+            <tr>
+                <td>Monto Inicial:</td>
+                <td class="text-right">{{ formatearMoneda(datos.monto_inicial) }}</td>
+            </tr>
+            <tr>
+                <td>Ventas Efectivo:</td>
+                <td class="text-right">{{ formatearMoneda(datos.ventas_efectivo) }}</td>
+            </tr>
+            <tr>
+                <td>Ventas Tarjeta:</td>
+                <td class="text-right">{{ formatearMoneda(datos.ventas_tarjeta) }}</td>
+            </tr>
+            <tr>
+                <td>Entradas (+):</td>
+                <td class="text-right text-success">{{ formatearMoneda(datos.total_entradas) }}</td>
+            </tr>
+            <tr>
+                <td>Salidas (-):</td>
+                <td class="text-right text-danger">{{ formatearMoneda(datos.total_salidas) }}</td>
+            </tr>
+            <tr class="separator-row">
+                <td colspan="2">
+                    <div class="separator"></div>
+                </td>
+            </tr>
+            <tr class="fw-bold">
+                <td>Total Esperado:</td>
+                <td class="text-right">{{ formatearMoneda(datos.monto_esperado) }}</td>
+            </tr>
+            <tr class="fw-bold fs-large">
+                <td>Total Real:</td>
+                <td class="text-right">{{ formatearMoneda(datos.monto_real) }}</td>
+            </tr>
+            <tr class="fw-bold" [ngClass]="{'text-danger': datos.diferencia < 0, 'text-success': datos.diferencia > 0}">
+                <td>Diferencia:</td>
+                <td class="text-right">{{ formatearMoneda(datos.diferencia) }}</td>
+            </tr>
+        </table>
+
+        <!-- Detalle de Arqueo -->
+        <ng-container *ngIf="datos.arqueo">
+            <div class="separator-double"></div>
+            <h3 class="section-title text-center">DETALLE DE ARQUEO</h3>
+            <div class="separator"></div>
+            <table class="items-table">
+                <tr *ngIf="datos.arqueo.billetes_2000 > 0">
+                    <td>Billetes 2,000 x {{ datos.arqueo.billetes_2000 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.billetes_2000 * 2000) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.billetes_1000 > 0">
+                    <td>Billetes 1,000 x {{ datos.arqueo.billetes_1000 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.billetes_1000 * 1000) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.billetes_500 > 0">
+                    <td>Billetes 500 x {{ datos.arqueo.billetes_500 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.billetes_500 * 500) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.billetes_200 > 0">
+                    <td>Billetes 200 x {{ datos.arqueo.billetes_200 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.billetes_200 * 200) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.billetes_100 > 0">
+                    <td>Billetes 100 x {{ datos.arqueo.billetes_100 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.billetes_100 * 100) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.billetes_50 > 0">
+                    <td>Billetes 50 x {{ datos.arqueo.billetes_50 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.billetes_50 * 50) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.monedas_25 > 0">
+                    <td>Monedas 25 x {{ datos.arqueo.monedas_25 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.monedas_25 * 25) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.monedas_10 > 0">
+                    <td>Monedas 10 x {{ datos.arqueo.monedas_10 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.monedas_10 * 10) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.monedas_5 > 0">
+                    <td>Monedas 5 x {{ datos.arqueo.monedas_5 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.monedas_5 * 5) }}</td>
+                </tr>
+                <tr *ngIf="datos.arqueo.monedas_1 > 0">
+                    <td>Monedas 1 x {{ datos.arqueo.monedas_1 }}</td>
+                    <td class="text-right">{{ formatearMoneda(datos.arqueo.monedas_1 * 1) }}</td>
+                </tr>
+            </table>
+        </ng-container>
+
+        <!-- Notas -->
+        <ng-container *ngIf="datos.notas">
+            <div class="separator"></div>
+            <div class="notes-section">
+                <strong>Notas:</strong>
+                <p class="m-0 small">{{ datos.notas }}</p>
+            </div>
+        </ng-container>
+
+        <div class="separator-double"></div>
+
+        <!-- Firma -->
+        <div class="signature-section text-center mt-5">
+            <div class="separator" style="width: 80%; margin: 0 auto 5px;"></div>
+            <p class="small">Firma del Cajero</p>
+        </div>
+
+        <!-- Pie de página -->
+        <div class="ticket-footer text-center mt-4">
+            <p class="small m-0">LogosPOS - Reporte de Cierre</p>
+            <p class="small m-0">Generado: {{ formatearFecha(datos.fecha_cierre) }}</p>
+        </div>
+    </div>
+</ng-template>
