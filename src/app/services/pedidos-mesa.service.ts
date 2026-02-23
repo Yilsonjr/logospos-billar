@@ -110,6 +110,40 @@ export class PedidosMesaService {
         }
     }
 
+    async actualizarDetallePedido(id: number, pedidoId: number, cambios: Partial<PedidoMesaDetalle>): Promise<void> {
+        try {
+            const { error } = await this.supabaseService.client
+                .from('pedidos_mesa_detalle')
+                .update(cambios)
+                .eq('id', id);
+
+            if (error) throw error;
+
+            await this.actualizarTotalPedido(pedidoId);
+            await this.cargarPedidosActivos();
+        } catch (error) {
+            console.error('Error al actualizar detalle:', error);
+            throw error;
+        }
+    }
+
+    async eliminarDetallePedido(id: number, pedidoId: number): Promise<void> {
+        try {
+            const { error } = await this.supabaseService.client
+                .from('pedidos_mesa_detalle')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            await this.actualizarTotalPedido(pedidoId);
+            await this.cargarPedidosActivos();
+        } catch (error) {
+            console.error('Error al eliminar detalle:', error);
+            throw error;
+        }
+    }
+
     private async actualizarTotalPedido(pedidoId: number): Promise<void> {
         const { data: detalles } = await this.supabaseService.client
             .from('pedidos_mesa_detalle')

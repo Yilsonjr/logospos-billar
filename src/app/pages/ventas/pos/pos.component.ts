@@ -115,6 +115,8 @@ export class PosComponent implements OnInit, OnDestroy {
   pedidoId?: number;
   mesaActual?: any;
   mostrarDropdownMesa: boolean = false;
+  itemsEliminadosDb: number[] = []; // IDs de detalles_mesa a eliminar en DB
+  detallesOriginalesDb: any[] = []; // Copia para comparar cambios
 
   async ngOnInit() {
     // 0. Suscribirse al estado del sidebar
@@ -451,6 +453,12 @@ export class PosComponent implements OnInit, OnDestroy {
 
   // Eliminar item del carrito
   eliminarDelCarrito(item: ItemCarrito) {
+    // Si el item ya existía en la mesa (DB), guardamos su ID para eliminarlo luego
+    const itemCasted = item as any;
+    if (itemCasted.esPedidoExistente && itemCasted.id_detalle_db) {
+      this.itemsEliminadosDb.push(itemCasted.id_detalle_db);
+    }
+
     const index = this.carrito.indexOf(item);
     if (index > -1) {
       this.carrito.splice(index, 1);
@@ -802,6 +810,8 @@ export class PosComponent implements OnInit, OnDestroy {
 
     try {
       this.cargando = true;
+      this.itemsEliminadosDb = []; // Resetear lista de eliminados
+
       const { data: mesa } = await this.supabaseService.client
         .from('mesas')
         .select('*')
@@ -811,7 +821,8 @@ export class PosComponent implements OnInit, OnDestroy {
       this.mesaActual = mesa;
 
       if (this.pedidoId) {
-        const { data: detalles } = await this.supabaseService.client
+        console.log('📖 [POS] Cargando detalles del pedido:', this.pedidoId);
+        const { data: detalles, error } = await this.supabaseService.client
           .from('pedidos_mesa_detalle')
           .select(`
             *,
@@ -822,6 +833,10 @@ export class PosComponent implements OnInit, OnDestroy {
           `)
           .eq('pedido_id', this.pedidoId);
 
+        if (error) throw error;
+
+        this.detallesOriginalesDb = JSON.parse(JSON.stringify(detalles || []));
+
         // Convertir detalles de mesa a items de carrito
         this.carrito = (detalles || []).map((d: any) => ({
           producto_id: d.producto_id,
@@ -830,17 +845,19 @@ export class PosComponent implements OnInit, OnDestroy {
           precio_unitario: d.precio_unitario,
           descuento: 0,
           subtotal: d.subtotal,
-          stock_disponible: 0, // No relevante para items ya servidos
-          esPedidoExistente: true, // Flag para saber que ya estaba en la mesa
+          stock_disponible: 0,
+          esPedidoExistente: true,
+          id_detalle_db: d.id, // Guardar ID de DB para updates/deletes
           notas: d.notas,
           imagen_url: d.productos?.imagen_url,
           categoria: d.productos?.categoria
         }));
 
+        console.log(`✅ [POS] Carrito cargado con ${this.carrito.length} items de la mesa`);
         this.calcularTotales();
       }
     } catch (error) {
-      console.error('Error al cargar contexto de mesa:', error);
+      console.error('❌ [POS] Error al cargar contexto de mesa:', error);
     } finally {
       this.cargando = false;
       this.cdr.detectChanges();
@@ -852,42 +869,61 @@ export class PosComponent implements OnInit, OnDestroy {
 
     try {
       this.cargando = true;
-      // 1. Filtrar solo los items NUEVOS (los que no estaban en la mesa)
-      const nuevosItems = this.carrito.filter(item => !(item as any).esPedidoExistente);
+      console.log('🔄 [POS] Iniciando sincronización de mesa...');
 
-      if (nuevosItems.length === 0) {
-        Swal.fire('Info', 'No hay productos nuevos para agregar a la mesa', 'info');
-        return;
+      // 1. ELIMINACIONES: Borrar items que estaban en DB pero ya no en carrito
+      if (this.itemsEliminadosDb.length > 0) {
+        console.log(`🗑️ [POS] Eliminando ${this.itemsEliminadosDb.length} items de la DB`);
+        for (const id of this.itemsEliminadosDb) {
+          await this.pedidosMesaService.eliminarDetallePedido(id, this.pedidoId);
+        }
       }
 
-      // 2. Agregar a pedidos_mesa_detalle
-      for (const item of nuevosItems) {
-        await this.pedidosMesaService.agregarDetallePedido({
-          pedido_id: this.pedidoId,
-          producto_id: item.producto_id,
-          producto_nombre: item.producto_nombre,
-          cantidad: item.cantidad,
-          precio_unitario: item.precio_unitario,
-          subtotal: item.subtotal,
-          notas: item.notas
-        });
+      // 2. UPDATES E INSERCIONES
+      for (const item of this.carrito) {
+        const itemCasted = item as any;
+
+        if (itemCasted.esPedidoExistente && itemCasted.id_detalle_db) {
+          // UPDATE: Verificamos si cambió cantidad o notas
+          const original = this.detallesOriginalesDb.find(d => d.id === itemCasted.id_detalle_db);
+          if (original && (original.cantidad !== item.cantidad || original.notas !== item.notas)) {
+            console.log(`📝 [POS] Actualizando item existente: ${item.producto_nombre}`);
+            await this.pedidosMesaService.actualizarDetallePedido(itemCasted.id_detalle_db, this.pedidoId, {
+              cantidad: item.cantidad,
+              subtotal: item.subtotal,
+              notas: item.notas
+            });
+          }
+        } else {
+          // INSERT: Es un item nuevo
+          console.log(`🆕 [POS] Insertando nuevo item: ${item.producto_nombre}`);
+          await this.pedidosMesaService.agregarDetallePedido({
+            pedido_id: this.pedidoId,
+            producto_id: item.producto_id,
+            producto_nombre: item.producto_nombre,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario,
+            subtotal: item.subtotal,
+            notas: item.notas
+          });
+        }
       }
 
       await Swal.fire({
-        title: 'Cuenta Actualizada',
-        text: 'Se han agregado los productos a la mesa',
+        title: 'Mesa Guardada',
+        text: 'La cuenta de la mesa ha sido actualizada correctamente',
         icon: 'success',
         timer: 1500,
         showConfirmButton: false
       });
 
-      // Recargar para limpiar flags
+      // Recargar para limpiar flags y listas de eliminados
       await this.cargarContextoMesa();
       this.router.navigate(['/ventas/mesas']);
 
     } catch (error) {
-      console.error('Error al actualizar mesa:', error);
-      Swal.fire('Error', 'No se pudo actualizar la mesa', 'error');
+      console.error('❌ [POS] Error al sincronizar mesa:', error);
+      Swal.fire('Error', 'Hubo un problema al guardar los cambios en la mesa', 'error');
     } finally {
       this.cargando = false;
     }

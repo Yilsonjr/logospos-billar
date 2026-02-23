@@ -326,7 +326,8 @@ export class MesasComponent implements OnInit, OnDestroy {
     }
 
     canManage(): boolean {
-        return this.authService.usuarioActual?.rol?.nombre === 'Admin';
+        const rol = this.authService.usuarioActual?.rol?.nombre;
+        return rol === 'Super Administrador' || rol === 'Administrador' || rol === 'Admin';
     }
 
     toggleMenu(mesaId: number, event: Event) {
