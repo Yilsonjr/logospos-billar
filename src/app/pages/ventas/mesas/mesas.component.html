@@ -161,7 +161,8 @@
                         </button>
 
                         <div *ngIf="mesa.estado === 'ocupada'" class="d-flex gap-2">
-                            <button class="btn btn-action btn-action-primary flex-grow-1">
+                            <button class="btn btn-action btn-action-primary flex-grow-1"
+                                (click)="verCuenta(mesa.id!); $event.stopPropagation()">
                                 <i class="fa-solid fa-cash-register me-2"></i>
                                 Ver Cuenta
                             </button>

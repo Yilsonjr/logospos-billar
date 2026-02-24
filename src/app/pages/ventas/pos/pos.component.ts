@@ -166,10 +166,19 @@ export class PosComponent implements OnInit, OnDestroy {
 
     // Contexto de Mesa
     this.route.queryParams.subscribe(params => {
-      if (params['mesaId']) {
-        this.mesaId = +params['mesaId'];
-        this.pedidoId = +params['pedidoId'];
+      const mesaId = Number(params['mesaId']);
+      const pedidoId = Number(params['pedidoId']);
+
+      if (mesaId && pedidoId) {
+        console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
+        this.mesaId = mesaId;
+        this.pedidoId = pedidoId;
         this.cargarContextoMesa();
+      } else if (mesaId) {
+        // Caso una mesa sin pedido (no debería pasar por esta ruta pero por si acaso)
+        this.mesaId = mesaId;
+        this.pedidoId = undefined;
+        this.limpiarContextoMesa();
       } else {
         this.limpiarContextoMesa();
       }

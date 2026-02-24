@@ -84,6 +84,7 @@ export interface ItemCarrito {
   imagen_url?: string;
   notas?: string;                // Notas para el producto en el carrito
   esPedidoExistente?: boolean;   // Indica si ya pertenece a una comanda
+  id_detalle_db?: number;       // ID de la fila en pedidos_mesa_detalle para updates
 }
 
 // Modelo para venta con información completa (para mostrar)

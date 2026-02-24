@@ -130,6 +130,9 @@ export class AuthService {
       // Cargar permisos
       const permisos = await this.cargarPermisosUsuario(usuario.id);
 
+      // Guardar en Dexie para acceso offline
+      await this.guardarUsuarioOffline(usuario, credentials.password, token, expiracion.toISOString());
+
       // Guardar en localStorage
       if (credentials.recordar) {
         localStorage.setItem('dolvin_token', token);
@@ -157,8 +160,91 @@ export class AuthService {
 
     } catch (error: any) {
       console.error('Error en login:', error);
+
+      // Si es error de red o timeout, intentar login offline
+      if (!this.supabaseService.isOnline || error.message?.includes('FetchError') || error.message?.includes('Network Error')) {
+        console.log('📶 Intento de login offline...');
+        try {
+          return await this.loginOffline(credentials);
+        } catch (offlineError: any) {
+          throw new Error(offlineError.message || 'Error en login offline');
+        }
+      }
+
       throw new Error(error.message || 'Error al iniciar sesión');
     }
+  }
+
+  // --- LOGICA OFFLINE (Dexie) ---
+
+  private async guardarUsuarioOffline(usuario: Usuario, password_plana: string, token: string, fecha_expiracion: string) {
+    try {
+      // 1. Guardar perfil de usuario
+      await this.supabaseService.db.usuarios_offline.put({
+        id: usuario.id!,
+        username: usuario.username,
+        email: usuario.email || '',
+        password_hash: password_plana, // Guardar plana para el fallback (o usar bcrypt local)
+        perfil_json: JSON.stringify(usuario),
+        ultimo_login: new Date().toISOString()
+      });
+
+      // 2. Guardar sesión
+      await this.supabaseService.db.sesiones_offline.put({
+        token,
+        usuario_id: usuario.id!,
+        fecha_expiracion
+      });
+
+      console.log('💾 Usuario cacheado para uso offline');
+    } catch (e) {
+      console.error('Error al cachear usuario offline:', e);
+    }
+  }
+
+  private async loginOffline(credentials: LoginCredentials): Promise<LoginResponse> {
+    const usuarioOffline = await this.supabaseService.db.usuarios_offline
+      .where('username').equalsIgnoreCase(credentials.username)
+      .or('email').equalsIgnoreCase(credentials.username)
+      .first();
+
+    if (!usuarioOffline) {
+      throw new Error('Usuario no encontrado en modo offline (debe iniciar sesión online primero)');
+    }
+
+    if (usuarioOffline.password_hash !== credentials.password) {
+      throw new Error('Contraseña offline incorrecta');
+    }
+
+    const usuario = JSON.parse(usuarioOffline.perfil_json);
+    const token = this.generarToken(); // Token local para esta sesión
+    const expiracion = new Date();
+    expiracion.setHours(expiracion.getHours() + 8);
+
+    // Actualizar estado
+    this.authStateSubject.next({
+      isAuthenticated: true,
+      usuario,
+      token,
+      permisos: usuario.rol?.permisos || []
+    });
+
+    // Guardar temporalmente en localStorage para que refrescos no saquen al usuario
+    sessionStorage.setItem('dolvin_token', token);
+    sessionStorage.setItem('dolvin_usuario', JSON.stringify(usuario));
+
+    await Swal.fire({
+      title: '📶 Modo Offline',
+      text: 'Has iniciado sesión en modo local. Algunas funciones de sincronización no estarán disponibles.',
+      icon: 'info',
+      confirmButtonText: 'Aceptar'
+    });
+
+    return {
+      usuario,
+      token,
+      expiracion: expiracion.toISOString()
+    };
   }
 
   // Logout

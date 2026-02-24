@@ -45,8 +45,17 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Si ya está autenticado, redirigir al dashboard
+    // Si ya está autenticado, redirigir según rol
     if (this.authService.isAuthenticated) {
+      this.redirigirSegunRol();
+    }
+  }
+
+  private redirigirSegunRol() {
+    const rol = this.authService.usuarioActual?.rol?.nombre;
+    if (rol === 'Cajero') {
+      this.router.navigate(['/ventas/mesas']);
+    } else {
       this.router.navigate(['/dashboard']);
     }
   }
@@ -83,7 +92,7 @@ export class LoginComponent implements OnInit {
         showConfirmButton: false
       });
 
-      this.router.navigate(['/dashboard']);
+      this.redirigirSegunRol();
 
     } catch (error: any) {
       // Resetear el estado de loading ANTES de mostrar el error
