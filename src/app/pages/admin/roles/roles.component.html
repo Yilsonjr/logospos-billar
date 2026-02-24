@@ -135,8 +135,8 @@
     </div>
 
     <div class="modal-body p-0 custom-scrollbar" style="overflow-y: auto; flex: 1;">
-      <form (ngSubmit)="guardarRol()" #rolForm="ngForm" class="h-100">
-        <div class="row g-0 h-100">
+      <form (ngSubmit)="guardarRol()" #rolForm="ngForm">
+        <div class="row g-0">
 
           <!-- Left Sidebar: Basic Config -->
           <div class="col-lg-4 bg-light p-4 border-end d-flex flex-column">
@@ -237,23 +237,25 @@
               </div>
             </div>
 
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-              <button type="button" class="btn btn-light px-4 border shadow-sm fw-bold text-muted"
-                (click)="cerrarModal()">Cancelar</button>
-              <button type="submit" [disabled]="isSaving || !rolForm.form.valid"
-                class="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
-                style="border-radius: 12px;">
-                @if (isSaving) {
-                <span class="spinner-border spinner-border-sm"></span> Guardando...
-                } @else {
-                <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
-                }
-              </button>
-            </div>
+
           </div>
 
         </div>
       </form>
+    </div>
+
+    <!-- Footer fijo con botones SIEMPRE visible -->
+    <div class="modal-footer bg-white border-top px-4 py-3 d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-light px-4 border shadow-sm fw-bold text-muted"
+        (click)="cerrarModal()">Cancelar</button>
+      <button type="button" [disabled]="isSaving" (click)="guardarRol()"
+        class="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2" style="border-radius: 12px;">
+        @if (isSaving) {
+        <span class="spinner-border spinner-border-sm"></span> Guardando...
+        } @else {
+        <i class="fa-solid fa-floppy-disk"></i> {{ modoModal === 'crear' ? 'Crear Rol' : 'Guardar Cambios' }}
+        }
+      </button>
     </div>
 
   </div>
@@ -368,7 +370,7 @@
         Cerrar
       </button>
       <button type="button" class="btn btn-primary px-5 py-2 fw-bold shadow-sm d-flex align-items-center gap-2"
-        style="border-radius: 12px;" (click)="cerrarDetalle(); abrirModalEditar(rolDetalle)">
+        style="border-radius: 12px;" (click)="abrirModalEditar(rolDetalle!); cerrarDetalle()">
         <i class="fa-solid fa-pen-to-square"></i>
         <span>EDITAR CONFIGURACIÓN</span>
       </button>
