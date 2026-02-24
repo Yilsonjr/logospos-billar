@@ -214,6 +214,7 @@ export class RolesComponent implements OnInit, OnDestroy {
     this.mostrarModal = false;
     this.rolSeleccionado = null;
     this.isSaving = false;
+    this.cdr.detectChanges();
   }
 
   async guardarRol() {
@@ -255,6 +256,7 @@ export class RolesComponent implements OnInit, OnDestroy {
       });
     } finally {
       this.isSaving = false;
+      this.cdr.detectChanges();
     }
   }
 
