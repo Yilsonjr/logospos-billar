@@ -847,8 +847,7 @@ export class PosComponent implements OnInit, OnDestroy {
           .select(`
             *,
             productos (
-              imagen_url,
-              categoria
+              imagen_url
             )
           `)
           .eq('pedido_id', this.pedidoId);
@@ -867,10 +866,10 @@ export class PosComponent implements OnInit, OnDestroy {
           subtotal: d.subtotal,
           stock_disponible: 0,
           esPedidoExistente: true,
-          id_detalle_db: d.id, // Guardar ID de DB para updates/deletes
+          id_detalle_db: d.id,
           notas: d.notas,
           imagen_url: d.productos?.imagen_url,
-          categoria: d.productos?.categoria
+          categoria: '' // categoria_id en la nueva DB, no se necesita para el carrito
         }));
 
         console.log(`✅ [POS] Carrito cargado con ${this.carrito.length} items de la mesa`);
