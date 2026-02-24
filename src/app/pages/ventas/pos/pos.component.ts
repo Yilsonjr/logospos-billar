@@ -799,17 +799,19 @@ export class PosComponent implements OnInit, OnDestroy {
     this.calcularTotales();
   }
 
-  cambiarAMesa(pedido: any) {
+  async cambiarAMesa(pedido: any) {
     this.mostrarDropdownMesa = false;
-    // Actualizar la URL para que el estado sea compartible, y recargar el contexto directamente
+    // Actualizar el contexto ANTES de navegar para evitar race conditions
+    this.mesaId = pedido.mesa_id;
+    this.pedidoId = pedido.id;
+    this.itemsEliminadosDb = [];
+    // Actualizar la URL para reflejar la mesa activa
     this.router.navigate(['/ventas/nueva'], {
       queryParams: { mesaId: pedido.mesa_id, pedidoId: pedido.id },
       replaceUrl: true
     });
-    // Cargar el nuevo contexto directamente sin esperar la navegación
-    this.mesaId = pedido.mesa_id;
-    this.pedidoId = pedido.id;
-    this.cargarContextoMesa();
+    // Cargar el contexto de la nueva mesa con await
+    await this.cargarContextoMesa();
   }
 
   irANuevaVenta() {
@@ -927,17 +929,18 @@ export class PosComponent implements OnInit, OnDestroy {
         }
       }
 
+      // Recargar el contexto para limpiar flags y reflejar el estado real del DB
+      await this.cargarContextoMesa();
+
       await Swal.fire({
-        title: 'Mesa Guardada',
-        text: 'La cuenta de la mesa ha sido actualizada correctamente',
+        title: '✅ Mesa Guardada',
+        text: 'La cuenta de la mesa ha sido actualizada. Puedes seguir agregando productos o ir a cobrar.',
         icon: 'success',
-        timer: 1500,
+        timer: 2000,
         showConfirmButton: false
       });
 
-      // Recargar para limpiar flags y listas de eliminados
-      await this.cargarContextoMesa();
-      this.router.navigate(['/ventas/mesas']);
+      // NO navegamos a /mesas - el usuario se queda en el POS para continuar
 
     } catch (error) {
       console.error('❌ [POS] Error al sincronizar mesa:', error);
