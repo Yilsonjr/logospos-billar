@@ -134,7 +134,7 @@
       <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
     </div>
 
-    <div class="modal-body p-0 custom-scrollbar">
+    <div class="modal-body p-0 custom-scrollbar" style="overflow-y: auto; flex: 1;">
       <form (ngSubmit)="guardarRol()" #rolForm="ngForm" class="h-100">
         <div class="row g-0 h-100">
 
@@ -203,7 +203,7 @@
               </div>
             </div>
 
-            <div class="permissions-container custom-scrollbar pe-2" style="max-height: 480px; overflow-y: auto;">
+            <div class="permissions-container custom-scrollbar pe-2" style="max-height: 320px; overflow-y: auto;">
               <div *ngFor="let categoria of Object.keys(permisosAgrupados)" class="mb-4">
                 <div class="d-flex align-items-center p-2 rounded bg-light mb-2 border-start border-3"
                   [style.border-color]="categoriaEsCompleta(categoria) ? '#198754' : '#dee2e6'">
