@@ -240,7 +240,7 @@ export class SistemaComponent implements OnInit {
           sistema: 'LicorPos',
           version: '1.0.0',
           fecha_generacion: new Date().toISOString(),
-          generado_por: (() => { try { return JSON.parse(localStorage.getItem('dolvin_usuario') || '{}')?.username || 'sistema'; } catch { return 'sistema'; } })(),
+          generado_por: (() => { try { return JSON.parse(localStorage.getItem('logos_usuario') || '{}')?.username || 'sistema'; } catch { return 'sistema'; } })(),
           total_tablas: 12
         },
         datos: {

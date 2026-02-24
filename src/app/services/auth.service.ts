@@ -4,6 +4,7 @@ import { SupabaseService } from './supabase.service';
 import { Usuario, Rol, LoginCredentials, LoginResponse, AuthState, Sesion } from '../models/usuario.model';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable({
   providedIn: 'root'
@@ -29,13 +30,12 @@ export class AuthService {
   private async initializeAuth() {
     try {
       // Intentar recuperar de localStorage o sessionStorage
-      let token = localStorage.getItem('dolvin_token') || sessionStorage.getItem('dolvin_token');
-      let usuarioData = localStorage.getItem('dolvin_usuario') || sessionStorage.getItem('dolvin_usuario');
+      let token = localStorage.getItem('logos_token') || sessionStorage.getItem('logos_token');
+      let usuarioData = localStorage.getItem('logos_usuario') || sessionStorage.getItem('logos_usuario');
 
       if (token && usuarioData) {
         const usuario = JSON.parse(usuarioData);
 
-        // 1. Actualización Optimista: Asumir que es válido mientras verificamos
         // Esto permite que el AuthGuard pase inmediatamente y evita el redirect al login
         this.authStateSubject.next({
           isAuthenticated: true,
@@ -96,8 +96,9 @@ export class AuthService {
         usuario.rol = rol;
       }
 
-      // Verificar contraseña (en producción usar bcrypt)
-      if (usuario.password !== credentials.password) {
+      // Verificar contraseña con HASHEO bcrypt
+      const esValida = await bcrypt.compare(credentials.password, usuario.password);
+      if (!esValida) {
         throw new Error('Contraseña incorrecta');
       }
 
@@ -135,11 +136,11 @@ export class AuthService {
 
       // Guardar en localStorage
       if (credentials.recordar) {
-        localStorage.setItem('dolvin_token', token);
-        localStorage.setItem('dolvin_usuario', JSON.stringify(usuario));
+        localStorage.setItem('logos_token', token);
+        localStorage.setItem('logos_usuario', JSON.stringify(usuario));
       } else {
-        sessionStorage.setItem('dolvin_token', token);
-        sessionStorage.setItem('dolvin_usuario', JSON.stringify(usuario));
+        sessionStorage.setItem('logos_token', token);
+        sessionStorage.setItem('logos_usuario', JSON.stringify(usuario));
       }
 
       // Actualizar estado
@@ -178,13 +179,14 @@ export class AuthService {
   // --- LOGICA OFFLINE (Dexie) ---
 
   private async guardarUsuarioOffline(usuario: Usuario, password_plana: string, token: string, fecha_expiracion: string) {
+    const hashLocal = await bcrypt.hash(password_plana, 10);
     try {
       // 1. Guardar perfil de usuario
       await this.supabaseService.db.usuarios_offline.put({
         id: usuario.id!,
         username: usuario.username,
         email: usuario.email || '',
-        password_hash: password_plana, // Guardar plana para el fallback (o usar bcrypt local)
+        password_hash: hashLocal,
         perfil_json: JSON.stringify(usuario),
         ultimo_login: new Date().toISOString()
       });
@@ -209,11 +211,13 @@ export class AuthService {
       .first();
 
     if (!usuarioOffline) {
-      throw new Error('Usuario no encontrado en modo offline (debe iniciar sesión online primero)');
+      throw new Error('Usuario no encontrado en modo local. Inicie sesión online primero.');
     }
 
-    if (usuarioOffline.password_hash !== credentials.password) {
-      throw new Error('Contraseña offline incorrecta');
+    const esValida = await bcrypt.compare(credentials.password, usuarioOffline.password_hash);
+
+    if (!esValida) {
+      throw new Error('Usuario o contraseña incorrectos');
     }
 
     const usuario = JSON.parse(usuarioOffline.perfil_json);
@@ -230,8 +234,8 @@ export class AuthService {
     });
 
     // Guardar temporalmente en localStorage para que refrescos no saquen al usuario
-    sessionStorage.setItem('dolvin_token', token);
-    sessionStorage.setItem('dolvin_usuario', JSON.stringify(usuario));
+    sessionStorage.setItem('logos_token', token);
+    sessionStorage.setItem('logos_usuario', JSON.stringify(usuario));
 
     await Swal.fire({
       title: '📶 Modo Offline',
@@ -261,10 +265,10 @@ export class AuthService {
       }
 
       // Limpiar almacenamiento
-      localStorage.removeItem('dolvin_token');
-      localStorage.removeItem('dolvin_usuario');
-      sessionStorage.removeItem('dolvin_token');
-      sessionStorage.removeItem('dolvin_usuario');
+      localStorage.removeItem('logos_token');
+      localStorage.removeItem('logos_usuario');
+      sessionStorage.removeItem('logos_token');
+      sessionStorage.removeItem('logos_usuario');
 
       // Actualizar estado
       this.authStateSubject.next({
@@ -386,7 +390,7 @@ export class AuthService {
   private generarToken(): string {
     const timestamp = Date.now().toString();
     const random = Math.random().toString(36).substring(2);
-    return `dolvin_${timestamp}_${random}`;
+    return `logos_${timestamp}_${random}`;
   }
 
   // Obtener IP del usuario (simulado)
@@ -418,11 +422,14 @@ export class AuthService {
         throw new Error('Contraseña actual incorrecta');
       }
 
+      // Hashear la nueva contraseña
+      const passwordHasheada = await bcrypt.hash(contrasenaNueva, 10);
+
       // Actualizar contraseña
       await this.supabaseService.client
         .from('usuarios')
         .update({
-          password: contrasenaNueva
+          password: passwordHasheada
         })
         .eq('id', usuario.id);
 

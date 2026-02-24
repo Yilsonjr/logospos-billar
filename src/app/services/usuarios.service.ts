@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { Usuario, Rol, CrearUsuario, ActualizarUsuario, CrearRol, ROLES_PREDEFINIDOS } from '../models/usuario.model';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable({
   providedIn: 'root'
@@ -56,9 +57,15 @@ export class UsuariosService {
         throw new Error('El nombre de usuario o email ya existe');
       }
 
+      // Hashear contraseña antes de guardar
+      const passwordHasheada = await bcrypt.hash(usuario.password!, 10);
+
       const { data, error } = await this.supabaseService.client
         .from('usuarios')
-        .insert([usuario])
+        .insert([{
+          ...usuario,
+          password: passwordHasheada
+        }])
         .select(`
           *,
           roles (*)
@@ -81,11 +88,15 @@ export class UsuariosService {
   // Actualizar usuario
   async actualizarUsuario(id: number, usuario: ActualizarUsuario): Promise<Usuario> {
     try {
+      // Si viene una contraseña en la actualización, hay que hashearla
+      let datosActualizados = { ...usuario };
+      if (usuario.password) {
+        datosActualizados.password = await bcrypt.hash(usuario.password, 10);
+      }
+
       const { data, error } = await this.supabaseService.client
         .from('usuarios')
-        .update({
-          ...usuario
-        })
+        .update(datosActualizados)
         .eq('id', id)
         .select(`
           *,
@@ -161,10 +172,12 @@ export class UsuariosService {
   // Resetear contraseña
   async resetearContrasena(id: number, nuevaContrasena: string): Promise<void> {
     try {
+      const passwordHasheada = await bcrypt.hash(nuevaContrasena, 10);
+
       const { error } = await this.supabaseService.client
         .from('usuarios')
         .update({
-          password: nuevaContrasena
+          password: passwordHasheada
         })
         .eq('id', id);
 

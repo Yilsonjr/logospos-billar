@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { ROLES_PREDEFINIDOS } from '../models/usuario.model';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BootstrapService {
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService) { }
 
   // Inicializar sistema (crear roles y admin)
   async inicializarSistema(): Promise<void> {
@@ -19,7 +20,7 @@ export class BootstrapService {
           resolve(false);
         }, 2000))
       ]);
-      
+
       if (supabaseDisponible) {
         // Configurar datos con timeout
         await Promise.race([
@@ -53,13 +54,13 @@ export class BootstrapService {
         .from('roles')
         .select('count')
         .limit(1);
-      
+
       if (error) {
         return false;
       }
-      
+
       return true;
-      
+
     } catch (error) {
       return false;
     }
@@ -87,7 +88,7 @@ export class BootstrapService {
   private async crearRolesPredefinidos(): Promise<void> {
     try {
       console.log('📋 Verificando roles...');
-      
+
       // Intentar crear todos los roles en paralelo
       const promesas = ROLES_PREDEFINIDOS.map(async (rolData) => {
         try {
@@ -110,7 +111,7 @@ export class BootstrapService {
 
       await Promise.all(promesas);
       console.log('✅ Roles verificados');
-      
+
     } catch (error) {
       console.log('⚠️ Error con roles:', error);
     }
@@ -119,7 +120,7 @@ export class BootstrapService {
   private async crearUsuarioAdmin(): Promise<void> {
     try {
       console.log('👤 Verificando usuario admin...');
-      
+
       // Verificar si existe
       const { data: existeAdmin } = await this.supabaseService.client
         .from('usuarios')
@@ -144,6 +145,9 @@ export class BootstrapService {
         return;
       }
 
+      // Hashear contraseña inicial
+      const passwordHasheada = await bcrypt.hash('admin123', 10);
+
       // Crear admin
       await this.supabaseService.client
         .from('usuarios')
@@ -152,7 +156,7 @@ export class BootstrapService {
           apellido: 'Sistema',
           email: 'admin@dolvinpos.com',
           username: 'admin',
-          password: 'admin123',
+          password: passwordHasheada,
           telefono: '+1234567890',
           rol_id: rolAdmin.id,
           activo: true,
@@ -239,10 +243,13 @@ export class BootstrapService {
           .maybeSingle();
 
         if (!existeUsuario && usuarioData.rol_id) {
+          const passwordHasheada = await bcrypt.hash(usuarioData.password, 10);
+
           const { error } = await this.supabaseService.client
             .from('usuarios')
             .insert([{
               ...usuarioData,
+              password: passwordHasheada,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }]);
