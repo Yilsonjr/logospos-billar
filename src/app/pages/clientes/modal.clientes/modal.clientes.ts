@@ -18,7 +18,6 @@ export class ModalClientesComponent implements OnInit {
   clienteForm: FormGroup;
   isLoading = false;
   editando = false;
-  mostrarNotas = false;
   tiposCliente = TIPOS_CLIENTE;
 
   constructor(
@@ -35,7 +34,6 @@ export class ModalClientesComponent implements OnInit {
       tipo_cliente: ['regular', Validators.required],
       limite_credito: [0, [Validators.min(0)]],
       descuento_porcentaje: [0, [Validators.min(0), Validators.max(100)]],
-      notas: [''],
       activo: [true]
     });
   }
@@ -58,7 +56,6 @@ export class ModalClientesComponent implements OnInit {
       tipo_cliente: cliente.tipo_cliente,
       limite_credito: cliente.limite_credito,
       descuento_porcentaje: cliente.descuento_porcentaje,
-      notas: cliente.notas || '',
       activo: cliente.activo
     });
   }

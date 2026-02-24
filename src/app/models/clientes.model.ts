@@ -11,7 +11,6 @@ export interface Cliente {
   limite_credito: number;       // Límite de crédito permitido
   balance_pendiente: number;    // Deuda actual
   descuento_porcentaje: number; // Descuento automático (0-100)
-  notas?: string;
   activo: boolean;
   created_at?: string;
   updated_at?: string;

@@ -132,19 +132,7 @@
         </div>
       </div>
 
-      <!-- Notas Collapsible (Opcional) -->
-      <div class="mt-3">
-        <a class="text-decoration-none small text-muted d-flex align-items-center cursor-pointer"
-          (click)="mostrarNotas = !mostrarNotas" role="button">
-          <i class="fa-regular fa-note-sticky me-1"></i> Agregar notas u observaciones (opcional)
-          <i class="fa-solid ms-1" [class.fa-chevron-down]="!mostrarNotas" [class.fa-chevron-up]="mostrarNotas"
-            style="font-size: 0.6rem"></i>
-        </a>
-        <div *ngIf="mostrarNotas" class="mt-2 animate-fade-in">
-          <textarea formControlName="notas" class="form-control form-control-sm bg-light" rows="2"
-            placeholder="Escribe aquí cualquier observación relevante sobre este cliente..."></textarea>
-        </div>
-      </div>
+
 
       <!-- Footer Actions -->
       <div class="modal-footer border-top-0 px-0 pb-0 pt-4 mt-2">
