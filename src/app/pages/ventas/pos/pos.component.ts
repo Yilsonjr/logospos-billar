@@ -164,31 +164,7 @@ export class PosComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub, mesaActivaSub);
 
-    // Contexto de Mesa
-    this.route.queryParams.subscribe(params => {
-      const mesaId = Number(params['mesaId']);
-      const pedidoId = Number(params['pedidoId']);
-
-      if (mesaId && pedidoId) {
-        console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
-        this.mesaId = mesaId;
-        this.pedidoId = pedidoId;
-        this.cargarContextoMesa();
-      } else if (mesaId) {
-        // Caso una mesa sin pedido (no debería pasar por esta ruta pero por si acaso)
-        this.mesaId = mesaId;
-        this.pedidoId = undefined;
-        this.limpiarContextoMesa();
-      } else {
-        this.limpiarContextoMesa();
-      }
-    });
-
-    // DESPUÉS: Cargar datos
-    await this.cargarDatos();
-    await this.verificarCaja();
-
-    // Recargar cuando se navega al POS
+    // Recargar productos cuando se navega al POS (sin limpiar el carrito de mesa)
     const navSub = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(async (event: any) => {
@@ -198,6 +174,36 @@ export class PosComponent implements OnInit, OnDestroy {
       });
 
     this.subscriptions.push(navSub);
+
+    // PRIMERO: Cargar datos del POS (productos, clientes, caja)
+    await this.cargarDatos();
+    await this.verificarCaja();
+
+    // DESPUÉS de cargar datos, leer los query params y cargar el contexto de mesa
+    // Usar una Promise para leer los params una sola vez, en lugar de subscribe
+    // (evita race condition donde queryParams dispara antes de que los datos estén listos)
+    const params = await new Promise<any>(resolve => {
+      const sub = this.route.queryParams.subscribe(p => {
+        resolve(p);
+        setTimeout(() => sub.unsubscribe(), 0);
+      });
+    });
+
+    const mesaId = Number(params['mesaId']);
+    const pedidoId = Number(params['pedidoId']);
+
+    if (mesaId && pedidoId) {
+      console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
+      this.mesaId = mesaId;
+      this.pedidoId = pedidoId;
+      await this.cargarContextoMesa(); // Ahora SÍ es awaited
+    } else if (mesaId) {
+      this.mesaId = mesaId;
+      this.pedidoId = undefined;
+      this.limpiarContextoMesa();
+    } else {
+      this.limpiarContextoMesa();
+    }
   }
 
   ngOnDestroy() {
@@ -795,12 +801,15 @@ export class PosComponent implements OnInit, OnDestroy {
 
   cambiarAMesa(pedido: any) {
     this.mostrarDropdownMesa = false;
+    // Actualizar la URL para que el estado sea compartible, y recargar el contexto directamente
     this.router.navigate(['/ventas/nueva'], {
-      queryParams: {
-        mesaId: pedido.mesa_id,
-        pedidoId: pedido.id
-      }
+      queryParams: { mesaId: pedido.mesa_id, pedidoId: pedido.id },
+      replaceUrl: true
     });
+    // Cargar el nuevo contexto directamente sin esperar la navegación
+    this.mesaId = pedido.mesa_id;
+    this.pedidoId = pedido.id;
+    this.cargarContextoMesa();
   }
 
   irANuevaVenta() {
