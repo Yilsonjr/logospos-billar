@@ -7,7 +7,7 @@ export interface UsuarioOffline {
   id?: number;
   username: string;
   email: string;
-  password_hash: string; // Contraseña plana o hash para offline
+  password_hash: string; // Contraseña plana o hasheada para offline
   perfil_json: string; // Usuario completo incluyendo Rol
   ultimo_login: string;
 }
