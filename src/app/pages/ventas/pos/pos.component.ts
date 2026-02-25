@@ -766,6 +766,7 @@ export class PosComponent implements OnInit, OnDestroy {
       const cuenta: CrearCuentaPorCobrar = {
         cliente_id: this.clienteSeleccionado.id!,
         venta_id: venta.id,
+        concepto: `Venta a crédito - Factura ${venta.numero_venta}`,
         monto_total: this.total,
         monto_pagado: 0,
         monto_pendiente: this.total,

@@ -2,6 +2,7 @@ export interface CuentaPorCobrar {
   id?: number;
   venta_id: number;
   cliente_id: number;
+  concepto: string;
   cliente_nombre?: string; // Para mostrar en UI
   monto_total: number;
   monto_pagado: number;
