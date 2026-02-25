@@ -27,7 +27,9 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
     totalTarjeta = 0;
     totalTransacciones = 0;
     ticketPromedio = 0;
-    topProductos: { nombre: string, cantidad: number, total: number }[] = [];
+    totalGanancia = 0;
+    margenPromedio = 0;
+    topProductos: { nombre: string, cantidad: number, total: number, ganancia: number }[] = [];
     distribucionMetodos: { nombre: string, valor: number, color: string }[] = [];
 
     private subscriptions: Subscription[] = [];
@@ -131,31 +133,43 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
     }
 
     private async calcularTopProductos(ventas: Venta[]) {
-        const productMap = new Map<number, { nombre: string, cantidad: number, total: number }>();
+        const productMap = new Map<number, { nombre: string, cantidad: number, total: number, ganancia: number }>();
 
-        // Necesitamos los detalles de estas ventas. 
-        // Para optimizar, podríamos hacer una sola petición a Supabase para todos los detalles de estas ventas
         const ventaIds = ventas.filter(v => v.estado === 'completada').map(v => v.id);
 
         if (ventaIds.length === 0) {
             this.topProductos = [];
+            this.totalGanancia = 0;
+            this.margenPromedio = 0;
             return;
         }
 
         try {
+            // Traer detalles CON el precio_compra del producto para calcular ganancia
             const { data: detalles, error } = await this.ventasService['supabaseService'].client
                 .from('ventas_detalle')
-                .select('producto_id, producto_nombre, cantidad, subtotal')
+                .select('producto_id, producto_nombre, cantidad, subtotal, precio_unitario, productos(precio_compra)')
                 .in('venta_id', ventaIds);
 
             if (error) throw error;
 
+            let gananciaTotal = 0;
+
             (detalles || []).forEach((d: any) => {
-                const current = productMap.get(d.producto_id) || { nombre: d.producto_nombre, cantidad: 0, total: 0 };
+                const precioCompra = d.productos?.precio_compra || 0;
+                const gananciaItem = (d.precio_unitario - precioCompra) * d.cantidad;
+
+                const current = productMap.get(d.producto_id) || { nombre: d.producto_nombre, cantidad: 0, total: 0, ganancia: 0 };
                 current.cantidad += d.cantidad;
                 current.total += d.subtotal;
+                current.ganancia += gananciaItem;
                 productMap.set(d.producto_id, current);
+
+                gananciaTotal += gananciaItem;
             });
+
+            this.totalGanancia = gananciaTotal;
+            this.margenPromedio = this.totalVentas > 0 ? (gananciaTotal / this.totalVentas) * 100 : 0;
 
             this.topProductos = Array.from(productMap.values())
                 .sort((a, b) => b.cantidad - a.cantidad)
@@ -164,6 +178,8 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
         } catch (error) {
             console.error('Error calculando top productos:', error);
             this.topProductos = [];
+            this.totalGanancia = 0;
+            this.margenPromedio = 0;
         }
     }
 

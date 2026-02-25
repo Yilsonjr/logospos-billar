@@ -46,7 +46,7 @@
 
         <!-- Resumen Premium -->
         <div class="row g-4 mb-5 animate__animated animate__fadeInUp">
-            <div class="col-md-3">
+            <div class="col-6 col-lg">
                 <div class="premium-card">
                     <div class="stats-icon bg-soft-primary text-primary" style="background: rgba(54, 153, 255, 0.1);">
                         <i class="fa-solid fa-sack-dollar"></i>
@@ -58,7 +58,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-lg">
                 <div class="premium-card">
                     <div class="stats-icon bg-soft-success text-success" style="background: rgba(16, 185, 129, 0.1);">
                         <i class="fa-solid fa-money-bill-1-wave"></i>
@@ -70,7 +70,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-lg">
                 <div class="premium-card">
                     <div class="stats-icon bg-soft-info text-info" style="background: rgba(54, 153, 255, 0.1);">
                         <i class="fa-solid fa-credit-card"></i>
@@ -82,7 +82,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-lg">
                 <div class="premium-card">
                     <div class="stats-icon bg-soft-warning text-warning" style="background: rgba(246, 173, 85, 0.1);">
                         <i class="fa-solid fa-chart-line"></i>
@@ -90,6 +90,22 @@
                     <span class="card-label">Ticket Promedio</span>
                     <h3 class="card-value">{{ formatearMoneda(ticketPromedio) }}</h3>
                     <div class="mt-2 small text-muted">Ingreso promedio por cliente</div>
+                </div>
+            </div>
+            <div class="col-12 col-lg">
+                <div class="premium-card" style="border-left: 4px solid #8b5cf6;">
+                    <div class="stats-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <span class="card-label">Ganancia Bruta</span>
+                    <h3 class="card-value" style="color: #8b5cf6;">{{ formatearMoneda(totalGanancia) }}</h3>
+                    <div class="mt-2 small">
+                        <span class="badge rounded-pill px-2 py-1"
+                            [style.background]="margenPromedio >= 30 ? 'rgba(16,185,129,0.15)' : 'rgba(246,173,85,0.15)'"
+                            [style.color]="margenPromedio >= 30 ? '#10b981' : '#f59e0b'">
+                            <i class="fa-solid fa-arrow-trend-up me-1"></i>{{ margenPromedio | number:'1.1-1' }}% margen
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -115,6 +131,10 @@
                                 </div>
                                 <div class="text-end">
                                     <div class="fw-bold text-primary">{{ formatearMoneda(prod.total) }}</div>
+                                    <div class="small" style="color: #8b5cf6;">
+                                        <i class="fa-solid fa-arrow-trend-up me-1"></i>{{ formatearMoneda(prod.ganancia)
+                                        }}
+                                    </div>
                                     <div class="method-bar" style="width: 100px; height: 4px;">
                                         <div class="method-progress bg-primary"
                                             [style.width.%]="(prod.cantidad / topProductos[0].cantidad) * 100"></div>
