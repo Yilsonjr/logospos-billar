@@ -10,13 +10,13 @@ export class CuentasCobrarService {
   private cuentasSubject = new BehaviorSubject<CuentaPorCobrar[]>([]);
   public cuentas$ = this.cuentasSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService) { }
 
   // Cargar todas las cuentas
   async cargarCuentas(): Promise<void> {
     try {
       console.log('🔄 Cargando cuentas por cobrar...');
-      
+
       const { data, error } = await this.supabaseService.client
         .from('cuentas_por_cobrar')
         .select(`
@@ -37,7 +37,7 @@ export class CuentasCobrarService {
 
       console.log('✅ Cuentas cargadas:', cuentasConCliente.length);
       this.cuentasSubject.next(cuentasConCliente);
-      
+
     } catch (error) {
       console.error('💥 Error en cargarCuentas:', error);
       throw error;
@@ -71,7 +71,7 @@ export class CuentasCobrarService {
         cliente_nombre: cuenta.clientes?.nombre,
         pagos: pagos || []
       };
-      
+
     } catch (error) {
       console.error('Error al obtener cuenta con pagos:', error);
       throw error;
@@ -82,7 +82,7 @@ export class CuentasCobrarService {
   async crearCuenta(cuenta: CrearCuentaPorCobrar): Promise<CuentaPorCobrar> {
     try {
       console.log('🔄 Creando cuenta por cobrar...');
-      
+
       const { data, error } = await this.supabaseService.client
         .from('cuentas_por_cobrar')
         .insert([cuenta])
@@ -97,7 +97,7 @@ export class CuentasCobrarService {
       console.log('✅ Cuenta creada:', data.id);
       await this.cargarCuentas();
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en crearCuenta:', error);
       throw error;
@@ -108,7 +108,8 @@ export class CuentasCobrarService {
   async registrarPago(pago: CrearPagoCuenta): Promise<PagoCuenta> {
     try {
       console.log('🔄 Registrando pago...');
-      
+
+      // 1. Insertar el pago
       const { data, error } = await this.supabaseService.client
         .from('pagos_cuentas')
         .insert([pago])
@@ -121,9 +122,66 @@ export class CuentasCobrarService {
       }
 
       console.log('✅ Pago registrado:', data.id);
+
+      // 2. Obtener la cuenta actual para actualizar montos
+      const { data: cuenta, error: errorCuenta } = await this.supabaseService.client
+        .from('cuentas_por_cobrar')
+        .select('monto_total, monto_pagado, monto_pendiente, cliente_id')
+        .eq('id', pago.cuenta_id)
+        .single();
+
+      if (errorCuenta) throw errorCuenta;
+
+      // 3. Calcular nuevos montos
+      const nuevoMontoPagado = (cuenta.monto_pagado || 0) + pago.monto;
+      const nuevoMontoPendiente = cuenta.monto_total - nuevoMontoPagado;
+
+      // 4. Determinar nuevo estado
+      let nuevoEstado: string;
+      if (nuevoMontoPendiente <= 0) {
+        nuevoEstado = 'pagada';
+      } else if (nuevoMontoPagado > 0) {
+        nuevoEstado = 'parcial';
+      } else {
+        nuevoEstado = 'pendiente';
+      }
+
+      // 5. Actualizar la cuenta
+      const { error: errorUpdate } = await this.supabaseService.client
+        .from('cuentas_por_cobrar')
+        .update({
+          monto_pagado: nuevoMontoPagado,
+          monto_pendiente: Math.max(0, nuevoMontoPendiente),
+          estado: nuevoEstado,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', pago.cuenta_id);
+
+      if (errorUpdate) throw errorUpdate;
+
+      console.log(`✅ Cuenta actualizada: pagado=${nuevoMontoPagado}, pendiente=${nuevoMontoPendiente}, estado=${nuevoEstado}`);
+
+      // 6. Actualizar balance del cliente
+      if (cuenta.cliente_id) {
+        const { data: cliente, error: errorCliente } = await this.supabaseService.client
+          .from('clientes')
+          .select('balance_pendiente')
+          .eq('id', cuenta.cliente_id)
+          .single();
+
+        if (!errorCliente && cliente) {
+          const nuevoBalance = Math.max(0, (cliente.balance_pendiente || 0) - pago.monto);
+          await this.supabaseService.client
+            .from('clientes')
+            .update({ balance_pendiente: nuevoBalance })
+            .eq('id', cuenta.cliente_id);
+          console.log(`✅ Balance cliente actualizado: ${nuevoBalance}`);
+        }
+      }
+
       await this.cargarCuentas();
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en registrarPago:', error);
       throw error;
@@ -141,7 +199,7 @@ export class CuentasCobrarService {
 
       if (error) throw error;
       return data || [];
-      
+
     } catch (error) {
       console.error('Error al obtener cuentas por cliente:', error);
       throw error;
@@ -161,12 +219,12 @@ export class CuentasCobrarService {
         .order('fecha_vencimiento', { ascending: true });
 
       if (error) throw error;
-      
+
       return data?.map(cuenta => ({
         ...cuenta,
         cliente_nombre: cuenta.clientes?.nombre
       })) || [];
-      
+
     } catch (error) {
       console.error('Error al obtener cuentas vencidas:', error);
       throw error;
@@ -183,15 +241,15 @@ export class CuentasCobrarService {
           clientes (nombre)
         `)
         .eq('estado', estado)
-        .order('fecha_vencimiento', { ascending: true});
+        .order('fecha_vencimiento', { ascending: true });
 
       if (error) throw error;
-      
+
       return data?.map(cuenta => ({
         ...cuenta,
         cliente_nombre: cuenta.clientes?.nombre
       })) || [];
-      
+
     } catch (error) {
       console.error('Error al obtener cuentas por estado:', error);
       throw error;
@@ -203,7 +261,7 @@ export class CuentasCobrarService {
     try {
       const { error } = await this.supabaseService.client
         .from('cuentas_por_cobrar')
-        .update({ 
+        .update({
           estado,
           updated_at: new Date().toISOString()
         })
@@ -211,7 +269,7 @@ export class CuentasCobrarService {
 
       if (error) throw error;
       await this.cargarCuentas();
-      
+
     } catch (error) {
       console.error('Error al actualizar estado:', error);
       throw error;
