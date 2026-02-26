@@ -120,12 +120,18 @@ export class CategoriasService {
     try {
       console.log('🔄 Actualizando categoría ID:', id);
 
+      // Crear objeto de actualización explícito para evitar errores 400
+      // Eliminado updated_at ya que no existe en la tabla 'categorias'
+      const updateData: any = {};
+
+      if (categoria.nombre !== undefined) updateData.nombre = categoria.nombre;
+      if (categoria.descripcion !== undefined) updateData.descripcion = categoria.descripcion || null;
+      if (categoria.color !== undefined) updateData.color = categoria.color;
+      if (categoria.activo !== undefined) updateData.activo = categoria.activo;
+
       const { data, error } = await this.supabaseService.client
         .from('categorias')
-        .update({
-          ...categoria,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -154,11 +160,11 @@ export class CategoriasService {
       console.log('🔄 Desactivando categoría ID:', id);
 
       // No eliminamos físicamente, solo desactivamos
+      // Eliminado updated_at ya que no existe en la tabla 'categorias'
       const { error } = await this.supabaseService.client
         .from('categorias')
         .update({
-          activo: false,
-          updated_at: new Date().toISOString()
+          activo: false
         })
         .eq('id', id);
 

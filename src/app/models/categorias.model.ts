@@ -6,7 +6,6 @@ export interface Categoria {
   color: string;           // Color para el badge (hex: #ff0000)
   activo: boolean;         // Si la categoría está activa o no
   created_at?: string;     // Fecha de creación (automática)
-  updated_at?: string;     // Fecha de actualización (automática)
 }
 
 // Tipo para crear categoría (sin campos automáticos)
