@@ -118,10 +118,11 @@ export class CategoriasService {
   // Método para actualizar una categoría
   async actualizarCategoria(id: number, categoria: Partial<Categoria>): Promise<Categoria> {
     try {
-      console.log('🔄 Actualizando categoría ID:', id);
+      if (!id || typeof id !== 'number') {
+        throw new Error('ID de categoría inválido para actualización');
+      }
 
       // Crear objeto de actualización explícito para evitar errores 400
-      // Eliminado updated_at ya que no existe en la tabla 'categorias'
       const updateData: any = {};
 
       if (categoria.nombre !== undefined) updateData.nombre = categoria.nombre;
@@ -129,24 +130,30 @@ export class CategoriasService {
       if (categoria.color !== undefined) updateData.color = categoria.color;
       if (categoria.activo !== undefined) updateData.activo = categoria.activo;
 
+      console.log('📡 Enviando actualización a Supabase:', { id, updateData });
+
       const { data, error } = await this.supabaseService.client
         .from('categorias')
         .update(updateData)
         .eq('id', id)
-        .select()
-        .single();
+        .select();
 
       if (error) {
         console.error('❌ Error al actualizar categoría:', error);
         throw error;
       }
 
-      console.log('✅ Categoría actualizada:', data.nombre);
+      if (!data || data.length === 0) {
+        throw new Error(`No se encontró la categoría con ID ${id} para actualizar`);
+      }
+
+      const updatedCategory = data[0];
+      console.log('✅ Categoría actualizada:', updatedCategory.nombre);
 
       // Recargar la lista
       await this.cargarCategorias();
 
-      return data;
+      return updatedCategory;
 
     } catch (error) {
       console.error('💥 Error en actualizarCategoria:', error);

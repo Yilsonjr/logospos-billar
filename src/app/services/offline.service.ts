@@ -11,6 +11,9 @@ export class OfflineService {
     private onlineSubject = new BehaviorSubject<boolean>(navigator.onLine);
     public online$ = this.onlineSubject.asObservable();
 
+    private syncRequestSubject = new BehaviorSubject<void>(undefined);
+    public syncRequest$ = this.syncRequestSubject.asObservable();
+
     private syncingSubject = new BehaviorSubject<boolean>(false);
     public syncing$ = this.syncingSubject.asObservable();
 
@@ -26,10 +29,15 @@ export class OfflineService {
             this.onlineSubject.next(isOnline);
             if (isOnline) {
                 console.log('🌐 Connection restored, preparing sync...');
+                this.triggerSync();
             } else {
                 console.log('📵 Connection lost, switching to local mode.');
             }
         });
+    }
+
+    triggerSync() {
+        this.syncRequestSubject.next();
     }
 
     get isOnline(): boolean {
