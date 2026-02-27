@@ -13,6 +13,8 @@ import { ItemCarrito, CrearVenta, METODOS_PAGO } from '../../../models/ventas.mo
 import { Productos } from '../../../models/productos.model';
 import { Cliente } from '../../../models/clientes.model';
 import { CrearCuentaPorCobrar } from '../../../models/cuentas-cobrar.model';
+import { CategoriasService } from '../../../services/categorias.service';
+import { Categoria } from '../../../models/categorias.model';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import Swal from 'sweetalert2';
@@ -50,13 +52,8 @@ export class PosComponent implements OnInit, OnDestroy {
 
   // Categorías y filtros
   categoriaSeleccionada: string = 'all';
-  categorias = [
-    { id: 'all', nombre: 'All Items', icono: 'fa-solid fa-grid-2', color: '#2563eb' },
-    { id: 'bebidas', nombre: 'Bebidas', icono: 'fa-solid fa-wine-bottle', color: '#7c3aed' },
-    { id: 'snacks', nombre: 'Snacks', icono: 'fa-solid fa-cookie-bite', color: '#f59e0b' },
-    { id: 'lacteos', nombre: 'Lácteos', icono: 'fa-solid fa-cheese', color: '#10b981' },
-    { id: 'panaderia', nombre: 'Panadería', icono: 'fa-solid fa-bread-slice', color: '#d97706' },
-    { id: 'carnes', nombre: 'Carnes', icono: 'fa-solid fa-drumstick-bite', color: '#dc2626' }
+  categorias: any[] = [
+    { id: 'all', nombre: 'Todos', icono: 'fa-solid fa-layer-group', color: '#2563eb' }
   ];
 
   // Cliente seleccionado
@@ -101,7 +98,8 @@ export class PosComponent implements OnInit, OnDestroy {
     private cuentasCobrarService: CuentasCobrarService,
     private sidebarService: SidebarService,
     private fiscalService: FiscalService,
-    private cajaService: CajaService, // Inyectar CajaService
+    private cajaService: CajaService,
+    private categoriasService: CategoriasService,
     private pedidosMesaService: PedidosMesaService, // Inyectar PedidosMesa
     private mesasService: MesasService, // Inyectar MesasService
     private supabaseService: SupabaseService, // Inyectar Supabase
@@ -157,12 +155,25 @@ export class PosComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
+    const categoriasSub = this.categoriasService.categorias$.subscribe(cats => {
+      this.categorias = [
+        { id: 'all', nombre: 'Todos', icono: 'fa-solid fa-layer-group', color: '#2563eb' },
+        ...cats.map(c => ({
+          id: c.nombre, // Usamos el nombre para filtrar ya que ProductosService aplanó el nombre
+          nombre: c.nombre,
+          icono: this.obtenerIconoPorDefecto(c.nombre),
+          color: c.color || '#6b7280'
+        }))
+      ];
+      this.cdr.detectChanges();
+    });
+
     const mesaActivaSub = this.pedidosMesaService.pedidosActivos$.subscribe(pedidos => {
       this.pedidosActivos = pedidos;
       this.cdr.detectChanges();
     });
 
-    this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub, mesaActivaSub);
+    this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub, categoriasSub, mesaActivaSub);
 
     // Recargar productos cuando se navega al POS (sin limpiar el carrito de mesa)
     const navSub = this.router.events
@@ -798,6 +809,19 @@ export class PosComponent implements OnInit, OnDestroy {
     this.mesaActual = null;
     this.carrito = [];
     this.calcularTotales();
+  }
+
+  obtenerIconoPorDefecto(nombre: string): string {
+    const n = nombre.toLowerCase();
+    if (n.includes('bebida') || n.includes('vino') || n.includes('cerveza')) return 'fa-solid fa-wine-bottle';
+    if (n.includes('comida') || n.includes('plato')) return 'fa-solid fa-utensils';
+    if (n.includes('snack') || n.includes('picadera')) return 'fa-solid fa-cookie-bite';
+    if (n.includes('lacteo') || n.includes('queso')) return 'fa-solid fa-cheese';
+    if (n.includes('pan') || n.includes('reposteria')) return 'fa-solid fa-bread-slice';
+    if (n.includes('carne')) return 'fa-solid fa-drumstick-bite';
+    if (n.includes('fruta') || n.includes('vegetal')) return 'fa-solid fa-apple-whole';
+    if (n.includes('aseo') || n.includes('limpieza')) return 'fa-solid fa-broom';
+    return 'fa-solid fa-tag'; // Icono por defecto
   }
 
   async cambiarAMesa(pedido: any) {
