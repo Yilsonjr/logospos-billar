@@ -2,36 +2,26 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../../services/supabase.service';
+import { PrintingService, TicketFormat } from '../../services/printing.service';
 
 export interface DatosCierreTicket {
     id: number;
-    usuario_apertura: string;
-    usuario_cierre: string;
     fecha_apertura: string;
     fecha_cierre: string;
     monto_inicial: number;
     ventas_efectivo: number;
     ventas_tarjeta: number;
+    ventas_credito: number;
+    ventas_mixto: number;
     total_entradas: number;
     total_salidas: number;
     monto_esperado: number;
     monto_real: number;
     diferencia: number;
+    usuario_apertura: string;
+    usuario_cierre?: string;
     notas?: string;
-    arqueo?: {
-        billetes_2000: number;
-        billetes_1000: number;
-        billetes_500: number;
-        billetes_200: number;
-        billetes_100: number;
-        billetes_50: number;
-        monedas_25: number;
-        monedas_10: number;
-        monedas_5: number;
-        monedas_1: number;
-        total_billetes: number;
-        total_monedas: number;
-    };
+    arqueo?: any;
 }
 
 @Component({
@@ -43,9 +33,9 @@ export interface DatosCierreTicket {
 })
 export class TicketCierreComponent implements OnInit {
     @Input() datos!: DatosCierreTicket;
-    @Input() showActions: boolean = true;
-    @Input() formato: '80mm' | '58mm' | 'a4' = '80mm';
     @Output() cerrar = new EventEmitter<void>();
+    @Input() showActions: boolean = true;
+    @Input() formato: TicketFormat = '80mm';
 
     negocio: any = {
         nombre: 'LogosPOS',
@@ -54,15 +44,23 @@ export class TicketCierreComponent implements OnInit {
         direccion: 'Cargando...'
     };
 
-    constructor(private supabaseService: SupabaseService) { }
+    constructor(
+        private supabaseService: SupabaseService,
+        private printingService: PrintingService
+    ) { 
+        this.formato = this.printingService.currentFormat;
+    }
 
     async ngOnInit() {
         await this.cargarDatosNegocio();
+        if (!this.datos) {
+            console.error('TicketCierreComponent: No se proporcionaron datos de cierre.');
+        }
     }
 
     async cargarDatosNegocio() {
         try {
-            const { data, error } = await this.supabaseService.client
+            const { data } = await this.supabaseService.client
                 .from('negocios')
                 .select('*')
                 .limit(1)
@@ -77,7 +75,8 @@ export class TicketCierreComponent implements OnInit {
     }
 
     cambiarFormato(nuevoFormato: any) {
-        this.formato = nuevoFormato;
+        this.formato = nuevoFormato as TicketFormat;
+        this.printingService.setFormat(this.formato);
     }
 
     formatearMoneda(valor: number | undefined): string {
@@ -87,8 +86,7 @@ export class TicketCierreComponent implements OnInit {
         }).format(valor || 0);
     }
 
-    formatearFecha(fecha: string | undefined): string {
-        if (!fecha) return 'N/A';
+    formatearFecha(fecha: string): string {
         return new Date(fecha).toLocaleString('es-DO', {
             year: 'numeric',
             month: '2-digit',

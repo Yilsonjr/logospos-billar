@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../../services/supabase.service';
+import { PrintingService, TicketFormat } from '../../services/printing.service';
 import { PedidoMesa } from '../../models/mesa.model';
 
 @Component({
@@ -13,7 +14,7 @@ import { PedidoMesa } from '../../models/mesa.model';
 })
 export class TicketPrecuentaComponent implements OnInit {
     @Input() pedido!: PedidoMesa;
-    @Input() formato: '80mm' | '58mm' | 'a4' = '80mm';
+    @Input() formato: TicketFormat = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
     negocio: any = {
@@ -23,7 +24,12 @@ export class TicketPrecuentaComponent implements OnInit {
         direccion: 'Cargando...'
     };
 
-    constructor(private supabaseService: SupabaseService) { }
+    constructor(
+        private supabaseService: SupabaseService,
+        private printingService: PrintingService
+    ) { 
+        this.formato = this.printingService.currentFormat;
+    }
 
     async ngOnInit() {
         await this.cargarDatosNegocio();
@@ -31,7 +37,7 @@ export class TicketPrecuentaComponent implements OnInit {
 
     async cargarDatosNegocio() {
         try {
-            const { data, error } = await this.supabaseService.client
+            const { data } = await this.supabaseService.client
                 .from('negocios')
                 .select('*')
                 .limit(1)
@@ -46,7 +52,8 @@ export class TicketPrecuentaComponent implements OnInit {
     }
 
     cambiarFormato(nuevoFormato: any) {
-        this.formato = nuevoFormato;
+        this.formato = nuevoFormato as TicketFormat;
+        this.printingService.setFormat(this.formato);
     }
 
     formatearMoneda(valor: number | undefined): string {
@@ -54,16 +61,6 @@ export class TicketPrecuentaComponent implements OnInit {
             style: 'currency',
             currency: 'DOP'
         }).format(valor || 0);
-    }
-
-    formatearFecha(): string {
-        return new Date().toLocaleString('es-DO', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     }
 
     imprimir() {

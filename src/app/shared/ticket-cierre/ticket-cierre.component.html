@@ -14,14 +14,14 @@
             </button>
         </div>
 
-        <div id="print-section" class="ticket-wrapper">
+        <div class="ticket-wrapper print-area">
             <ng-container *ngTemplateOutlet="ticketContent"></ng-container>
         </div>
     </div>
 </div>
 
 <!-- Estructura solo para impresión directa si no hay overlay -->
-<div id="print-section" class="ticket-wrapper only-print" [ngClass]="'format-' + formato" *ngIf="!showActions">
+<div class="ticket-wrapper only-print print-area" [ngClass]="'format-' + formato" *ngIf="!showActions">
     <ng-container *ngTemplateOutlet="ticketContent"></ng-container>
 </div>
 
@@ -50,7 +50,7 @@
             </tr>
             <tr>
                 <td><strong>Cajero:</strong></td>
-                <td class="text-right">{{ datos.usuario_cierre }}</td>
+                <td class="text-right">{{ datos.usuario_cierre || datos.usuario_apertura }}</td>
             </tr>
         </table>
 

@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VentaCompleta } from '../../models/ventas.model';
 import { SupabaseService } from '../../services/supabase.service';
+import { PrintingService, TicketFormat } from '../../services/printing.service';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -14,10 +15,10 @@ import { FormsModule } from '@angular/forms';
 export class FacturaComponent implements OnInit {
     @Input() venta!: VentaCompleta;
     @Input() simulation: boolean = true; // Si es true, se muestra como modal/simulación
-    @Input() formato: '80mm' | '58mm' | 'a4' = '80mm'; // Added new input
+    @Input() formato: TicketFormat = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio: any = { // Changed type to any and updated default values
+    negocio: any = {
         nombre: 'LogosPOS',
         rnc: '131-XXXXX-X',
         telefono: '(809) 000-0000',
@@ -25,16 +26,21 @@ export class FacturaComponent implements OnInit {
         lema: '¡Gracias por su preferencia!'
     };
 
-    constructor(private supabaseService: SupabaseService) { } // Added constructor with SupabaseService injection
+    constructor(
+        private supabaseService: SupabaseService,
+        private printingService: PrintingService
+    ) { 
+        this.formato = this.printingService.currentFormat;
+    }
 
-    async ngOnInit() { // Made ngOnInit async
+    async ngOnInit() {
         if (!this.venta) {
             console.error('FacturaComponent: No se proporcionó una venta válida.');
         }
-        await this.cargarDatosNegocio(); // Added call to cargarDatosNegocio
+        await this.cargarDatosNegocio();
     }
 
-    async cargarDatosNegocio() { // Added new method
+    async cargarDatosNegocio() {
         try {
             const { data, error } = await this.supabaseService.client
                 .from('negocios')
@@ -50,8 +56,9 @@ export class FacturaComponent implements OnInit {
         }
     }
 
-    cambiarFormato(nuevoFormato: any) { // Added new method
-        this.formato = nuevoFormato;
+    cambiarFormato(nuevoFormato: any) {
+        this.formato = nuevoFormato as TicketFormat;
+        this.printingService.setFormat(this.formato);
     }
 
     formatearMoneda(valor: number | undefined): string {
