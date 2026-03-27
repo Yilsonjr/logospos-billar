@@ -1,5 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { SupabaseService } from '../../services/supabase.service';
 
 export interface DatosCierreTicket {
     id: number;
@@ -35,21 +37,48 @@ export interface DatosCierreTicket {
 @Component({
     selector: 'app-ticket-cierre',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './ticket-cierre.component.html',
     styleUrl: './ticket-cierre.component.css'
 })
-export class TicketCierreComponent {
+export class TicketCierreComponent implements OnInit {
     @Input() datos!: DatosCierreTicket;
     @Input() showActions: boolean = true;
+    @Input() formato: '80mm' | '58mm' | 'a4' = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio = {
+    negocio: any = {
         nombre: 'LogosPOS',
-        rnc: '131-12345-6',
-        telefono: '(809) 123-4567',
-        direccion: 'Av. Principal #123, Santo Domingo, RD'
+        rnc: '131-XXXXX-X',
+        telefono: '(809) 000-0000',
+        direccion: 'Cargando...'
     };
+
+    constructor(private supabaseService: SupabaseService) { }
+
+    async ngOnInit() {
+        await this.cargarDatosNegocio();
+    }
+
+    async cargarDatosNegocio() {
+        try {
+            const { data, error } = await this.supabaseService.client
+                .from('negocios')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (data) {
+                this.negocio = data;
+            }
+        } catch (error) {
+            console.warn('No se pudo cargar la configuración del negocio.');
+        }
+    }
+
+    cambiarFormato(nuevoFormato: any) {
+        this.formato = nuevoFormato;
+    }
 
     formatearMoneda(valor: number | undefined): string {
         return new Intl.NumberFormat('es-DO', {

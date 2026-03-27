@@ -1,24 +1,53 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { SupabaseService } from '../../services/supabase.service';
 import { PedidoMesa } from '../../models/mesa.model';
 
 @Component({
     selector: 'app-ticket-precuenta',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './ticket-precuenta.component.html',
     styleUrl: './ticket-precuenta.component.css'
 })
-export class TicketPrecuentaComponent {
+export class TicketPrecuentaComponent implements OnInit {
     @Input() pedido!: PedidoMesa;
+    @Input() formato: '80mm' | '58mm' | 'a4' = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio = {
+    negocio: any = {
         nombre: 'LogosPOS',
-        rnc: '131-12345-6',
-        telefono: '(809) 123-4567',
-        direccion: 'Av. Principal #123, Santo Domingo, RD'
+        rnc: '131-XXXXX-X',
+        telefono: '(809) 000-0000',
+        direccion: 'Cargando...'
     };
+
+    constructor(private supabaseService: SupabaseService) { }
+
+    async ngOnInit() {
+        await this.cargarDatosNegocio();
+    }
+
+    async cargarDatosNegocio() {
+        try {
+            const { data, error } = await this.supabaseService.client
+                .from('negocios')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (data) {
+                this.negocio = data;
+            }
+        } catch (error) {
+            console.warn('No se pudo cargar la configuración del negocio.');
+        }
+    }
+
+    cambiarFormato(nuevoFormato: any) {
+        this.formato = nuevoFormato;
+    }
 
     formatearMoneda(valor: number | undefined): string {
         return new Intl.NumberFormat('es-DO', {

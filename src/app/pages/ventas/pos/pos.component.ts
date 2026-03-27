@@ -189,32 +189,29 @@ export class PosComponent implements OnInit, OnDestroy {
     // PRIMERO: Cargar datos del POS (productos, clientes, caja)
     await this.cargarDatos();
     await this.verificarCaja();
+    // DESPUÉS de cargar datos, suscribirse a los query params de forma reactiva
+    const paramsSub = this.route.queryParams.subscribe(async params => {
+      const mesaId = Number(params['mesaId']);
+      const pedidoId = Number(params['pedidoId']);
 
-    // DESPUÉS de cargar datos, leer los query params y cargar el contexto de mesa
-    // Usar una Promise para leer los params una sola vez, en lugar de subscribe
-    // (evita race condition donde queryParams dispara antes de que los datos estén listos)
-    const params = await new Promise<any>(resolve => {
-      const sub = this.route.queryParams.subscribe(p => {
-        resolve(p);
-        setTimeout(() => sub.unsubscribe(), 0);
-      });
+      if (mesaId && pedidoId) {
+        // Solo recargar si el contexto cambió para evitar loop infinito o recargas innecesarias
+        if (this.mesaId !== mesaId || this.pedidoId !== pedidoId) {
+          console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
+          this.mesaId = mesaId;
+          this.pedidoId = pedidoId;
+          await this.cargarContextoMesa();
+        }
+      } else {
+        // Si no hay mesa/pedido en la URL, limpiamos el contexto solo si antes había uno
+        if (this.mesaId || this.pedidoId) {
+          console.log('🧹 [POS] Limpiando contexto de mesa (Venta General)');
+          this.limpiarContextoMesa();
+        }
+      }
     });
 
-    const mesaId = Number(params['mesaId']);
-    const pedidoId = Number(params['pedidoId']);
-
-    if (mesaId && pedidoId) {
-      console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
-      this.mesaId = mesaId;
-      this.pedidoId = pedidoId;
-      await this.cargarContextoMesa(); // Ahora SÍ es awaited
-    } else if (mesaId) {
-      this.mesaId = mesaId;
-      this.pedidoId = undefined;
-      this.limpiarContextoMesa();
-    } else {
-      this.limpiarContextoMesa();
-    }
+    this.subscriptions.push(paramsSub);
   }
 
   ngOnDestroy() {
