@@ -169,3 +169,81 @@ select:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
 }
+
+/* ===========================
+   GLOBAL PRINT RULES
+   Oculta toda la UI y muestra
+   solo el área de impresión del ticket
+   =========================== */
+@media print {
+  /* Ocultar absolutamente todo */
+  body > * {
+    display: none !important;
+  }
+
+  /* Mostrar solo el contenedor de la app */
+  body > app-root {
+    display: block !important;
+  }
+
+  /* Ocultar todo dentro de app-root */
+  app-root > * {
+    display: none !important;
+  }
+
+  /* Mostrar solo el layout principal */
+  app-root > .app-layout {
+    display: block !important;
+  }
+
+  /* Ocultar sidebar, navbar, topbar */
+  app-navbar,
+  app-topbar,
+  .sidebar-container,
+  .sidebar-overlay,
+  nav,
+  header {
+    display: none !important;
+  }
+
+  /* Ocultar el contenido de la página (no el ticket) */
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  /* Ocultar todo excepto el print-area */
+  body *:not(.print-area):not(.print-area *) {
+    visibility: hidden;
+  }
+
+  /* Mostrar el área de impresión */
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  /* Posicionar el área de impresión en el origen */
+  .print-area {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 999999 !important;
+    background: white !important;
+  }
+
+  /* Ocultar elementos de UI del ticket */
+  .no-print,
+  .ticket-overlay .modal-header-actions {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Configuración de página */
+  @page {
+    margin: 5mm;
+    size: auto;
+  }
+}
