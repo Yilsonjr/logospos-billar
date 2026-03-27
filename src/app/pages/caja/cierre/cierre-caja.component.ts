@@ -251,6 +251,8 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
         monto_inicial: this.cajaActual.monto_inicial,
         ventas_efectivo: this.ventasEfectivo,
         ventas_tarjeta: this.ventasTarjeta,
+        ventas_credito: 0,
+        ventas_mixto: 0,
         total_entradas: this.totalEntradas,
         total_salidas: this.totalSalidas,
         monto_esperado: this.montoEsperado,
