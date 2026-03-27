@@ -63,6 +63,17 @@ export class TicketPrecuentaComponent implements OnInit {
         }).format(valor || 0);
     }
 
+    formatearFecha(fecha?: string): string {
+        const date = fecha ? new Date(fecha) : new Date();
+        return date.toLocaleString('es-DO', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
     imprimir() {
         window.print();
     }
