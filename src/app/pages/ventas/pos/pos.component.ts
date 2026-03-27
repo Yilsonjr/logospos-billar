@@ -24,6 +24,8 @@ import { FacturaComponent } from '../../../shared/factura/factura.component';
 import { VentaCompleta } from '../../../models/ventas.model';
 import { CajaService } from '../../../services/caja.service';
 import { Caja } from '../../../models/caja.model';
+import { CategoriasService } from '../../../services/categorias.service';
+import { Categoria } from '../../../models/categorias.model';
 
 @Component({
   selector: 'app-pos',
@@ -50,13 +52,8 @@ export class PosComponent implements OnInit, OnDestroy {
 
   // Categorías y filtros
   categoriaSeleccionada: string = 'all';
-  categorias = [
-    { id: 'all', nombre: 'All Items', icono: 'fa-solid fa-grid-2', color: '#2563eb' },
-    { id: 'bebidas', nombre: 'Bebidas', icono: 'fa-solid fa-wine-bottle', color: '#7c3aed' },
-    { id: 'snacks', nombre: 'Snacks', icono: 'fa-solid fa-cookie-bite', color: '#f59e0b' },
-    { id: 'lacteos', nombre: 'Lácteos', icono: 'fa-solid fa-cheese', color: '#10b981' },
-    { id: 'panaderia', nombre: 'Panadería', icono: 'fa-solid fa-bread-slice', color: '#d97706' },
-    { id: 'carnes', nombre: 'Carnes', icono: 'fa-solid fa-drumstick-bite', color: '#dc2626' }
+  categorias: any[] = [
+    { id: 'all', nombre: 'Todos', icono: 'fa-solid fa-layer-group', color: '#2563eb' }
   ];
 
   // Cliente seleccionado
@@ -107,7 +104,8 @@ export class PosComponent implements OnInit, OnDestroy {
     private supabaseService: SupabaseService, // Inyectar Supabase
     private cdr: ChangeDetectorRef,
     private router: Router,
-    private route: ActivatedRoute // Inyectar ActivatedRoute
+    private route: ActivatedRoute, // Inyectar ActivatedRoute
+    private categoriasService: CategoriasService // Inyectar CategoriasService
   ) { }
 
   // Contexto de Billar
@@ -162,7 +160,20 @@ export class PosComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub, mesaActivaSub);
+    const categoriasSub = this.categoriasService.categorias$.subscribe(cats => {
+      this.categorias = [
+        { id: 'all', nombre: 'Todos', icono: 'fa-solid fa-layer-group', color: '#2563eb' },
+        ...cats.map(c => ({
+          id: c.nombre, // Usamos el nombre como ID para filtrar fácilmente
+          nombre: c.nombre,
+          icono: this.getIconoPorCategoria(c.nombre),
+          color: c.color || '#64748b'
+        }))
+      ];
+      this.cdr.detectChanges();
+    });
+
+    this.subscriptions.push(productosSub, clientesSub, fiscalSub, cajaSub, mesaActivaSub, categoriasSub);
 
     // Recargar productos cuando se navega al POS (sin limpiar el carrito de mesa)
     const navSub = this.router.events
@@ -265,7 +276,8 @@ export class PosComponent implements OnInit, OnDestroy {
       // Cargar productos y clientes en paralelo
       await Promise.all([
         this.productosService.cargarProductos(),
-        this.clientesService.cargarClientes()
+        this.clientesService.cargarClientes(),
+        this.categoriasService.cargarCategorias()
       ]);
 
     } catch (error) {
@@ -305,9 +317,11 @@ export class PosComponent implements OnInit, OnDestroy {
   filtrarProductos() {
     let filtrados = this.productos;
 
-    // 1. Filtrar por categoría
+    // 1. Filtrar por categoría (Comparación case-insensitive para mayor seguridad)
     if (this.categoriaSeleccionada !== 'all') {
-      filtrados = filtrados.filter(p => p.categoria === this.categoriaSeleccionada);
+      filtrados = filtrados.filter(p =>
+        p.categoria?.toLowerCase() === this.categoriaSeleccionada.toLowerCase()
+      );
     }
 
     // 2. Filtrar por texto de búsqueda
@@ -327,6 +341,20 @@ export class PosComponent implements OnInit, OnDestroy {
     this.productosFiltrados = filtrados;
     this.selectedAutocompleteIndex = 0;
     this.cdr.detectChanges();
+  }
+
+  // Helper para iconos por nombre de categoría
+  getIconoPorCategoria(nombre: string): string {
+    const n = nombre.toLowerCase();
+    if (n.includes('bebida') || n.includes('jugo') || n.includes('refresco')) return 'fa-solid fa-wine-bottle';
+    if (n.includes('snack') || n.includes('picadera')) return 'fa-solid fa-cookie-bite';
+    if (n.includes('lacteo') || n.includes('queso')) return 'fa-solid fa-cheese';
+    if (n.includes('pan') || n.includes('reposteria')) return 'fa-solid fa-bread-slice';
+    if (n.includes('carne') || n.includes('pollo') || n.includes('res')) return 'fa-solid fa-drumstick-bite';
+    if (n.includes('fruta') || n.includes('vegetal')) return 'fa-solid fa-apple-whole';
+    if (n.includes('alcohol') || n.includes('licor') || n.includes('cerveza')) return 'fa-solid fa-glass-whiskey';
+    if (n.includes('billar') || n.includes('juego')) return 'fa-solid fa-table-tennis-paddle-ball';
+    return 'fa-solid fa-tag'; // Icono por defecto
   }
 
   // Manejar teclas en búsqueda

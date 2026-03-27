@@ -1,31 +1,57 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VentaCompleta } from '../../models/ventas.model';
+import { SupabaseService } from '../../services/supabase.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-factura',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './factura.component.html',
     styleUrl: './factura.component.css'
 })
 export class FacturaComponent implements OnInit {
     @Input() venta!: VentaCompleta;
     @Input() simulation: boolean = true; // Si es true, se muestra como modal/simulación
+    @Input() formato: '80mm' | '58mm' | 'a4' = '80mm'; // Added new input
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio = {
+    negocio: any = { // Changed type to any and updated default values
         nombre: 'LogosPOS',
-        rnc: '131-12345-6',
-        telefono: '(809) 123-4567',
-        direccion: 'Av. Principal #123, Santo Domingo, RD',
+        rnc: '131-XXXXX-X',
+        telefono: '(809) 000-0000',
+        direccion: 'Cargando...',
         lema: '¡Gracias por su preferencia!'
     };
 
-    ngOnInit() {
+    constructor(private supabaseService: SupabaseService) { } // Added constructor with SupabaseService injection
+
+    async ngOnInit() { // Made ngOnInit async
         if (!this.venta) {
             console.error('FacturaComponent: No se proporcionó una venta válida.');
         }
+        await this.cargarDatosNegocio(); // Added call to cargarDatosNegocio
+    }
+
+    async cargarDatosNegocio() { // Added new method
+        try {
+            const { data, error } = await this.supabaseService.client
+                .from('negocios')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (data) {
+                this.negocio = data;
+            }
+        } catch (error) {
+            console.warn('No se pudo cargar la configuración del negocio, usando valores por defecto.');
+        }
+    }
+
+    cambiarFormato(nuevoFormato: any) { // Added new method
+        this.formato = nuevoFormato;
     }
 
     formatearMoneda(valor: number | undefined): string {

@@ -2,9 +2,16 @@
 <div class="factura-simulation-overlay" *ngIf="simulation" (click)="onCerrar()">
     <div class="factura-modal" (click)="$event.stopPropagation()">
         <div class="modal-actions no-print">
-            <button class="btn-print" (click)="imprimir()">
-                <i class="fa-solid fa-print me-2"></i>Imprimir Factura
-            </button>
+            <div class="d-flex gap-2 flex-grow-1">
+                <select class="form-select form-select-sm w-auto" [ngModel]="formato" (ngModelChange)="cambiarFormato($event)">
+                    <option value="80mm">80mm (Térmico)</option>
+                    <option value="58mm">58mm (Térmico)</option>
+                    <option value="a4">Carta / A4</option>
+                </select>
+                <button class="btn-print" (click)="imprimir()">
+                    <i class="fa-solid fa-print me-2"></i>Imprimir
+                </button>
+            </div>
             <button class="btn-close-custom" (click)="onCerrar()">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -24,7 +31,7 @@
 
 <!-- Template Reutilizable de la Factura -->
 <ng-template #receiptTemplate>
-    <div class="receipt-container">
+    <div class="receipt-container" [ngClass]="'format-' + formato">
         <!-- Header -->
         <div class="receipt-header">
             <h2 class="business-name">{{ negocio.nombre }}</h2>
