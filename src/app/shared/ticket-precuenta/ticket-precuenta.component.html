@@ -1,4 +1,4 @@
-<div class="ticket-overlay no-print" (click)="onCerrar()">
+<div class="ticket-overlay" (click)="onCerrar()">
     <div class="ticket-modal animate__animated animate__fadeInUp" (click)="$event.stopPropagation()">
         <div class="modal-header-actions mb-3 d-flex gap-2 no-print">
             <select class="form-select form-select-sm w-auto" [ngModel]="formato" (ngModelChange)="cambiarFormato($event)">
