@@ -44,7 +44,6 @@ export class IdentidadNegocioComponent implements OnInit {
   async cargarDatos() {
     this.loading = true;
     try {
-      // Intentar obtener de memoria primero, si falla, cargar de DB proactivamente
       const data = await this.negociosService.cargarNegocio();
       
       if (data) {
@@ -53,9 +52,19 @@ export class IdentidadNegocioComponent implements OnInit {
         if (data.logo_url) {
           this.logoPreview = data.logo_url;
         }
+      } else {
+        // Manejo de error si el negocio no existe o el ID es inválido
+        console.error('No se pudo cargar la información del negocio.');
+        await Swal.fire({
+          title: 'Sesión Inválida',
+          text: 'No se encontró la información de su negocio. Se recomienda cerrar sesión y volver a entrar.',
+          icon: 'warning',
+          confirmButtonText: 'Entendido'
+        });
       }
     } catch (error) {
       console.error('Error al cargar datos del negocio:', error);
+      Swal.fire('Error', 'Hubo un problema de conexión con el servidor.', 'error');
     } finally {
       this.loading = false;
     }
@@ -89,12 +98,11 @@ export class IdentidadNegocioComponent implements OnInit {
     try {
       let logoUrl = this.negocioActual?.logo_url;
 
-      // Subir logo si se seleccionó uno nuevo
       if (this.selectedFile) {
         const uploadResult = await this.imagenService.actualizarImagen(
           this.selectedFile,
-          this.negocioActual?.logo_url?.split('/').pop(), // Nombre del archivo anterior
-          { bucket: 'productos-imagenes', id: 'logo-negocio' }
+          this.negocioActual?.logo_url?.split('/').pop(),
+          { bucket: 'productos-imagenes', id: this.negocioActual?.id || 'logo-negocio' }
         );
         logoUrl = uploadResult.url;
       }
@@ -126,6 +134,5 @@ export class IdentidadNegocioComponent implements OnInit {
   eliminarLogo() {
       this.logoPreview = null;
       this.selectedFile = null;
-      // Nota: Aquí podrías añadir lógica para eliminarlo de storage si lo deseas
   }
 }
