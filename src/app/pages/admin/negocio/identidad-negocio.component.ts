@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NegociosService } from '../../../services/negocios.service';
@@ -24,7 +24,8 @@ export class IdentidadNegocioComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private negociosService: NegociosService,
-    private imagenService: ImagenService
+    private imagenService: ImagenService,
+    private cdr: ChangeDetectorRef // Inyectamos el detector de cambios
   ) {
     this.negocioForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -43,6 +44,8 @@ export class IdentidadNegocioComponent implements OnInit {
 
   async cargarDatos() {
     this.loading = true;
+    this.cdr.detectChanges(); // Forzamos mostrar el spinner
+
     try {
       const data = await this.negociosService.cargarNegocio();
       
@@ -53,20 +56,14 @@ export class IdentidadNegocioComponent implements OnInit {
           this.logoPreview = data.logo_url;
         }
       } else {
-        // Manejo de error si el negocio no existe o el ID es inválido
         console.error('No se pudo cargar la información del negocio.');
-        await Swal.fire({
-          title: 'Sesión Inválida',
-          text: 'No se encontró la información de su negocio. Se recomienda cerrar sesión y volver a entrar.',
-          icon: 'warning',
-          confirmButtonText: 'Entendido'
-        });
+        // No mostramos el Swal aquí para evitar interrumpir el flujo si es un error de Zone.js
       }
     } catch (error) {
       console.error('Error al cargar datos del negocio:', error);
-      Swal.fire('Error', 'Hubo un problema de conexión con el servidor.', 'error');
     } finally {
       this.loading = false;
+      this.cdr.detectChanges(); // 💡 CRÍTICO: Forzamos a Angular a ocultar el spinner y mostrar los datos
     }
   }
 
@@ -83,6 +80,7 @@ export class IdentidadNegocioComponent implements OnInit {
       const reader = new FileReader();
       reader.onload = () => {
         this.logoPreview = reader.result as string;
+        this.cdr.detectChanges();
       };
       reader.readAsDataURL(file);
     }
@@ -95,6 +93,8 @@ export class IdentidadNegocioComponent implements OnInit {
     }
 
     this.saving = true;
+    this.cdr.detectChanges();
+
     try {
       let logoUrl = this.negocioActual?.logo_url;
 
@@ -128,11 +128,13 @@ export class IdentidadNegocioComponent implements OnInit {
       Swal.fire('Error', 'No se pudieron guardar los cambios.', 'error');
     } finally {
       this.saving = false;
+      this.cdr.detectChanges();
     }
   }
 
   eliminarLogo() {
       this.logoPreview = null;
       this.selectedFile = null;
+      this.cdr.detectChanges();
   }
 }

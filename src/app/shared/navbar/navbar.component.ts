@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Subscription, Observable } from 'rxjs';
@@ -38,9 +38,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private sidebarService: SidebarService,
     private router: Router,
     private offlineService: OfflineService,
-    private negociosService: NegociosService
+    private negociosService: NegociosService,
+    private cdr: ChangeDetectorRef // 💡 Detector de cambios inyectado
   ) {
-    // Cargar estado inicial del sidebar
     this.isCollapsed = this.sidebarService.getCollapsed();
     this.online$ = this.offlineService.online$;
     this.isSyncing$ = this.offlineService.syncing$;
@@ -48,9 +48,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.checkMobile();
+    
     // Suscribirse al estado del sidebar
     const sidebarSub = this.sidebarService.isCollapsed$.subscribe(collapsed => {
       this.isCollapsed = collapsed;
+      this.cdr.detectChanges();
     });
 
     // Suscribirse al estado de autenticación
@@ -58,6 +60,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.usuario = authState.usuario;
       this.filtrarMenuPorPermisos();
       this.autoExpandActualRoute();
+      this.cdr.detectChanges();
     });
 
     // Suscribirse a cambios de ruta para auto-expandir
@@ -65,10 +68,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
       this.autoExpandActualRoute();
+      this.cdr.detectChanges();
     });
 
     const negocioSub = this.negociosService.negocio$.subscribe((data: Negocio | null) => {
       this.negocio = data;
+      this.cdr.detectChanges(); // 💡 CRÍTICO: Actualizar UI cuando cambie el negocio
     });
 
     this.subscriptions.push(sidebarSub, authSub, routerSub, negocioSub);
@@ -257,6 +262,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       return true;
     });
+    this.cdr.detectChanges();
   }
 
   autoExpandActualRoute() {
@@ -269,10 +275,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
         }
       }
     });
+    this.cdr.detectChanges();
   }
 
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    this.cdr.detectChanges();
   }
 
   toggleSidebar() {
@@ -281,6 +289,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   toggleSubmenu(item: any) {
     item.expanded = (!this.isCollapsed || this.isMobile) && !item.expanded;
+    this.cdr.detectChanges();
   }
 
   @HostListener('window:resize')
@@ -290,6 +299,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private checkMobile() {
     this.isMobile = window.innerWidth <= 992;
+    this.cdr.detectChanges();
   }
 
   handleMenuClick(event: Event, item: any) {
@@ -300,6 +310,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.sidebarService.setCollapsed(false);
         setTimeout(() => {
           item.expanded = true;
+          this.cdr.detectChanges();
         }, 100);
       } else {
         this.toggleSubmenu(item);
