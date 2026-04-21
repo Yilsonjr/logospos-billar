@@ -32,7 +32,7 @@ export class FacturaComponent implements OnInit {
         if (!this.venta) {
             console.error('FacturaComponent: No se proporcionó una venta válida.');
         }
-        this.negociosService.negocio$.subscribe(data => {
+        this.negociosService.negocio$.subscribe((data: Negocio | null) => {
             this.negocio = data;
         });
     }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { Negocio } from '../models/negocio.model';
 
 // =============================================
 // Tipos de negocio soportados por la plataforma
@@ -67,28 +68,14 @@ export const MODULOS_LABELS: Record<ModuloSistema, string> = {
     usuarios: 'Gestión de Usuarios'
 };
 
-// =============================================
-// Interface del Negocio
-// =============================================
-export interface Negocio {
-    id: string;
-    nombre: string;
-    subdominio: string;
-    rnc: string | null;
-    plan_tipo: 'basico' | 'profesional' | 'pro' | 'perpetual';
-    estado_licencia: 'activa' | 'suspendida' | 'vencida';
-    fecha_vencimiento: string | null;
-    tipo_negocio: TipoNegocio;
-    modulos_activos: ModuloSistema[];
-    created_at?: string;
-}
+// (Removed local Negocio interface, now using src/app/models/negocio.model.ts)
 
 @Injectable({
     providedIn: 'root'
 })
 export class NegociosService {
-    private negocioActualSubject = new BehaviorSubject<Negocio | null>(null);
-    public negocioActual$ = this.negocioActualSubject.asObservable();
+    private negocioSubject = new BehaviorSubject<Negocio | null>(null);
+    public negocio$ = this.negocioSubject.asObservable();
 
     constructor(private supabaseService: SupabaseService) { }
 
@@ -158,7 +145,32 @@ export class NegociosService {
      */
     async cargarNegocioActual(id: string): Promise<void> {
         const negocio = await this.obtenerPorId(id);
-        this.negocioActualSubject.next(negocio);
+        this.negocioSubject.next(negocio);
+    }
+
+    /**
+     * Alias para cargar el negocio actual (usado por IdentidadNegocioComponent)
+     */
+    async cargarNegocio(): Promise<Negocio | null> {
+        return this.negocioSubject.value;
+    }
+
+    /**
+     * Actualizar los datos del negocio actual
+     */
+    async actualizarNegocio(cambios: Partial<Negocio>): Promise<void> {
+        const negocioActual = this.negocioSubject.value;
+        if (!negocioActual) throw new Error('No hay negocio cargado para actualizar');
+
+        const { error } = await this.supabaseService.client
+            .from('negocios')
+            .update(cambios)
+            .eq('id', negocioActual.id);
+
+        if (error) throw error;
+
+        // Actualizar el estado local
+        this.negocioSubject.next({ ...negocioActual, ...cambios });
     }
 
     // =============================================
@@ -169,7 +181,7 @@ export class NegociosService {
      * Verificar si el negocio actual tiene un módulo activo
      */
     tieneModulo(modulo: ModuloSistema): boolean {
-        const negocio = this.negocioActualSubject.value;
+        const negocio = this.negocioSubject.value;
         if (!negocio) return true; // Si no hay negocio cargado, mostrar todo (modo desarrollo)
         return negocio.modulos_activos?.includes(modulo) ?? false;
     }
@@ -178,13 +190,13 @@ export class NegociosService {
      * Obtener la lista de módulos activos del negocio actual
      */
     get modulosActivos(): ModuloSistema[] {
-        return this.negocioActualSubject.value?.modulos_activos || [];
+        return this.negocioSubject.value?.modulos_activos || [];
     }
 
     /**
      * Obtener el tipo de negocio actual
      */
     get tipoNegocio(): TipoNegocio {
-        return this.negocioActualSubject.value?.tipo_negocio || 'general';
+        return this.negocioSubject.value?.tipo_negocio || 'general';
     }
 }

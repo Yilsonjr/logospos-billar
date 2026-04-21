@@ -67,7 +67,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.autoExpandActualRoute();
     });
 
-    const negocioSub = this.negociosService.negocio$.subscribe(data => {
+    const negocioSub = this.negociosService.negocio$.subscribe((data: Negocio | null) => {
       this.negocio = data;
     });
 

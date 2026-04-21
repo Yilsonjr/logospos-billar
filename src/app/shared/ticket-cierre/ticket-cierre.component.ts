@@ -48,7 +48,7 @@ export class TicketCierreComponent implements OnInit {
     }
 
     async ngOnInit() {
-        this.negociosService.negocio$.subscribe(data => {
+        this.negociosService.negocio$.subscribe((data: Negocio | null) => {
             this.negocio = data;
         });
 

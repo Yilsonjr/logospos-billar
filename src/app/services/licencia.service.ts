@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { NegociosService, Negocio } from './negocios.service';
+import { NegociosService } from './negocios.service';
+import { Negocio } from '../models/negocio.model';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -25,7 +26,7 @@ export class LicenciaService {
     public estado$ = this.estadoSubject.asObservable();
 
     constructor(private negociosService: NegociosService) {
-        this.negociosService.negocioActual$.subscribe(negocio => {
+        this.negociosService.negocio$.subscribe((negocio: Negocio | null) => {
             if (negocio) {
                 this.procesarEstadoNegocio(negocio);
             }
