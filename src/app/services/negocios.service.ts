@@ -68,8 +68,6 @@ export const MODULOS_LABELS: Record<ModuloSistema, string> = {
     usuarios: 'Gestión de Usuarios'
 };
 
-// (Removed local Negocio interface, now using src/app/models/negocio.model.ts)
-
 @Injectable({
     providedIn: 'root'
 })
@@ -113,7 +111,6 @@ export class NegociosService {
      * Registrar un nuevo negocio (Onboarding)
      */
     async crearNegocio(negocio: Partial<Negocio>): Promise<Negocio> {
-        // Si se especifica tipo_negocio pero no modulos_activos, usar los defaults
         if (negocio.tipo_negocio && !negocio.modulos_activos) {
             negocio.modulos_activos = [...MODULOS_POR_TIPO[negocio.tipo_negocio]];
         }
@@ -150,8 +147,15 @@ export class NegociosService {
 
     /**
      * Alias para cargar el negocio actual (usado por IdentidadNegocioComponent)
+     * Si no hay negocio cargado, intenta obtenerlo del ID guardado
      */
     async cargarNegocio(): Promise<Negocio | null> {
+        if (!this.negocioSubject.value) {
+            const savedId = localStorage.getItem('logos_negocio_id');
+            if (savedId) {
+                await this.cargarNegocioActual(savedId);
+            }
+        }
         return this.negocioSubject.value;
     }
 
@@ -173,29 +177,16 @@ export class NegociosService {
         this.negocioSubject.next({ ...negocioActual, ...cambios });
     }
 
-    // =============================================
-    // Helpers para módulos
-    // =============================================
-
-    /**
-     * Verificar si el negocio actual tiene un módulo activo
-     */
     tieneModulo(modulo: ModuloSistema): boolean {
         const negocio = this.negocioSubject.value;
-        if (!negocio) return true; // Si no hay negocio cargado, mostrar todo (modo desarrollo)
+        if (!negocio) return true;
         return negocio.modulos_activos?.includes(modulo) ?? false;
     }
 
-    /**
-     * Obtener la lista de módulos activos del negocio actual
-     */
     get modulosActivos(): ModuloSistema[] {
         return this.negocioSubject.value?.modulos_activos || [];
     }
 
-    /**
-     * Obtener el tipo de negocio actual
-     */
     get tipoNegocio(): TipoNegocio {
         return this.negocioSubject.value?.tipo_negocio || 'general';
     }

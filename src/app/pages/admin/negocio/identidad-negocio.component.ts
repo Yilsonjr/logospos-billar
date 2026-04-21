@@ -44,7 +44,9 @@ export class IdentidadNegocioComponent implements OnInit {
   async cargarDatos() {
     this.loading = true;
     try {
+      // Intentar obtener de memoria primero, si falla, cargar de DB proactivamente
       const data = await this.negociosService.cargarNegocio();
+      
       if (data) {
         this.negocioActual = data;
         this.negocioForm.patchValue(data);
