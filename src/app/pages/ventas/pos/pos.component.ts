@@ -107,8 +107,7 @@ export class PosComponent implements OnInit, OnDestroy {
     private supabaseService: SupabaseService, // Inyectar Supabase
     private cdr: ChangeDetectorRef,
     private router: Router,
-    private route: ActivatedRoute, // Inyectar ActivatedRoute
-    private categoriasService: CategoriasService // Inyectar CategoriasService
+    private route: ActivatedRoute // Inyectar ActivatedRoute
   ) { }
 
   // Contexto de Billar
