@@ -135,7 +135,8 @@ export class ComprasService {
         // DB check: 'completada', 'cancelada', 'pendiente'
         estado: compra.estado === 'pagada' ? 'completada' : 'pendiente',
         metodo_pago: compra.metodo_pago || null,
-        notas: compra.notas || null
+        notas: compra.notas || null,
+        negocio_id: this.authService.getNegocioId() // Multi-tenant support
       };
 
       // Crear la compra
@@ -153,7 +154,8 @@ export class ComprasService {
       // Crear los detalles con el ID de la compra
       const detallesConCompraId = detalles.map(detalle => ({
         ...detalle,
-        compra_id: nuevaCompra.id
+        compra_id: nuevaCompra.id,
+        negocio_id: this.authService.getNegocioId() // Multi-tenant support
       }));
 
       const { error: errorDetalles } = await this.supabaseService.client

@@ -1,0 +1,200 @@
+<div class="developer-container container-fluid p-4">
+    <!-- Header & Stats -->
+    <div class="row mb-4 animate__animated animate__fadeInDown">
+        <div class="col-md-8">
+            <h1 class="fw-bold text-dark">
+                <i class="fa-solid fa-server me-2 text-indigo"></i>Gestión de Negocios
+            </h1>
+            <p class="text-muted">Control maestro de suscripciones y licencias del sistema.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary btn-lg shadow-sm" (click)="abrirModalCrear()">
+                <i class="fa-solid fa-plus me-2"></i>Nuevo Negocio
+            </button>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="card border-0 shadow-sm mb-4 animate__animated animate__fadeIn">
+        <div class="card-body">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-end-0">
+                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0 ps-0"
+                    placeholder="Buscar por nombre, subdominio o RNC..." [(ngModel)]="filtroTexto"
+                    (ngModelChange)="aplicarFiltros()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Business List -->
+    <div class="row g-4 overflow-auto animate__animated animate__fadeInUp">
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Cargando ecosistema...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!isLoading && negociosFiltrados.length === 0" class="col-12 text-center py-5">
+            <i class="fa-solid fa-cloud-open fs-1 text-muted mb-3"></i>
+            <h3>No se encontraron negocios</h3>
+            <p class="text-muted">Intenta ajustar los filtros de búsqueda.</p>
+        </div>
+
+        <!-- Business Card -->
+        <div *ngFor="let negocio of negociosFiltrados" class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-hover transition-all"
+                [class.border-start-danger]="negocio.estado_licencia === 'suspendida'">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title fw-bold mb-0">{{ negocio.nombre }}</h5>
+                            <small class="text-indigo fw-semibold">@{{ negocio.subdominio }}</small>
+                        </div>
+                        <span class="badge rounded-pill px-3 py-2"
+                            [ngClass]="obtenerClaseEstado(negocio.estado_licencia)">
+                            {{ negocio.estado_licencia | titlecase }}
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa-solid fa-store text-muted me-2 small"></i>
+                            <span class="small text-muted">Tipo: {{ tiposNegocio[negocio.tipo_negocio] ||
+                                negocio.tipo_negocio }}</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa-solid fa-id-card-clip text-muted me-2 small"></i>
+                            <span class="small text-muted">RNC: {{ negocio.rnc || 'N/A' }}</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa-solid fa-box text-muted me-2 small"></i>
+                            <span class="small fw-bold">Plan: {{ negocio.plan_tipo | uppercase }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-puzzle-piece text-muted me-2 small"></i>
+                            <span class="small text-muted">{{ negocio.modulos_activos?.length || 0 }} módulos</span>
+                        </div>
+                    </div>
+
+                    <div class="alert small mb-4"
+                        [ngClass]="negocio.estado_licencia === 'activa' ? 'alert-info' : 'alert-secondary'">
+                        <i class="fa-solid fa-calendar-check me-2"></i>
+                        Vence: {{ negocio.fecha_vencimiento ? (negocio.fecha_vencimiento | date:'mediumDate') :
+                        'Indefinido' }}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary btn-sm flex-grow-1" (click)="abrirModalEditar(negocio)">
+                            <i class="fa-solid fa-pen-to-square me-1"></i>Editar
+                        </button>
+                        <button class="btn btn-sm flex-grow-1"
+                            [class.btn-outline-danger]="negocio.estado_licencia === 'activa'"
+                            [class.btn-outline-success]="negocio.estado_licencia !== 'activa'"
+                            (click)="toggleEstado(negocio)">
+                            <i class="fa-solid me-1" [class.fa-ban]="negocio.estado_licencia === 'activa'"
+                                [class.fa-check]="negocio.estado_licencia !== 'activa'"></i>
+                            {{ negocio.estado_licencia === 'activa' ? 'Suspender' : 'Activar' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Admin -->
+    <div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-4">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid me-2" [class.fa-plus]="modoModal === 'crear'"
+                            [class.fa-edit]="modoModal === 'editar'"></i>
+                        {{ modoModal === 'crear' ? 'Registrar Nuevo Negocio' : 'Editar Suscripción' }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form (ngSubmit)="guardarNegocio()">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Nombre del Negocio</label>
+                                <input type="text" class="form-control" name="nombre"
+                                    [(ngModel)]="formularioNegocio.nombre" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Subdominio / ID Corto</label>
+                                <input type="text" class="form-control" name="subdominio"
+                                    [(ngModel)]="formularioNegocio.subdominio" required
+                                    [disabled]="modoModal === 'editar'">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">RNC (Opcional)</label>
+                                <input type="text" class="form-control" name="rnc" [(ngModel)]="formularioNegocio.rnc">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Plan</label>
+                                <select class="form-select" name="plan_tipo" [(ngModel)]="formularioNegocio.plan_tipo">
+                                    <option value="basico">Básico</option>
+                                    <option value="profesional">Profesional</option>
+                                    <option value="pro">Pro (Full)</option>
+                                    <option value="perpetual">Perpetuo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Estado</label>
+                                <select class="form-select" name="estado_licencia"
+                                    [(ngModel)]="formularioNegocio.estado_licencia">
+                                    <option value="activa">Activa</option>
+                                    <option value="suspendida">Suspendida</option>
+                                    <option value="vencida">Vencida</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Fecha de Vencimiento</label>
+                                <input type="date" class="form-control" name="fecha_vencimiento"
+                                    [(ngModel)]="formularioNegocio.fecha_vencimiento">
+                            </div>
+                            <!-- Tipo de Negocio -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Tipo de Negocio</label>
+                                <select class="form-select" name="tipo_negocio"
+                                    [(ngModel)]="formularioNegocio.tipo_negocio"
+                                    (ngModelChange)="onTipoNegocioChange()">
+                                    <option *ngFor="let tipo of tiposKeys" [value]="tipo">
+                                        {{ tiposNegocio[tipo] }}
+                                    </option>
+                                </select>
+                            </div>
+                            <!-- Módulos Activos -->
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Módulos Activos</label>
+                                <div class="row g-2">
+                                    <div *ngFor="let modulo of modulosKeys" class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" [id]="'mod_' + modulo"
+                                                [checked]="moduloActivo(modulo)" (change)="toggleModulo(modulo)">
+                                            <label class="form-check-label small" [for]="'mod_' + modulo">
+                                                {{ modulosLabels[modulo] }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="button" class="btn btn-light me-2" (click)="cerrarModal()">Cancelar</button>
+                            <button type="submit" class="btn btn-indigo px-4" [disabled]="isSaving">
+                                <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+                                {{ modoModal === 'crear' ? 'Registrar Negocio' : 'Guardar Cambios' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="mostrarModal" class="modal-backdrop fade show"></div>
+</div>

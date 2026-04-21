@@ -100,85 +100,36 @@ export class VentasService {
   // Ejecución real en Supabase (usado por el interceptor y por la sync automática)
   private async ejecutarCrearVentaEnSupabase(venta: CrearVenta): Promise<Venta> {
     try {
-      console.log('🔄 Ejecutando venta en Supabase...');
+      console.log('🔄 Ejecutando venta atómica en Supabase...');
 
-      // Obtener usuario actual (id de tabla usuarios, bigint)
+      // Obtener usuario actual
       const usuarioId = this.authService.usuarioActual?.id;
       if (!usuarioId) throw new Error('No hay usuario autenticado');
 
-      // 1. Generar número de venta
-      const numeroVenta = await this.generarNumeroFactura();
-      console.log('📄 Número de venta:', numeroVenta);
+      const negocioId = this.authService.getNegocioId();
 
-      // 2. Preparar payload alineado con tabla ventas real
-      const payload = {
-        numero_venta: numeroVenta,           // nombre correcto de la columna
-        cliente_id: venta.cliente_id || null,
-        caja_id: venta.caja_id || null,     // bigint NOT NULL → caja(id)
-        usuario_id: usuarioId,             // bigint NOT NULL → usuarios(id)
-        subtotal: venta.subtotal,
-        descuento: venta.descuento,
-        impuestos: venta.impuesto,        // 'impuestos' (plural) en la tabla
+      // Llamada al RPC que maneja toda la transacción en la BD
+      const { data, error } = await this.supabaseService.client
+        .rpc('crear_venta_completa', {
+          p_venta: venta,
+          p_usuario_id: usuarioId,
+          p_negocio_id: negocioId
+        });
+
+      if (error) {
+        console.error('❌ Error en RPC crear_venta_completa:', error);
+        throw error;
+      }
+
+      console.log('✅ Venta procesada atómicamente:', data.numero_venta);
+      
+      // Retornar la venta creada (el RPC devuelve {id, numero_venta})
+      return {
+        id: data.id,
+        numero_venta: data.numero_venta,
         total: venta.total,
-        metodo_pago: venta.metodo_pago,
-        tipo_venta: venta.metodo_pago === 'credito' ? 'credito' : 'contado',
-        estado: 'completada',
-        notas: venta.notas || null,
-        // Datos Fiscales
-        ncf: venta.ncf || null,
-        tipo_ncf: venta.tipo_ncf || null,
-        rnc_cliente: venta.rnc_cliente || null,
-        nombre_cliente_fiscal: venta.nombre_cliente_fiscal || null,
-        mesa_id: venta.mesa_id || null,
-        pedido_id: venta.pedido_id || null
-      };
-
-      // 3. Crear encabezado de venta
-      const { data: ventaCreada, error: errorVenta } = await this.supabaseService.client
-        .from('ventas')
-        .insert([payload])
-        .select()
-        .single();
-
-      if (errorVenta) {
-        console.error('❌ Error ventas insert:', JSON.stringify(errorVenta));
-        throw errorVenta;
-      }
-
-      // 4. Crear detalles de venta
-      const detalles = venta.detalles.map(detalle => ({
-        venta_id: ventaCreada.id,
-        producto_id: detalle.producto_id,
-        producto_nombre: detalle.producto_nombre,
-        cantidad: detalle.cantidad,
-        precio_unitario: detalle.precio_unitario,
-        descuento: detalle.descuento,
-        subtotal: detalle.subtotal
-      }));
-
-      const { error: errorDetalles } = await this.supabaseService.client
-        .from('ventas_detalle')
-        .insert(detalles);
-
-      if (errorDetalles) throw errorDetalles;
-
-      // 5. Actualizar stock de productos
-      for (const detalle of venta.detalles) {
-        await this.actualizarStockProducto(detalle.producto_id, detalle.cantidad);
-      }
-
-      // 6. Si es venta a crédito, actualizar balance del cliente
-      if (venta.metodo_pago === 'credito' && venta.cliente_id) {
-        await this.actualizarBalanceCliente(venta.cliente_id, venta.total);
-      }
-
-      // 7. Registrar movimientos en caja si hay caja_id
-      if (venta.caja_id) {
-        await this.registrarMovimientosVentaCaja(venta, ventaCreada.id, numeroVenta);
-      }
-
-      console.log('✅ Venta sincronizada con Supabase:', numeroVenta);
-      return ventaCreada;
+        estado: 'completada'
+      } as Venta;
 
     } catch (error) {
       console.error('💥 Error al ejecutar venta en Supabase:', error);

@@ -6,8 +6,8 @@ import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { OfflineService } from '../../services/offline.service';
-import { Usuario } from '../../models/usuario.model';
 import { NegociosService } from '../../services/negocios.service';
+import { Usuario } from '../../models/usuario.model';
 import { Negocio } from '../../models/negocio.model';
 
 @Component({
@@ -28,9 +28,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   negocio: Negocio | null = null;
 
   quickActions = [
-    { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff' },
-    { label: 'Mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', link: '/ventas/mesas', permissions: ['ventas.crear'], color: '#ef4444' },
-    { label: 'Cierre', icon: 'fa-solid fa-door-closed', link: '/caja/cierre', permissions: ['caja.cerrar'], color: '#f59e0b' }
+    { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff', modulo: 'ventas' },
+    { label: 'Mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', link: '/ventas/mesas', permissions: ['ventas.crear'], color: '#ef4444', modulo: 'mesas' },
+    { label: 'Cierre', icon: 'fa-solid fa-door-closed', link: '/caja/cierre', permissions: ['caja.cerrar'], color: '#f59e0b', modulo: 'caja' }
   ];
 
   constructor(
@@ -116,9 +116,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/ventas',
       active: false,
       permissions: ['ventas.ver'],
+      modulo: 'ventas',
       submenu: [
         { label: 'Nueva Transaccion', link: '/ventas/nueva', icon: 'fa-solid fa-plus-circle', permissions: ['ventas.crear'] },
-        { label: 'Mesas de Billar', link: '/ventas/mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', permissions: ['ventas.crear'] },
+        { label: 'Mesas', link: '/ventas/mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', permissions: ['ventas.crear'], modulo: 'mesas' },
         { label: 'Historial', link: '/ventas/historial', icon: 'fa-solid fa-clock-rotate-left', permissions: ['ventas.historial'] }
       ],
       expanded: false
@@ -129,6 +130,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/caja',
       active: false,
       permissions: ['caja.ver'],
+      modulo: 'caja',
       submenu: [
         { label: 'Apertura de Caja', link: '/caja/apertura', icon: 'fa-solid fa-door-open', permissions: ['caja.abrir'] },
         { label: 'Cierre de Caja', link: '/caja/cierre', icon: 'fa-solid fa-door-closed', permissions: ['caja.cerrar'] },
@@ -144,7 +146,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-users',
       link: '/clientes',
       active: false,
-      permissions: ['clientes.ver']
+      permissions: ['clientes.ver'],
+      modulo: 'clientes'
     },
     {
       label: 'Cuentas por Cobrar',
@@ -152,6 +155,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/cuentas-cobrar',
       active: false,
       permissions: ['cuentas.ver'],
+      modulo: 'cuentas_cobrar',
       submenu: [
         { label: 'Cuentas Pendientes', link: '/cuentas-cobrar', icon: 'fa-solid fa-hourglass-half', permissions: ['cuentas.ver'] },
         { label: 'Recordatorios', link: '/cuentas-cobrar/recordatorios', icon: 'fa-solid fa-bell', permissions: ['cuentas.recordatorios'] }
@@ -164,6 +168,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/cuentas-pagar',
       active: false,
       permissions: ['cuentas.ver'],
+      modulo: 'cuentas_pagar',
       submenu: [
         { label: 'Deudas Pendientes', link: '/cuentas-pagar', icon: 'fa-solid fa-exclamation-triangle', permissions: ['cuentas.ver'] },
         { label: 'Nueva Cuenta', link: '/cuentas-pagar/nueva', icon: 'fa-solid fa-plus-circle', permissions: ['cuentas.crear'] }
@@ -176,12 +181,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/admin',
       active: false,
       permissions: ['usuarios.ver', 'roles.ver', 'config.general'],
+      modulo: 'usuarios',
       submenu: [
         { label: 'Identidad del Negocio', link: '/admin/negocio', icon: 'fa-solid fa-id-card', permissions: ['config.general'] },
         { label: 'Usuarios', link: '/admin/usuarios', icon: 'fa-solid fa-users', permissions: ['usuarios.ver'] },
         { label: 'Roles', link: '/admin/roles', icon: 'fa-solid fa-user-tag', permissions: ['roles.ver'] },
         { label: 'Sistema', link: '/admin/sistema', icon: 'fa-solid fa-cogs', permissions: ['config.general'] },
-        { label: 'Fiscal (DGII)', link: '/admin/fiscal', icon: 'fa-solid fa-file-invoice', permissions: ['config.general'] }
+        { label: 'Gestión de Negocios', link: '/admin/developer/negocios', icon: 'fa-solid fa-server', permissions: ['config.general'], superAdminOnly: true },
+        { label: 'Fiscal (DGII)', link: '/admin/fiscal', icon: 'fa-solid fa-file-invoice', permissions: ['config.general'], modulo: 'fiscal' }
       ],
       expanded: false
     },
@@ -191,6 +198,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/reportes',
       active: false,
       permissions: ['reportes.ventas', 'reportes.inventario', 'reportes.caja', 'reportes.clientes'],
+      modulo: 'reportes',
       submenu: [
         { label: 'Reportes de Ventas', link: '/reportes/ventas', icon: 'fa-solid fa-chart-line', permissions: ['reportes.ventas'] },
         { label: 'Reportes de Inventario', link: '/reportes/inventario', icon: 'fa-solid fa-boxes-stacked', permissions: ['reportes.inventario'] },
@@ -201,31 +209,59 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
   ];
 
-  // Items filtrados por permisos
+  // Items filtrados por permisos y módulos
   menuItemsFiltrados: any[] = [];
+  quickActionsFiltrados: any[] = [];
 
-  // Filtrar menú por permisos
+  // Filtrar menú por permisos y módulos activos del negocio
   filtrarMenuPorPermisos() {
     if (!this.usuario) {
       this.menuItemsFiltrados = [];
+      this.quickActionsFiltrados = [];
       return;
     }
 
+    const esSuperAdmin = this.authService.isSuperAdmin();
+
+    // Filtrar quick actions
+    this.quickActionsFiltrados = this.quickActions.filter(action => {
+      const tienePermiso = action.permissions.some((p: string) => this.authService.tienePermiso(p));
+      const tieneModulo = esSuperAdmin || !action.modulo || this.negociosService.tieneModulo(action.modulo as any);
+      return tienePermiso && tieneModulo;
+    });
+
     this.menuItemsFiltrados = this.menuItems.filter(item => {
-      // Verificar si el usuario tiene alguno de los permisos requeridos para el item principal
+      // 1. Verificar permisos
       const tienePermisoItem = !item.permissions ||
         item.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
 
       if (!tienePermisoItem) return false;
 
-      // Si tiene submenu, filtrar los subitems
+      // 2. Verificar módulo del item principal (SuperAdmin ve todo)
+      if (!esSuperAdmin && (item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
+        return false;
+      }
+
+      // 3. Si tiene submenu, filtrar los subitems
       if (item.submenu) {
         item.submenu = item.submenu.filter((subitem: any) => {
-          return !subitem.permissions ||
+          // Verificar permiso del subitem
+          const tienePermisoSub = !subitem.permissions ||
             subitem.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
+          if (!tienePermisoSub) return false;
+
+          // Verificar restricción de SuperAdmin
+          if (subitem.superAdminOnly && !esSuperAdmin) return false;
+
+          // Verificar módulo del subitem
+          if (!esSuperAdmin && subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
+            return false;
+          }
+
+          return true;
         });
 
-        // Si no quedan subitems después del filtro, ocultar el item principal
+        // Si no quedan subitems, ocultar el item principal
         if (item.submenu.length === 0) return false;
       }
 

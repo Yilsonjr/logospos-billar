@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Categoria, CrearCategoria } from '../models/categorias.model';
 import { BehaviorSubject } from 'rxjs';
 
@@ -14,7 +15,10 @@ export class CategoriasService {
   // Observable público para que los componentes se suscriban
   public categorias$ = this.categoriasSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) {
     // Cargar categorías al inicializar el servicio
     this.cargarCategorias();
   }
@@ -81,7 +85,8 @@ export class CategoriasService {
           nombre: categoria.nombre,
           descripcion: categoria.descripcion || null,
           color: categoria.color,
-          activo: categoria.activo !== false // Usar activo directamente
+          activo: categoria.activo !== false,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
         }])
         .select() // Devolver el registro creado
         .single(); // Esperar un solo resultado

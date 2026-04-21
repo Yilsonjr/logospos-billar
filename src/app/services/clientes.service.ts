@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Cliente, CrearCliente } from '../models/clientes.model';
 import { BehaviorSubject } from 'rxjs';
 import { OfflineService } from './offline.service';
@@ -13,7 +14,8 @@ export class ClientesService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private authService: AuthService
   ) {
     this.iniciarCargaHibrida();
   }
@@ -97,7 +99,8 @@ export class ClientesService {
         .from('clientes')
         .insert([{
           ...cliente,
-          balance_pendiente: 0 // Inicializar balance en 0
+          balance_pendiente: 0, // Inicializar balance en 0
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
         }])
         .select()
         .single();

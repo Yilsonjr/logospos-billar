@@ -1,0 +1,78 @@
+/* Dashboard Developer Styles */
+.developer-container {
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+.text-indigo {
+    color: #6366f1;
+}
+
+.btn-indigo {
+    background-color: #6366f1;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-indigo:hover {
+    background-color: #4f46e5;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.shadow-hover:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-2px);
+}
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+.border-start-danger {
+    border-left: 4px solid #ef4444 !important;
+}
+
+.card {
+    border-radius: 16px;
+}
+
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Modal Customization */
+.modal-content {
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Animations (using standard animation or animate.css if available) */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.animate__fadeIn {
+    animation: fadeIn 0.5s ease-out;
+}

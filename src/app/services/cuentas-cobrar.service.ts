@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { CuentaPorCobrar, PagoCuenta, CuentaConPagos, CrearCuentaPorCobrar, CrearPagoCuenta } from '../models/cuentas-cobrar.model';
 import { BehaviorSubject } from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,10 @@ export class CuentasCobrarService {
   private cuentasSubject = new BehaviorSubject<CuentaPorCobrar[]>([]);
   public cuentas$ = this.cuentasSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) { }
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) { }
 
   // Cargar todas las cuentas
   async cargarCuentas(): Promise<void> {
@@ -85,7 +89,10 @@ export class CuentasCobrarService {
 
       const { data, error } = await this.supabaseService.client
         .from('cuentas_por_cobrar')
-        .insert([cuenta])
+        .insert([{
+          ...cuenta,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
+        }])
         .select()
         .single();
 
@@ -112,7 +119,10 @@ export class CuentasCobrarService {
       // 1. Insertar el pago
       const { data, error } = await this.supabaseService.client
         .from('pagos_cuentas')
-        .insert([pago])
+        .insert([{
+          ...pago,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
+        }])
         .select()
         .single();
 

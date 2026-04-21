@@ -18,7 +18,7 @@ export class BootstrapService {
         this.verificarSupabase(),
         new Promise<boolean>((resolve) => setTimeout(() => {
           resolve(false);
-        }, 2000))
+        }, 5000)) // Aumentado a 5 segundos para db de prueba
       ]);
 
       if (supabaseDisponible) {
@@ -49,17 +49,19 @@ export class BootstrapService {
 
   private async verificarSupabase(): Promise<boolean> {
     try {
-      // Intentar una consulta simple para verificar conectividad
-      const { data, error } = await this.supabaseService.client
+      // Simplemente intentar conectar y ver si responde
+      const { error } = await this.supabaseService.client
         .from('roles')
-        .select('count')
+        .select('*')
         .limit(1);
 
-      if (error) {
-        return false;
+      // Si el error es que no hay filas, está bien (la tabla existe)
+      // Si el error es de conexión o autenticación, devolvemos false
+      if (error && (error.code === 'PGRST116' || error.message.includes('No rows'))) {
+        return true;
       }
 
-      return true;
+      return !error;
 
     } catch (error) {
       return false;

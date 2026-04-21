@@ -41,6 +41,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     password: '',
     telefono: '',
     rol_id: 0,
+    negocio_id: '',
     activo: true
   };
 
@@ -207,6 +208,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       password: '',
       telefono: '',
       rol_id: this.roles.length > 0 ? this.roles[0].id! : 0,
+      negocio_id: this.authService.getNegocioId() || '',
       activo: true
     };
     this.mostrarModal = true;
@@ -233,6 +235,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       password: '', // No mostrar contraseña actual
       telefono: usuario.telefono || '',
       rol_id: usuario.rol_id,
+      negocio_id: usuario.negocio_id || this.authService.getNegocioId() || '',
       activo: usuario.activo
     };
     this.mostrarModal = true;

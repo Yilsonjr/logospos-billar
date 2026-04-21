@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { Usuario, Rol, CrearUsuario, ActualizarUsuario, CrearRol, ROLES_PREDEFINIDOS } from '../models/usuario.model';
 import * as bcrypt from 'bcryptjs';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,10 @@ export class UsuariosService {
   private rolesSubject = new BehaviorSubject<Rol[]>([]);
   public roles$ = this.rolesSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) { }
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) { }
 
   // ==================== USUARIOS ====================
 
@@ -64,7 +68,8 @@ export class UsuariosService {
         .from('usuarios')
         .insert([{
           ...usuario,
-          password: passwordHasheada
+          password: passwordHasheada,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
         }])
         .select(`
           *,
