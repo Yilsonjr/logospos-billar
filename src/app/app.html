@@ -12,8 +12,24 @@
     </div>
   </div>
 
+  <!-- Bloqueo de licencia -->
+  <div *ngIf="licencia?.bloqueado" class="license-blocked-screen">
+    <div class="license-content">
+      <i class="fa-solid fa-lock license-icon"></i>
+      <h2>Acceso Restringido</h2>
+      <p>{{ licencia?.mensaje }}</p>
+      <hr>
+      <p class="license-contact">Por favor, contacte con soporte técnico para reactivar su servicio.</p>
+    </div>
+  </div>
+
   <!-- Aplicación normal -->
-  <div *ngIf="!isInitializing">
+  <div *ngIf="!isInitializing && !licencia?.bloqueado">
+    <!-- Banner de advertencia (No bloqueante) -->
+    <div *ngIf="licencia?.mensaje && !licencia?.bloqueado" class="license-warning-banner">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      {{ licencia?.mensaje }}
+    </div>
     <!-- Sidebar solo si está autenticado -->
     <app-navbar *ngIf="isAuthenticated"></app-navbar>
 

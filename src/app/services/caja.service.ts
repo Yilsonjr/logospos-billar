@@ -124,7 +124,8 @@ export class CajaService {
       // Forzar usuario actual
       const cajaNueva = {
         ...caja,
-        usuario_apertura: usuarioActual.username
+        usuario_apertura: usuarioActual.username,
+        negocio_id: this.authService.getNegocioId() // Multi-tenant support
       };
 
       const { data, error } = await this.supabaseService.client
@@ -199,7 +200,10 @@ export class CajaService {
 
       const { data, error } = await this.supabaseService.client
         .from('movimientos_caja')
-        .insert([movimiento])
+        .insert([{
+          ...movimiento,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
+        }])
         .select()
         .single();
 
@@ -237,7 +241,10 @@ export class CajaService {
 
       const { error } = await this.supabaseService.client
         .from('arqueos_caja')
-        .insert([arqueo]);
+        .insert([{
+          ...arqueo,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
+        }]);
 
       if (error) throw error;
 

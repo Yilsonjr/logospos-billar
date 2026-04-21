@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import {
   CuentaPorPagar,
   PagoCuentaPagar,
@@ -32,7 +33,10 @@ export class CuentasPagarService {
   });
   public resumen$ = this.resumenSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) { }
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) { }
 
   // ==================== CUENTAS POR PAGAR ====================
 
@@ -119,7 +123,8 @@ export class CuentasPagarService {
         monto_pendiente: cuenta.monto_total,
         estado: 'pendiente' as const,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        negocio_id: this.authService.getNegocioId() // Multi-tenant support
       };
 
       const { data, error } = await this.supabaseService.client
@@ -211,7 +216,8 @@ export class CuentasPagarService {
         .from('pagos_cuentas_pagar')
         .insert([{
           ...pago,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
         }])
         .select()
         .single();

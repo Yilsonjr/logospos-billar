@@ -9,6 +9,7 @@ export interface Usuario {
   avatar?: string;
   rol_id: number;
   rol?: Rol; // Para mostrar en UI
+  negocio_id: string; // ID del negocio al que pertenece (UUID)
   activo: boolean;
   ultimo_acceso?: string;
   created_at?: string;
@@ -46,33 +47,33 @@ export type CrearRol = Omit<Rol, 'id' | 'created_at' | 'updated_at'>;
 export const PERMISOS_SISTEMA = {
   // Dashboard
   'dashboard.ver': 'Ver Dashboard',
-  
+
   // Inventario
   'inventario.ver': 'Ver Inventario',
   'inventario.crear': 'Crear Productos',
   'inventario.editar': 'Editar Productos',
   'inventario.eliminar': 'Eliminar Productos',
   'inventario.exportar': 'Exportar Inventario',
-  
+
   // Proveedores
   'proveedores.ver': 'Ver Proveedores',
   'proveedores.crear': 'Crear Proveedores',
   'proveedores.editar': 'Editar Proveedores',
   'proveedores.eliminar': 'Eliminar Proveedores',
-  
+
   // Clientes
   'clientes.ver': 'Ver Clientes',
   'clientes.crear': 'Crear Clientes',
   'clientes.editar': 'Editar Clientes',
   'clientes.eliminar': 'Eliminar Clientes',
-  
+
   // Ventas
   'ventas.ver': 'Ver Ventas',
   'ventas.crear': 'Realizar Ventas',
   'ventas.cancelar': 'Cancelar Ventas',
   'ventas.historial': 'Ver Historial de Ventas',
   'ventas.exportar': 'Exportar Ventas',
-  
+
   // Caja
   'caja.ver': 'Ver Caja',
   'caja.abrir': 'Abrir Caja',
@@ -80,13 +81,13 @@ export const PERMISOS_SISTEMA = {
   'caja.movimientos': 'Gestionar Movimientos',
   'caja.arqueo': 'Realizar Arqueo',
   'caja.historial': 'Ver Historial de Caja',
-  
+
   // Cuentas por Cobrar
   'cuentas.ver': 'Ver Cuentas por Cobrar',
   'cuentas.pagos': 'Registrar Pagos',
   'cuentas.recordatorios': 'Gestionar Recordatorios',
   'cuentas.exportar': 'Exportar Cuentas',
-  
+
   // Usuarios y Roles
   'usuarios.ver': 'Ver Usuarios',
   'usuarios.crear': 'Crear Usuarios',
@@ -96,13 +97,13 @@ export const PERMISOS_SISTEMA = {
   'roles.crear': 'Crear Roles',
   'roles.editar': 'Editar Roles',
   'roles.eliminar': 'Eliminar Roles',
-  
+
   // Reportes
   'reportes.ventas': 'Reportes de Ventas',
   'reportes.inventario': 'Reportes de Inventario',
   'reportes.caja': 'Reportes de Caja',
   'reportes.clientes': 'Reportes de Clientes',
-  
+
   // Configuración
   'config.general': 'Configuración General',
   'config.backup': 'Backup y Restauración',

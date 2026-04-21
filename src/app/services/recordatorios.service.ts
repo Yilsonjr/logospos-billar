@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { Recordatorio, CrearRecordatorio, PLANTILLAS_RECORDATORIO } from '../models/recordatorios.model';
 import { BehaviorSubject } from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,10 @@ export class RecordatoriosService {
   private recordatoriosSubject = new BehaviorSubject<Recordatorio[]>([]);
   public recordatorios$ = this.recordatoriosSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) { }
 
   // Cargar recordatorios
   async cargarRecordatorios(): Promise<void> {
@@ -44,7 +48,10 @@ export class RecordatoriosService {
     try {
       const { data, error } = await this.supabaseService.client
         .from('recordatorios')
-        .insert([recordatorio])
+        .insert([{
+          ...recordatorio,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
+        }])
         .select()
         .single();
 
@@ -128,7 +135,7 @@ export class RecordatoriosService {
 
       // Simular envío según el canal
       let exitoso = true;
-      
+
       switch (recordatorio.canal) {
         case 'whatsapp':
           exitoso = await this.enviarWhatsApp(recordatorio);
@@ -175,10 +182,10 @@ export class RecordatoriosService {
       // Por ahora, simular el envío
       console.log('📱 Enviando WhatsApp a:', recordatorio.telefono);
       console.log('💬 Mensaje:', recordatorio.mensaje);
-      
+
       // Simular delay de envío
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Simular 95% de éxito
       return Math.random() > 0.05;
     } catch (error) {
@@ -197,7 +204,7 @@ export class RecordatoriosService {
       // En producción, aquí integrarías con un servicio de email
       console.log('📧 Enviando Email a:', recordatorio.email);
       console.log('💬 Mensaje:', recordatorio.mensaje);
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
       return Math.random() > 0.1; // 90% de éxito
     } catch (error) {
@@ -215,7 +222,7 @@ export class RecordatoriosService {
 
       console.log('📱 Enviando SMS a:', recordatorio.telefono);
       console.log('💬 Mensaje:', recordatorio.mensaje);
-      
+
       await new Promise(resolve => setTimeout(resolve, 800));
       return Math.random() > 0.15; // 85% de éxito
     } catch (error) {
@@ -227,11 +234,11 @@ export class RecordatoriosService {
   // Generar mensaje usando plantillas
   generarMensajeRecordatorio(plantilla: keyof typeof PLANTILLAS_RECORDATORIO, variables: Record<string, string>): string {
     let mensaje = PLANTILLAS_RECORDATORIO[plantilla];
-    
+
     Object.entries(variables).forEach(([key, value]) => {
       mensaje = mensaje.replace(new RegExp(`{${key}}`, 'g'), value);
     });
-    
+
     return mensaje;
   }
 

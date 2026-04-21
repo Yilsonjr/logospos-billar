@@ -3,6 +3,7 @@ import { SupabaseService } from './supabase.service';
 import { Productos } from '../models/productos.model';
 import { Observable, from, BehaviorSubject } from 'rxjs';
 import { OfflineService } from './offline.service';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,8 @@ export class ProductosService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private authService: AuthService
   ) {
     // Carga inicial: Primero desde caché local, luego desde Supabase
     this.iniciarCarga().catch(err => console.error('Error in initial load:', err));
@@ -130,7 +132,8 @@ export class ProductosService {
           stock_minimo: producto.stock_minimo,
           unidad_medida: producto.unidad,
           imagen_url: producto.imagen_url || null,
-          imagen_nombre: producto.imagen_nombre
+          imagen_nombre: producto.imagen_nombre,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
         }])
         .select()
         .single();

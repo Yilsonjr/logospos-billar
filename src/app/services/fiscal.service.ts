@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { ConfiguracionFiscal, SecuenciaNCF, TipoComprobante } from '../models/fiscal.model';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable({
     providedIn: 'root'
@@ -10,7 +11,10 @@ export class FiscalService {
     private configSubject = new BehaviorSubject<ConfiguracionFiscal | null>(null);
     public config$ = this.configSubject.asObservable();
 
-    constructor(private supabaseService: SupabaseService) {
+    constructor(
+        private supabaseService: SupabaseService,
+        private authService: AuthService
+    ) {
         this.cargarConfiguracion();
     }
 
@@ -36,7 +40,11 @@ export class FiscalService {
             const current = this.configSubject.value;
             const { data, error } = await this.supabaseService.client
                 .from('configuracion_fiscal')
-                .upsert({ id: 1, ...config }) // Asumimos ID 1 siempre
+                .upsert({
+                    id: current?.id || 1,
+                    ...config,
+                    negocio_id: this.authService.getNegocioId() // Multi-tenant support
+                })
                 .select()
                 .single();
 
@@ -63,7 +71,10 @@ export class FiscalService {
     async guardarSecuencia(secuencia: Partial<SecuenciaNCF>): Promise<SecuenciaNCF> {
         const { data, error } = await this.supabaseService.client
             .from('secuencias_ncf')
-            .upsert(secuencia)
+            .upsert({
+                ...secuencia,
+                negocio_id: this.authService.getNegocioId() // Multi-tenant support
+            })
             .select()
             .single();
 
@@ -80,7 +91,10 @@ export class FiscalService {
 
         try {
             const { data, error } = await this.supabaseService.client
-                .rpc('obtener_siguiente_ncf', { tipo_solicitado: tipo });
+                .rpc('obtener_siguiente_ncf', {
+                    tipo_solicitado: tipo,
+                    p_negocio_id: this.authService.getNegocioId() // Pass negocio_id to RPC
+                });
 
             if (error) throw error;
             // Forzar mayúsculas según estándar NCF dominicano (Bxx...)

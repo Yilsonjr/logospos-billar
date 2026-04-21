@@ -7,7 +7,7 @@ import { CrearUsuario } from '../models/usuario.model';
 })
 export class InitService {
 
-  constructor(private usuariosService: UsuariosService) {}
+  constructor(private usuariosService: UsuariosService) { }
 
   // Inicializar datos de demostración
   async inicializarDatosDemo(): Promise<void> {
@@ -58,6 +58,7 @@ export class InitService {
         password: 'admin123',
         telefono: '+1234567890',
         rol_id: roles['Super Administrador'],
+        negocio_id: '00000000-0000-0000-0000-000000000000',
         activo: true
       },
       {
@@ -68,6 +69,7 @@ export class InitService {
         password: 'cajero123',
         telefono: '+1234567891',
         rol_id: roles['Cajero'],
+        negocio_id: '00000000-0000-0000-0000-000000000000',
         activo: true
       },
       {
@@ -78,6 +80,7 @@ export class InitService {
         password: 'vendedor123',
         telefono: '+1234567892',
         rol_id: roles['Vendedor'],
+        negocio_id: '00000000-0000-0000-0000-000000000000',
         activo: true
       },
       {
@@ -88,6 +91,7 @@ export class InitService {
         password: 'supervisor123',
         telefono: '+1234567893',
         rol_id: roles['Administrador'],
+        negocio_id: '00000000-0000-0000-0000-000000000000',
         activo: true
       },
       {
@@ -98,6 +102,7 @@ export class InitService {
         password: 'consulta123',
         telefono: '+1234567894',
         rol_id: roles['Solo Lectura'],
+        negocio_id: '00000000-0000-0000-0000-000000000000',
         activo: true
       }
     ];
@@ -106,7 +111,7 @@ export class InitService {
       try {
         // Verificar si el usuario ya existe
         const existeUsuario = await this.verificarUsuarioExiste(usuarioData.username);
-        
+
         if (!existeUsuario) {
           await this.usuariosService.crearUsuario(usuarioData);
           console.log(`✅ Usuario creado: ${usuarioData.username}`);

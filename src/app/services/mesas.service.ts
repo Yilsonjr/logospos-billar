@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Mesa } from '../models/mesa.model';
 import { BehaviorSubject } from 'rxjs';
 
@@ -10,7 +11,10 @@ export class MesasService {
     private mesasSubject = new BehaviorSubject<Mesa[]>([]);
     public mesas$ = this.mesasSubject.asObservable();
 
-    constructor(private supabaseService: SupabaseService) {
+    constructor(
+        private supabaseService: SupabaseService,
+        private authService: AuthService
+    ) {
         this.cargarMesas();
         this.suscribirMesas();
     }
@@ -41,7 +45,10 @@ export class MesasService {
     async crearMesa(mesa: Partial<Mesa>): Promise<Mesa> {
         const { data, error } = await this.supabaseService.client
             .from('mesas')
-            .insert([mesa])
+            .insert([{
+                ...mesa,
+                negocio_id: this.authService.getNegocioId() // Multi-tenant support
+            }])
             .select()
             .single();
 

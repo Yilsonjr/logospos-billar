@@ -7,6 +7,7 @@ import { AuthService } from './services/auth.service';
 import { SidebarService } from './services/sidebar.service';
 import { BootstrapService } from './services/bootstrap.service';
 import { NotificacionesAutoService } from './services/notificaciones-auto.service';
+import { LicenciaService, EstadoLicencia } from './services/licencia.service';
 
 @Component({
   selector: 'app-root',
@@ -19,12 +20,14 @@ export class App implements OnInit {
   isAuthenticated = false;
   isInitializing = true;
   sidebarCollapsed = false;
+  licencia: EstadoLicencia | null = null;
 
   constructor(
     private authService: AuthService,
     private sidebarService: SidebarService,
     private bootstrapService: BootstrapService,
     private notificacionesAutoService: NotificacionesAutoService,
+    private licenciaService: LicenciaService,
     private router: Router
   ) { }
 
@@ -39,6 +42,11 @@ export class App implements OnInit {
     // 2. Configurar suscripción al estado del sidebar
     this.sidebarService.isCollapsed$.subscribe(collapsed => {
       this.sidebarCollapsed = collapsed;
+    });
+
+    // 3. Configurar suscripción a la licencia
+    this.licenciaService.estado$.subscribe(estado => {
+      this.licencia = estado;
     });
 
     // 3. Terminar carga inmediatamente

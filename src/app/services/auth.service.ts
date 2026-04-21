@@ -5,6 +5,7 @@ import { Usuario, Rol, LoginCredentials, LoginResponse, AuthState, Sesion } from
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import * as bcrypt from 'bcryptjs';
+import { NegociosService } from './negocios.service';
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +22,8 @@ export class AuthService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private router: Router
+    private router: Router,
+    private negociosService: NegociosService
   ) {
     this.initializeAuth();
   }
@@ -50,6 +52,9 @@ export class AuthService {
         if (isValid) {
           // Cargar permisos actualizados
           const permisos = await this.cargarPermisosUsuario(usuario.id);
+
+          // Cargar datos del negocio (Tenant)
+          await this.negociosService.cargarNegocioActual(usuario.negocio_id);
 
           // Actualizar estado con permisos confirmados
           this.authStateSubject.next({
@@ -142,6 +147,12 @@ export class AuthService {
         sessionStorage.setItem('logos_token', token);
         sessionStorage.setItem('logos_usuario', JSON.stringify(usuario));
       }
+
+      // Guardar negocio_id por separado para fácil acceso
+      localStorage.setItem('logos_negocio_id', usuario.negocio_id);
+
+      // Cargar datos del negocio
+      await this.negociosService.cargarNegocioActual(usuario.negocio_id);
 
       // Actualizar estado
       this.authStateSubject.next({
@@ -269,6 +280,7 @@ export class AuthService {
       localStorage.removeItem('logos_usuario');
       sessionStorage.removeItem('logos_token');
       sessionStorage.removeItem('logos_usuario');
+      localStorage.removeItem('logos_negocio_id'); // Clear negocio_id on logout
 
       // Actualizar estado
       this.authStateSubject.next({
@@ -286,6 +298,16 @@ export class AuthService {
     }
   }
 
+  // Obtener negocio_id actual
+  getNegocioId(): string | null {
+    return this.authStateSubject.value.usuario?.negocio_id || localStorage.getItem('logos_negocio_id');
+  }
+
+  // Verificar si es el administrador global del sistema
+  isSuperAdmin(): boolean {
+    const negocioId = this.getNegocioId();
+    return negocioId === '00000000-0000-0000-0000-000000000000';
+  }
   // Verificar si el usuario tiene un permiso específico
   tienePermiso(permiso: string): boolean {
     const currentState = this.authStateSubject.value;

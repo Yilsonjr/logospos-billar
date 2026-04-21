@@ -3,6 +3,7 @@ import { SupabaseService } from './supabase.service';
 import { PedidoMesa, PedidoMesaDetalle } from '../models/mesa.model';
 import { BehaviorSubject } from 'rxjs';
 import { MesasService } from './mesas.service';
+import { AuthService } from './auth.service';
 
 @Injectable({
     providedIn: 'root'
@@ -13,7 +14,8 @@ export class PedidosMesaService {
 
     constructor(
         private supabaseService: SupabaseService,
-        private mesasService: MesasService
+        private mesasService: MesasService,
+        private authService: AuthService
     ) {
         this.cargarPedidosActivos();
         this.suscribirPedidos();
@@ -75,7 +77,8 @@ export class PedidosMesaService {
                     usuario_id: usuarioId,
                     nombre_cliente: nombreCliente || null,
                     estado: 'abierto',
-                    total: 0
+                    total: 0,
+                    negocio_id: this.authService.getNegocioId() // Multi-tenant support
                 }])
                 .select()
                 .single();
@@ -97,7 +100,10 @@ export class PedidosMesaService {
         try {
             const { error } = await this.supabaseService.client
                 .from('pedidos_mesa_detalle')
-                .insert([detalle]);
+                .insert([{
+                    ...detalle,
+                    negocio_id: this.authService.getNegocioId() // Multi-tenant support
+                }]);
 
             if (error) throw error;
 

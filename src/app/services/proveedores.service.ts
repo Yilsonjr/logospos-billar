@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Proveedor, CrearProveedor } from '../models/proveedores.model';
 import { BehaviorSubject } from 'rxjs';
 
@@ -10,7 +11,10 @@ export class ProveedoresService {
   private proveedoresSubject = new BehaviorSubject<Proveedor[]>([]);
   public proveedores$ = this.proveedoresSubject.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) {
     // No cargar automáticamente en el constructor
     // Dejar que cada componente llame a cargarProveedores() cuando lo necesite
   }
@@ -19,7 +23,7 @@ export class ProveedoresService {
   async cargarProveedores(): Promise<void> {
     try {
       console.log('🔄 Cargando proveedores...');
-      
+
       const { data, error } = await this.supabaseService.client
         .from('proveedores')
         .select('*')
@@ -33,7 +37,7 @@ export class ProveedoresService {
 
       console.log('✅ Proveedores cargados:', data?.length || 0);
       this.proveedoresSubject.next(data || []);
-      
+
     } catch (error) {
       console.error('💥 Error en cargarProveedores:', error);
       throw error;
@@ -44,7 +48,7 @@ export class ProveedoresService {
   async cargarTodosProveedores(): Promise<Proveedor[]> {
     try {
       console.log('🔄 Cargando todos los proveedores...');
-      
+
       const { data, error } = await this.supabaseService.client
         .from('proveedores')
         .select('*')
@@ -57,7 +61,7 @@ export class ProveedoresService {
 
       console.log('✅ Todos los proveedores cargados:', data?.length || 0);
       return data || [];
-      
+
     } catch (error) {
       console.error('💥 Error en cargarTodosProveedores:', error);
       throw error;
@@ -68,10 +72,13 @@ export class ProveedoresService {
   async crearProveedor(proveedor: CrearProveedor): Promise<Proveedor> {
     try {
       console.log('🔄 Creando proveedor:', proveedor.nombre);
-      
+
       const { data, error } = await this.supabaseService.client
         .from('proveedores')
-        .insert([proveedor])
+        .insert([{
+          ...proveedor,
+          negocio_id: this.authService.getNegocioId() // Multi-tenant support
+        }])
         .select()
         .single();
 
@@ -83,7 +90,7 @@ export class ProveedoresService {
       console.log('✅ Proveedor creado:', data.nombre);
       await this.cargarProveedores();
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en crearProveedor:', error);
       throw error;
@@ -94,7 +101,7 @@ export class ProveedoresService {
   async actualizarProveedor(id: number, proveedor: Partial<Proveedor>): Promise<Proveedor> {
     try {
       console.log('🔄 Actualizando proveedor ID:', id);
-      
+
       const { data, error } = await this.supabaseService.client
         .from('proveedores')
         .update({
@@ -113,7 +120,7 @@ export class ProveedoresService {
       console.log('✅ Proveedor actualizado:', data.nombre);
       await this.cargarProveedores();
       return data;
-      
+
     } catch (error) {
       console.error('💥 Error en actualizarProveedor:', error);
       throw error;
@@ -124,10 +131,10 @@ export class ProveedoresService {
   async desactivarProveedor(id: number): Promise<void> {
     try {
       console.log('🔄 Desactivando proveedor ID:', id);
-      
+
       const { error } = await this.supabaseService.client
         .from('proveedores')
-        .update({ 
+        .update({
           activo: false,
           updated_at: new Date().toISOString()
         })
@@ -140,7 +147,7 @@ export class ProveedoresService {
 
       console.log('✅ Proveedor desactivado');
       await this.cargarProveedores();
-      
+
     } catch (error) {
       console.error('💥 Error en desactivarProveedor:', error);
       throw error;
@@ -151,7 +158,7 @@ export class ProveedoresService {
   async eliminarProveedorFisicamente(id: number): Promise<void> {
     try {
       console.log('🔄 Eliminando físicamente proveedor ID:', id);
-      
+
       const { error } = await this.supabaseService.client
         .from('proveedores')
         .delete()
@@ -164,7 +171,7 @@ export class ProveedoresService {
 
       console.log('✅ Proveedor eliminado físicamente');
       await this.cargarProveedores();
-      
+
     } catch (error) {
       console.error('💥 Error en eliminarProveedorFisicamente:', error);
       throw error;
