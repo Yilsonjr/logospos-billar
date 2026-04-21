@@ -25,6 +25,7 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
     totalVentas = 0;
     totalEfectivo = 0;
     totalTarjeta = 0;
+    totalCredito = 0;
     totalTransacciones = 0;
     ticketPromedio = 0;
     totalGanancia = 0;
@@ -106,20 +107,31 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
         this.totalVentas = 0;
         this.totalEfectivo = 0;
         this.totalTarjeta = 0;
-        this.totalTransacciones = ventasInteres.length;
+        this.totalCredito = 0;
 
-        ventasInteres.forEach(venta => {
-            if (venta.estado === 'completada') {
-                this.totalVentas += venta.total;
+        const ventasCompletadas = ventasInteres.filter(v => v.estado === 'completada');
+        this.totalTransacciones = ventasCompletadas.length;
 
-                if (venta.metodo_pago === 'efectivo') {
+        ventasCompletadas.forEach(venta => {
+            this.totalVentas += venta.total;
+
+            if (venta.metodo_pago === 'efectivo') {
+                this.totalEfectivo += venta.total;
+            } else if (venta.metodo_pago === 'tarjeta') {
+                this.totalTarjeta += venta.total;
+            } else if (venta.metodo_pago === 'credito') {
+                this.totalCredito += venta.total;
+            } else if (venta.metodo_pago === 'mixto') {
+                // Usar montos desglosados si existen, si no atribuir todo a efectivo
+                const montoEfectivo = venta.monto_efectivo || 0;
+                const montoTarjeta = venta.monto_tarjeta || 0;
+
+                if (montoEfectivo > 0 || montoTarjeta > 0) {
+                    this.totalEfectivo += montoEfectivo;
+                    this.totalTarjeta += montoTarjeta;
+                } else {
+                    // Fallback: Si no hay desglose, atribuir el total a efectivo
                     this.totalEfectivo += venta.total;
-                } else if (venta.metodo_pago === 'mixto') {
-                    // Desglose proporcional si no hay detalle exacto en BD
-                    this.totalEfectivo += (venta.monto_efectivo || venta.total / 2);
-                    this.totalTarjeta += (venta.monto_tarjeta || venta.total / 2);
-                } else if (venta.metodo_pago === 'tarjeta') {
-                    this.totalTarjeta += venta.total;
                 }
             }
         });

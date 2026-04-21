@@ -1,9 +1,10 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SupabaseService } from '../../services/supabase.service';
 import { PrintingService, TicketFormat } from '../../services/printing.service';
 import { PedidoMesa } from '../../models/mesa.model';
+import { NegociosService } from '../../services/negocios.service';
+import { Negocio } from '../../models/negocio.model';
 
 @Component({
     selector: 'app-ticket-precuenta',
@@ -17,38 +18,19 @@ export class TicketPrecuentaComponent implements OnInit {
     @Input() formato: TicketFormat = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio: any = {
-        nombre: 'LogosPOS',
-        rnc: '131-XXXXX-X',
-        telefono: '(809) 000-0000',
-        direccion: 'Cargando...'
-    };
+    negocio: Negocio | null = null;
 
     constructor(
-        private supabaseService: SupabaseService,
+        private negociosService: NegociosService,
         private printingService: PrintingService
     ) { 
         this.formato = this.printingService.currentFormat;
     }
 
     async ngOnInit() {
-        await this.cargarDatosNegocio();
-    }
-
-    async cargarDatosNegocio() {
-        try {
-            const { data } = await this.supabaseService.client
-                .from('negocios')
-                .select('*')
-                .limit(1)
-                .single();
-
-            if (data) {
-                this.negocio = data;
-            }
-        } catch (error) {
-            console.warn('No se pudo cargar la configuración del negocio.');
-        }
+        this.negociosService.negocio$.subscribe(data => {
+            this.negocio = data;
+        });
     }
 
     cambiarFormato(nuevoFormato: any) {

@@ -66,7 +66,7 @@
                     <span class="card-label">Cobro Efectivo</span>
                     <h3 class="card-value">{{ formatearMoneda(totalEfectivo) }}</h3>
                     <div class="mt-2 method-bar">
-                        <div class="method-progress bg-success" [style.width.%]="(totalEfectivo/totalVentas)*100"></div>
+                        <div class="method-progress bg-success" [style.width.%]="totalVentas > 0 ? (totalEfectivo/totalVentas)*100 : 0"></div>
                     </div>
                 </div>
             </div>
@@ -78,7 +78,19 @@
                     <span class="card-label">Tarjeta/Transferencia</span>
                     <h3 class="card-value">{{ formatearMoneda(totalTarjeta) }}</h3>
                     <div class="mt-2 method-bar">
-                        <div class="method-progress bg-info" [style.width.%]="(totalTarjeta/totalVentas)*100"></div>
+                        <div class="method-progress bg-info" [style.width.%]="totalVentas > 0 ? (totalTarjeta/totalVentas)*100 : 0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-lg" *ngIf="totalCredito > 0">
+                <div class="premium-card">
+                    <div class="stats-icon" style="background: rgba(126, 130, 153, 0.1); color: #7e8299;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <span class="card-label">Ventas a Crédito</span>
+                    <h3 class="card-value" style="color: #7e8299;">{{ formatearMoneda(totalCredito) }}</h3>
+                    <div class="mt-2 method-bar">
+                        <div class="method-progress" style="background: #7e8299;" [style.width.%]="totalVentas > 0 ? (totalCredito/totalVentas)*100 : 0"></div>
                     </div>
                 </div>
             </div>

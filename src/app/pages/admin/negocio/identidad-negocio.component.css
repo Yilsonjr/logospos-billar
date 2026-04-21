@@ -1,0 +1,46 @@
+.logo-preview-container {
+    background-image: 
+        linear-gradient(45deg, #f8f9fa 25%, transparent 25%), 
+        linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #f8f9fa 75%), 
+        linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    transition: all 0.3s ease;
+}
+
+.logo-preview-container:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+}
+
+.form-control:focus {
+    background-color: #fff !important;
+    border-color: #3699ff !important;
+}
+
+.btn-toggle-active {
+    background: #3699ff !important;
+    color: white !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+.transition-all {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Glassmorphism subtle effects */
+.card {
+    backdrop-filter: blur(10px);
+}
+
+.focus-ring:focus {
+    box-shadow: 0 0 0 0.25rem rgba(54, 153, 255, 0.15) !important;
+}

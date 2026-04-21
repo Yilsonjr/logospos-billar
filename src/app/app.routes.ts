@@ -28,6 +28,7 @@ import { UsuariosComponent } from './pages/admin/usuarios/usuarios.component';
 import { RolesComponent } from './pages/admin/roles/roles.component';
 import { SistemaComponent } from './pages/admin/sistema/sistema.component';
 import { ConfiguracionFiscalComponent } from './pages/admin/configuracion-fiscal/configuracion-fiscal.component';
+import { IdentidadNegocioComponent } from './pages/admin/negocio/identidad-negocio.component';
 
 // Componentes de Reportes
 import { ReportesVentasComponent } from './pages/reportes/ventas/reportes-ventas.component';
@@ -258,6 +259,12 @@ export const routes: Routes = [
     {
         path: 'admin/fiscal',
         component: ConfiguracionFiscalComponent,
+        canActivate: [AuthGuard, PermissionGuard],
+        data: { permissions: ['config.general'] }
+    },
+    {
+        path: 'admin/negocio',
+        component: IdentidadNegocioComponent,
         canActivate: [AuthGuard, PermissionGuard],
         data: { permissions: ['config.general'] }
     },

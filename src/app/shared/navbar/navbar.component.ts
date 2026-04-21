@@ -7,6 +7,8 @@ import { AuthService } from '../../services/auth.service';
 import { SidebarService } from '../../services/sidebar.service';
 import { OfflineService } from '../../services/offline.service';
 import { Usuario } from '../../models/usuario.model';
+import { NegociosService } from '../../services/negocios.service';
+import { Negocio } from '../../models/negocio.model';
 
 @Component({
   selector: 'app-navbar',
@@ -23,6 +25,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   subscriptions: Subscription[] = [];
   online$: Observable<boolean>;
   isSyncing$: Observable<boolean>;
+  negocio: Negocio | null = null;
 
   quickActions = [
     { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff' },
@@ -34,7 +37,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private sidebarService: SidebarService,
     private router: Router,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private negociosService: NegociosService
   ) {
     // Cargar estado inicial del sidebar
     this.isCollapsed = this.sidebarService.getCollapsed();
@@ -63,7 +67,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.autoExpandActualRoute();
     });
 
-    this.subscriptions.push(sidebarSub, authSub, routerSub);
+    const negocioSub = this.negociosService.negocio$.subscribe(data => {
+      this.negocio = data;
+    });
+
+    this.subscriptions.push(sidebarSub, authSub, routerSub, negocioSub);
   }
 
   ngOnDestroy() {
@@ -169,6 +177,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       active: false,
       permissions: ['usuarios.ver', 'roles.ver', 'config.general'],
       submenu: [
+        { label: 'Identidad del Negocio', link: '/admin/negocio', icon: 'fa-solid fa-id-card', permissions: ['config.general'] },
         { label: 'Usuarios', link: '/admin/usuarios', icon: 'fa-solid fa-users', permissions: ['usuarios.ver'] },
         { label: 'Roles', link: '/admin/roles', icon: 'fa-solid fa-user-tag', permissions: ['roles.ver'] },
         { label: 'Sistema', link: '/admin/sistema', icon: 'fa-solid fa-cogs', permissions: ['config.general'] },

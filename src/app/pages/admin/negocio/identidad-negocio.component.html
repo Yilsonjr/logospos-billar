@@ -1,0 +1,149 @@
+<div class="container-fluid py-4 min-vh-100 bg-light">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold text-dark mb-0">Identidad del Negocio</h2>
+            <p class="text-muted small">Configura el nombre, logo y datos de contacto que aparecerán en tus tickets y facturas.</p>
+        </div>
+    </div>
+
+    @if (loading) {
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+    } @else {
+    <div class="row g-4">
+        <!-- Columna Izquierda: Logo y Previsualización -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden text-center">
+                <div class="card-header bg-white border-0 py-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">Logo del Negocio</h5>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <div class="logo-preview-container mx-auto mb-4 d-flex align-items-center justify-content-center bg-light rounded-4 shadow-sm border"
+                        style="width: 200px; height: 200px; position: relative; overflow: hidden;">
+                        @if (logoPreview) {
+                        <img [src]="logoPreview" alt="Logo Preview" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                        <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle shadow-sm"
+                            (click)="eliminarLogo()" title="Eliminar Logo">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                        } @else {
+                        <div class="text-muted text-center p-3">
+                            <i class="fa-solid fa-image fs-1 mb-2 opacity-25"></i>
+                            <p class="small mb-0">Sin Logo</p>
+                        </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="logoUpload" class="btn btn-outline-primary w-100 fw-bold rounded-3 py-2 cursor-pointer transition-all hover-shadow">
+                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> {{ logoPreview ? 'Cambiar Logo' : 'Subir Logo' }}
+                            <input type="file" id="logoUpload" (change)="onFileSelected($event)" accept="image/*" class="d-none">
+                        </label>
+                        <p class="text-muted small mt-2 mb-0">Recomendado: 512x512px. JPG o PNG.</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-light-subtle border-0 py-3 text-start small">
+                    <i class="fa-solid fa-info-circle me-1 text-primary"></i> El logo se imprimirá en el encabezado de todos tus tickets.
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Formulario de Datos -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">Información Comercial</h5>
+                    <i class="fa-solid fa-address-card text-muted opacity-50 fs-4"></i>
+                </div>
+                <div class="card-body px-4 pt-0">
+                    <form [formGroup]="negocioForm" (ngSubmit)="guardarCambios()">
+                        <div class="row g-3">
+                            <!-- Nombre -->
+                            <div class="col-md-7">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        id="floatNombre" formControlName="nombre" placeholder="Nombre Comercial">
+                                    <label for="floatNombre" class="small fw-bold">Nombre del Negocio</label>
+                                    @if (negocioForm.get('nombre')?.touched && negocioForm.get('nombre')?.invalid) {
+                                    <div class="text-danger small mt-1 animate__animated animate__fadeIn">El nombre es obligatorio.</div>
+                                    }
+                                </div>
+                            </div>
+                            <!-- RNC -->
+                            <div class="col-md-5">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        id="floatRNC" formControlName="rnc" placeholder="RNC/Cédula">
+                                    <label for="floatRNC" class="small fw-bold">RNC / Cédula</label>
+                                </div>
+                            </div>
+
+                            <!-- Lema -->
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        id="floatLema" formControlName="lema" placeholder="Slogan/Lema">
+                                    <label for="floatLema" class="small fw-bold">Slogan / Lema (Opcional)</label>
+                                </div>
+                            </div>
+
+                            <!-- Teléfono -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="tel" class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        id="floatTel" formControlName="telefono" placeholder="Teléfono">
+                                    <label for="floatTel" class="small fw-bold">Teléfono de contacto</label>
+                                </div>
+                            </div>
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="email" class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        id="floatEmail" formControlName="email" placeholder="Email">
+                                    <label for="floatEmail" class="small fw-bold">Correo Electrónico</label>
+                                </div>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <textarea class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        style="height: 100px" id="floatDir" formControlName="direccion" placeholder="Dirección"></textarea>
+                                    <label for="floatDir" class="small fw-bold">Dirección Completa</label>
+                                </div>
+                            </div>
+
+                            <!-- Web -->
+                            <div class="col-12">
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control bg-light border-0 rounded-3 shadow-none focus-ring"
+                                        id="floatWeb" formControlName="web" placeholder="Sitio Web">
+                                    <label for="floatWeb" class="small fw-bold">Sitio Web / Redes Sociales</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botón de Acción -->
+                        <div class="d-flex justify-content-end gap-3 mt-4 border-top pt-4">
+                            <button type="button" class="btn btn-light px-4 py-2 rounded-3 fw-bold" [disabled]="saving" (click)="cargarDatos()">
+                                Descartar Cambios
+                            </button>
+                            <button type="submit" class="btn btn-primary px-5 py-2 rounded-3 fw-bold shadow-sm d-flex align-items-center gap-2"
+                                [disabled]="saving || negocioForm.invalid">
+                                @if (saving) {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                }
+                                <i class="fa-solid fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>

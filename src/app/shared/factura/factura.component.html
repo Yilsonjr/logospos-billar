@@ -33,11 +33,12 @@
 <ng-template #receiptTemplate>
     <div class="receipt-container" [ngClass]="'format-' + formato">
         <!-- Header -->
-        <div class="receipt-header">
+        <div class="receipt-header text-center" *ngIf="negocio">
+            <img *ngIf="negocio.logo_url" [src]="negocio.logo_url" alt="Logo" class="ticket-logo mb-2" style="max-width: 80px; height: auto;">
             <h2 class="business-name">{{ negocio.nombre }}</h2>
-            <p class="business-info">RNC: {{ negocio.rnc }}</p>
-            <p class="business-info">{{ negocio.direccion }}</p>
-            <p class="business-info">Tel: {{ negocio.telefono }}</p>
+            <p class="business-info" *ngIf="negocio.rnc">RNC: {{ negocio.rnc }}</p>
+            <p class="business-info" *ngIf="negocio.direccion">{{ negocio.direccion }}</p>
+            <p class="business-info" *ngIf="negocio.telefono">Tel: {{ negocio.telefono }}</p>
             <div class="separator-double"></div>
             <h3 class="receipt-title">FACTURA DE VENTA</h3>
             <div class="separator"></div>
@@ -134,10 +135,9 @@
             </table>
         </div>
 
-        <!-- Footer -->
-        <div class="receipt-footer">
+        <div class="receipt-footer" *ngIf="negocio">
             <div class="separator"></div>
-            <p class="lema">{{ negocio.lema }}</p>
+            <p class="lema" *ngIf="negocio.lema">{{ negocio.lema }}</p>
             <p class="footer-msg">Desarrollado por LogosPOS</p>
         </div>
     </div>

@@ -143,9 +143,15 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   actualizarVentasStats(ventas: any[]) {
-    const hoy = new Date().toISOString().split('T')[0];
+    // Usar fecha local (no UTC) para comparar con 'hoy'
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${(ahora.getMonth() + 1).toString().padStart(2, '0')}-${ahora.getDate().toString().padStart(2, '0')}`;
     const totalVentasHoy = ventas
-      .filter(v => v.created_at.startsWith(hoy) && v.estado === 'completada')
+      .filter(v => {
+        const fechaVenta = new Date(v.created_at);
+        const fechaLocal = `${fechaVenta.getFullYear()}-${(fechaVenta.getMonth() + 1).toString().padStart(2, '0')}-${fechaVenta.getDate().toString().padStart(2, '0')}`;
+        return fechaLocal === hoy && v.estado === 'completada';
+      })
       .reduce((sum, v) => sum + v.total, 0);
 
     const sIndex = this.stats.findIndex(s => s.title === 'Ventas de Hoy');
@@ -231,7 +237,9 @@ export class Dashboard implements OnInit, OnDestroy {
 
     const ventasPorDia = new Map<string, number>();
     ventasFiltradas.forEach(venta => {
-      const fecha = new Date(venta.created_at).toISOString().split('T')[0];
+      // Usar fecha local en vez de UTC
+      const fechaVenta = new Date(venta.created_at);
+      const fecha = `${fechaVenta.getFullYear()}-${(fechaVenta.getMonth() + 1).toString().padStart(2, '0')}-${fechaVenta.getDate().toString().padStart(2, '0')}`;
       ventasPorDia.set(fecha, (ventasPorDia.get(fecha) || 0) + venta.total);
     });
 
@@ -364,13 +372,16 @@ export class Dashboard implements OnInit, OnDestroy {
 
   async obtenerVentasHoy(): Promise<number> {
     try {
-      const hoy = new Date().toISOString().split('T')[0];
+      // Construir rango de 'hoy' en hora local como ISO strings
+      const ahora = new Date();
+      const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
+      const finHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59);
 
       const { data, error } = await this.supabaseService.client
         .from('ventas')
         .select('total')
-        .gte('fecha', `${hoy}T00:00:00`)
-        .lte('fecha', `${hoy}T23:59:59`)
+        .gte('created_at', inicioHoy.toISOString())
+        .lte('created_at', finHoy.toISOString())
         .eq('estado', 'completada');
 
       if (error) throw error;
@@ -533,7 +544,8 @@ export class Dashboard implements OnInit, OnDestroy {
       // Agrupar por día
       const ventasPorDia = new Map<string, number>();
       data?.forEach(venta => {
-        const fecha = new Date(venta.created_at).toISOString().split('T')[0];
+        const fechaVenta = new Date(venta.created_at);
+        const fecha = `${fechaVenta.getFullYear()}-${(fechaVenta.getMonth() + 1).toString().padStart(2, '0')}-${fechaVenta.getDate().toString().padStart(2, '0')}`;
         ventasPorDia.set(fecha, (ventasPorDia.get(fecha) || 0) + venta.total);
       });
 
@@ -612,7 +624,9 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   formatearDia(fecha: string): string {
-    const date = new Date(fecha);
+    // fecha viene como 'YYYY-MM-DD', parseamos manualmente para evitar offset UTC
+    const [year, month, day] = fecha.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     return dias[date.getDay()];
   }

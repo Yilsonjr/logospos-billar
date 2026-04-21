@@ -1,9 +1,10 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VentaCompleta } from '../../models/ventas.model';
-import { SupabaseService } from '../../services/supabase.service';
 import { PrintingService, TicketFormat } from '../../services/printing.service';
 import { FormsModule } from '@angular/forms';
+import { NegociosService } from '../../services/negocios.service';
+import { Negocio } from '../../models/negocio.model';
 
 @Component({
     selector: 'app-factura',
@@ -18,16 +19,10 @@ export class FacturaComponent implements OnInit {
     @Input() formato: TicketFormat = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio: any = {
-        nombre: 'LogosPOS',
-        rnc: '131-XXXXX-X',
-        telefono: '(809) 000-0000',
-        direccion: 'Cargando...',
-        lema: '¡Gracias por su preferencia!'
-    };
+    negocio: Negocio | null = null;
 
     constructor(
-        private supabaseService: SupabaseService,
+        private negociosService: NegociosService,
         private printingService: PrintingService
     ) { 
         this.formato = this.printingService.currentFormat;
@@ -37,23 +32,9 @@ export class FacturaComponent implements OnInit {
         if (!this.venta) {
             console.error('FacturaComponent: No se proporcionó una venta válida.');
         }
-        await this.cargarDatosNegocio();
-    }
-
-    async cargarDatosNegocio() {
-        try {
-            const { data, error } = await this.supabaseService.client
-                .from('negocios')
-                .select('*')
-                .limit(1)
-                .single();
-
-            if (data) {
-                this.negocio = data;
-            }
-        } catch (error) {
-            console.warn('No se pudo cargar la configuración del negocio, usando valores por defecto.');
-        }
+        this.negociosService.negocio$.subscribe(data => {
+            this.negocio = data;
+        });
     }
 
     cambiarFormato(nuevoFormato: any) {

@@ -23,10 +23,12 @@
 <ng-template #ticketContent>
     <div class="ticket-container" [ngClass]="'format-' + formato">
         <!-- Encabezado -->
-        <div class="ticket-header text-center">
+        <div class="ticket-header text-center" *ngIf="negocio">
+            <img *ngIf="negocio.logo_url" [src]="negocio.logo_url" alt="Logo" class="ticket-logo mb-2" style="max-width: 80px; height: auto;">
             <h1 class="business-name">{{ negocio.nombre }}</h1>
-            <p class="business-info">{{ negocio.direccion }}</p>
-            <p class="business-info">Tel: {{ negocio.telefono }}</p>
+            <p class="business-info" *ngIf="negocio.rnc">RNC: {{ negocio.rnc }}</p>
+            <p class="business-info" *ngIf="negocio.direccion">{{ negocio.direccion }}</p>
+            <p class="business-info" *ngIf="negocio.telefono">Tel: {{ negocio.telefono }}</p>
             <div class="separator-double"></div>
             <h2 class="receipt-title">PRE-CUENTA (NO FISCAL)</h2>
             <div class="separator"></div>
