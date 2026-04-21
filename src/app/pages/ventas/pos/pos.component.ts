@@ -26,8 +26,6 @@ import { FacturaComponent } from '../../../shared/factura/factura.component';
 import { VentaCompleta } from '../../../models/ventas.model';
 import { CajaService } from '../../../services/caja.service';
 import { Caja } from '../../../models/caja.model';
-import { CategoriasService } from '../../../services/categorias.service';
-import { Categoria } from '../../../models/categorias.model';
 
 @Component({
   selector: 'app-pos',
