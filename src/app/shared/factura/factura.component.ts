@@ -1,31 +1,64 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VentaCompleta } from '../../models/ventas.model';
+import { SupabaseService } from '../../services/supabase.service';
+import { PrintingService, TicketFormat } from '../../services/printing.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
     selector: 'app-factura',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './factura.component.html',
     styleUrl: './factura.component.css'
 })
 export class FacturaComponent implements OnInit {
     @Input() venta!: VentaCompleta;
     @Input() simulation: boolean = true; // Si es true, se muestra como modal/simulación
+    @Input() formato: TicketFormat = '80mm';
     @Output() cerrar = new EventEmitter<void>();
 
-    negocio = {
+    negocio: any = {
         nombre: 'LogosPOS',
-        rnc: '131-12345-6',
-        telefono: '(809) 123-4567',
-        direccion: 'Av. Principal #123, Santo Domingo, RD',
+        rnc: '131-XXXXX-X',
+        telefono: '(809) 000-0000',
+        direccion: 'Cargando...',
         lema: '¡Gracias por su preferencia!'
     };
 
-    ngOnInit() {
+    constructor(
+        private supabaseService: SupabaseService,
+        private printingService: PrintingService
+    ) { 
+        this.formato = this.printingService.currentFormat;
+    }
+
+    async ngOnInit() {
         if (!this.venta) {
             console.error('FacturaComponent: No se proporcionó una venta válida.');
         }
+        await this.cargarDatosNegocio();
+    }
+
+    async cargarDatosNegocio() {
+        try {
+            const { data, error } = await this.supabaseService.client
+                .from('negocios')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (data) {
+                this.negocio = data;
+            }
+        } catch (error) {
+            console.warn('No se pudo cargar la configuración del negocio, usando valores por defecto.');
+        }
+    }
+
+    cambiarFormato(nuevoFormato: any) {
+        this.formato = nuevoFormato as TicketFormat;
+        this.printingService.setFormat(this.formato);
     }
 
     formatearMoneda(valor: number | undefined): string {

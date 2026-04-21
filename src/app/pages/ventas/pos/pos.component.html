@@ -104,7 +104,7 @@
           [class.active]="categoriaSeleccionada === 'all'" (click)="seleccionarCategoria('all')">
           <i class="fa-solid fa-layer-group"></i> Todos
         </button>
-        <button *ngFor="let cat of categorias.slice(1)"
+        <button *ngFor="let cat of categorias"
           class="btn category-pill shadow-sm flex-shrink-0 d-flex align-items-center gap-2"
           [class.active]="categoriaSeleccionada === cat.id" (click)="seleccionarCategoria(cat.id)">
           <i [class]="cat.icono"></i> {{ cat.nombre }}

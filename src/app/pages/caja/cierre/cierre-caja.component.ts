@@ -241,7 +241,15 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
 
       this.mostrarConfirmacion = false;
 
-      // Generar datos para el ticket
+      // Mostrar mensaje de éxito primero
+      await Swal.fire({
+        title: '✅ Caja Cerrada',
+        html: `Monto contado: ${this.formatearMoneda(this.totalContado)}<br>A continuación verás el ticket de cierre para imprimir.`,
+        icon: 'success',
+        confirmButtonText: 'Ver Ticket'
+      });
+
+      // Generar datos para el ticket DESPUÉS de cerrar el swal
       this.datosCierreTicket = {
         id: this.cajaActual.id!,
         usuario_apertura: this.cajaActual.usuario_apertura,
@@ -251,6 +259,8 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
         monto_inicial: this.cajaActual.monto_inicial,
         ventas_efectivo: this.ventasEfectivo,
         ventas_tarjeta: this.ventasTarjeta,
+        ventas_credito: 0,
+        ventas_mixto: 0,
         total_entradas: this.totalEntradas,
         total_salidas: this.totalSalidas,
         monto_esperado: this.montoEsperado,
@@ -276,13 +286,6 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
       // Mostrar el ticket
       this.mostrarTicket = true;
       this.cdr.detectChanges();
-
-      await Swal.fire({
-        title: '✅ Caja Cerrada',
-        html: `Monto contado: ${this.formatearMoneda(this.totalContado)}<br>Imprime el ticket de cierre antes de continuar.`,
-        icon: 'success',
-        confirmButtonText: 'Aceptar'
-      });
 
     } catch (error) {
       console.error('Error al cerrar caja:', error);

@@ -26,6 +26,8 @@ import { FacturaComponent } from '../../../shared/factura/factura.component';
 import { VentaCompleta } from '../../../models/ventas.model';
 import { CajaService } from '../../../services/caja.service';
 import { Caja } from '../../../models/caja.model';
+import { CategoriasService } from '../../../services/categorias.service';
+import { Categoria } from '../../../models/categorias.model';
 
 @Component({
   selector: 'app-pos',
@@ -105,7 +107,8 @@ export class PosComponent implements OnInit, OnDestroy {
     private supabaseService: SupabaseService, // Inyectar Supabase
     private cdr: ChangeDetectorRef,
     private router: Router,
-    private route: ActivatedRoute // Inyectar ActivatedRoute
+    private route: ActivatedRoute, // Inyectar ActivatedRoute
+    private categoriasService: CategoriasService // Inyectar CategoriasService
   ) { }
 
   // Contexto de Billar
@@ -189,32 +192,29 @@ export class PosComponent implements OnInit, OnDestroy {
     // PRIMERO: Cargar datos del POS (productos, clientes, caja)
     await this.cargarDatos();
     await this.verificarCaja();
+    // DESPUÉS de cargar datos, suscribirse a los query params de forma reactiva
+    const paramsSub = this.route.queryParams.subscribe(async params => {
+      const mesaId = Number(params['mesaId']);
+      const pedidoId = Number(params['pedidoId']);
 
-    // DESPUÉS de cargar datos, leer los query params y cargar el contexto de mesa
-    // Usar una Promise para leer los params una sola vez, en lugar de subscribe
-    // (evita race condition donde queryParams dispara antes de que los datos estén listos)
-    const params = await new Promise<any>(resolve => {
-      const sub = this.route.queryParams.subscribe(p => {
-        resolve(p);
-        setTimeout(() => sub.unsubscribe(), 0);
-      });
+      if (mesaId && pedidoId) {
+        // Solo recargar si el contexto cambió para evitar loop infinito o recargas innecesarias
+        if (this.mesaId !== mesaId || this.pedidoId !== pedidoId) {
+          console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
+          this.mesaId = mesaId;
+          this.pedidoId = pedidoId;
+          await this.cargarContextoMesa();
+        }
+      } else {
+        // Si no hay mesa/pedido en la URL, limpiamos el contexto solo si antes había uno
+        if (this.mesaId || this.pedidoId) {
+          console.log('🧹 [POS] Limpiando contexto de mesa (Venta General)');
+          this.limpiarContextoMesa();
+        }
+      }
     });
 
-    const mesaId = Number(params['mesaId']);
-    const pedidoId = Number(params['pedidoId']);
-
-    if (mesaId && pedidoId) {
-      console.log(`🎯 [POS] Detectado contexto de mesa: ${mesaId}, pedido: ${pedidoId}`);
-      this.mesaId = mesaId;
-      this.pedidoId = pedidoId;
-      await this.cargarContextoMesa(); // Ahora SÍ es awaited
-    } else if (mesaId) {
-      this.mesaId = mesaId;
-      this.pedidoId = undefined;
-      this.limpiarContextoMesa();
-    } else {
-      this.limpiarContextoMesa();
-    }
+    this.subscriptions.push(paramsSub);
   }
 
   ngOnDestroy() {
@@ -276,7 +276,8 @@ export class PosComponent implements OnInit, OnDestroy {
       // Cargar productos y clientes en paralelo
       await Promise.all([
         this.productosService.cargarProductos(),
-        this.clientesService.cargarClientes()
+        this.clientesService.cargarClientes(),
+        this.categoriasService.cargarCategorias()
       ]);
 
     } catch (error) {
@@ -316,9 +317,11 @@ export class PosComponent implements OnInit, OnDestroy {
   filtrarProductos() {
     let filtrados = this.productos;
 
-    // 1. Filtrar por categoría
+    // 1. Filtrar por categoría (Comparación case-insensitive para mayor seguridad)
     if (this.categoriaSeleccionada !== 'all') {
-      filtrados = filtrados.filter(p => p.categoria === this.categoriaSeleccionada);
+      filtrados = filtrados.filter(p =>
+        p.categoria?.toLowerCase() === this.categoriaSeleccionada.toLowerCase()
+      );
     }
 
     // 2. Filtrar por texto de búsqueda
@@ -338,6 +341,20 @@ export class PosComponent implements OnInit, OnDestroy {
     this.productosFiltrados = filtrados;
     this.selectedAutocompleteIndex = 0;
     this.cdr.detectChanges();
+  }
+
+  // Helper para iconos por nombre de categoría
+  getIconoPorCategoria(nombre: string): string {
+    const n = nombre.toLowerCase();
+    if (n.includes('bebida') || n.includes('jugo') || n.includes('refresco')) return 'fa-solid fa-wine-bottle';
+    if (n.includes('snack') || n.includes('picadera')) return 'fa-solid fa-cookie-bite';
+    if (n.includes('lacteo') || n.includes('queso')) return 'fa-solid fa-cheese';
+    if (n.includes('pan') || n.includes('reposteria')) return 'fa-solid fa-bread-slice';
+    if (n.includes('carne') || n.includes('pollo') || n.includes('res')) return 'fa-solid fa-drumstick-bite';
+    if (n.includes('fruta') || n.includes('vegetal')) return 'fa-solid fa-apple-whole';
+    if (n.includes('alcohol') || n.includes('licor') || n.includes('cerveza')) return 'fa-solid fa-glass-whiskey';
+    if (n.includes('billar') || n.includes('juego')) return 'fa-solid fa-table-tennis-paddle-ball';
+    return 'fa-solid fa-tag'; // Icono por defecto
   }
 
   // Manejar teclas en búsqueda
