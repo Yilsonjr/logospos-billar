@@ -18,14 +18,14 @@ import { Negocio } from '../../models/negocio.model';
   styleUrl: './navbar.component.css',
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  isMobileMenuOpen = false;
-  isCollapsed = false;
-  isMobile = false;
-  usuario: Usuario | null = null;
-  subscriptions: Subscription[] = [];
-  online$: Observable<boolean>;
-  isSyncing$: Observable<boolean>;
-  negocio: Negocio | null = null;
+  public isMobileMenuOpen = false;
+  public isCollapsed = false;
+  public isMobile = false;
+  public usuario: Usuario | null = null;
+  public subscriptions: Subscription[] = [];
+  public online$: Observable<boolean>;
+  public isSyncing$: Observable<boolean>;
+  public negocio: Negocio | null = null;
 
   quickActions = [
     { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff', modulo: 'ventas' },
@@ -209,11 +209,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
   ];
 
-  // Items filtrados por permisos y módulos
   menuItemsFiltrados: any[] = [];
   quickActionsFiltrados: any[] = [];
 
-  // Filtrar menú por permisos y módulos activos del negocio
   filtrarMenuPorPermisos() {
     if (!this.usuario) {
       this.menuItemsFiltrados = [];
@@ -223,7 +221,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     const esSuperAdmin = this.authService.isSuperAdmin();
 
-    // Filtrar quick actions
     this.quickActionsFiltrados = this.quickActions.filter(action => {
       const tienePermiso = action.permissions.some((p: string) => this.authService.tienePermiso(p));
       const tieneModulo = esSuperAdmin || !action.modulo || this.negociosService.tieneModulo(action.modulo as any);
@@ -231,29 +228,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
 
     this.menuItemsFiltrados = this.menuItems.filter(item => {
-      // 1. Verificar permisos
       const tienePermisoItem = !item.permissions ||
         item.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
 
       if (!tienePermisoItem) return false;
 
-      // 2. Verificar módulo del item principal (SuperAdmin ve todo)
       if (!esSuperAdmin && (item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
         return false;
       }
 
-      // 3. Si tiene submenu, filtrar los subitems
       if (item.submenu) {
         item.submenu = item.submenu.filter((subitem: any) => {
-          // Verificar permiso del subitem
           const tienePermisoSub = !subitem.permissions ||
             subitem.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
           if (!tienePermisoSub) return false;
 
-          // Verificar restricción de SuperAdmin
           if (subitem.superAdminOnly && !esSuperAdmin) return false;
 
-          // Verificar módulo del subitem
           if (!esSuperAdmin && subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
             return false;
           }
@@ -261,7 +252,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
           return true;
         });
 
-        // Si no quedan subitems, ocultar el item principal
         if (item.submenu.length === 0) return false;
       }
 
@@ -269,7 +259,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Auto-expandir el menú basado en la ruta actual
   autoExpandActualRoute() {
     const currentUrl = this.router.url;
     this.menuItemsFiltrados.forEach(item => {
@@ -291,7 +280,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   toggleSubmenu(item: any) {
-    // Permitir expansión si no está colapsado O si es móvil (drawer abierto)
     item.expanded = (!this.isCollapsed || this.isMobile) && !item.expanded;
   }
 
@@ -306,12 +294,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   handleMenuClick(event: Event, item: any) {
     if (item.submenu) {
-      event.preventDefault(); // Prevenir navegación si tiene submenu
+      event.preventDefault();
 
-      // Si está colapsado, expandir primero el sidebar
       if (this.isCollapsed) {
         this.sidebarService.setCollapsed(false);
-        // Pequeño delay para que la animación de expansión permita ver el submenu
         setTimeout(() => {
           item.expanded = true;
         }, 100);
@@ -321,23 +307,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Ir al perfil
   irAPerfil() {
     this.router.navigate(['/perfil']);
   }
 
-  // Cerrar sesión
   async cerrarSesion() {
     await this.authService.logout();
   }
 
-  // Obtener iniciales del usuario
   obtenerIniciales(): string {
     if (!this.usuario) return 'U';
-    return `${this.usuario.nombre.charAt(0)}${this.usuario.apellido.charAt(0)} `.toUpperCase();
+    return `${this.usuario.nombre.charAt(0)}${this.usuario.apellido.charAt(0)}`.toUpperCase();
   }
 
-  // Obtener color del rol
   obtenerColorRol(): string {
     return this.usuario?.rol?.color || '#3b82f6';
   }
