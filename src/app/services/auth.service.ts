@@ -322,7 +322,7 @@ export class AuthService {
   tienePermiso(permiso: string): boolean {
     const currentState = this.authStateSubject.value;
     // Si es administrador (rol_id 1 o nombre 'admin' / 'super administrador'), tiene acceso total
-    const roleName = currentState.usuario?.rol?.nombre.toLowerCase() || '';
+    const roleName = (currentState.usuario?.rol?.nombre || '').toLowerCase().trim();
     if (currentState.usuario?.rol_id === 1 || roleName === 'admin' || roleName === 'super administrador') {
       return true;
     }
@@ -334,7 +334,7 @@ export class AuthService {
     const currentState = this.authStateSubject.value;
 
     // Si es administrador, acceso total
-    const roleName = currentState.usuario?.rol?.nombre.toLowerCase() || '';
+    const roleName = (currentState.usuario?.rol?.nombre || '').toLowerCase().trim();
     if (currentState.usuario?.rol_id === 1 || roleName === 'admin' || roleName === 'super administrador') {
       return true;
     }
@@ -347,7 +347,8 @@ export class AuthService {
     const currentState = this.authStateSubject.value;
 
     // Si es administrador, acceso total
-    if (currentState.usuario?.rol_id === 1 || currentState.usuario?.rol?.nombre.toLowerCase() === 'admin') {
+    const roleName = (currentState.usuario?.rol?.nombre || '').toLowerCase().trim();
+    if (currentState.usuario?.rol_id === 1 || roleName === 'admin' || roleName === 'super administrador') {
       return true;
     }
 

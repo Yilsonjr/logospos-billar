@@ -247,7 +247,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       // Si el ítem tiene módulo, verificamos si el negocio lo tiene activo
       if ((item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
-        return false;
+        // PERMISO ESPECIAL: El administrador del negocio siempre ve el Dashboard y Administración
+        const esAdminNegocio = this.authService.tienePermiso('admin');
+        const esModuloCore = (item as any).modulo === 'dashboard' || item.label === 'Administración';
+        
+        if (!esAdminNegocio || !esModuloCore) {
+          return false;
+        }
       }
 
       if (item.submenu) {
