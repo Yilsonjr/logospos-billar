@@ -105,7 +105,7 @@ export class NegociosService {
                 .from('negocios')
                 .select('*')
                 .eq('id', id)
-                .single();
+                .maybeSingle(); // 💡 Evita el error 406 si no hay resultados
 
             const result: any = await Promise.race([queryPromise, timeoutPromise]);
             

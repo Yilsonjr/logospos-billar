@@ -55,8 +55,10 @@ export class IdentidadNegocioComponent implements OnInit {
         if (data) {
           this.negocioActual = data;
           this.negocioForm.patchValue(data);
-          if (data.logo_url) {
+          if (data.logo_url && (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))) {
             this.logoPreview = data.logo_url;
+          } else {
+            this.logoPreview = null; // 💡 Evita cargar valores inválidos que causan errores 504
           }
         } else {
           console.warn('⚠️ No se pudo obtener la información del negocio.');
