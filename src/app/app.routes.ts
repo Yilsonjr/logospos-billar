@@ -40,6 +40,7 @@ import { ReportesClientesComponent } from './pages/reportes/clientes/reportes-cl
 // Guards
 import { AuthGuard } from './guards/auth.guard';
 import { PermissionGuard } from './guards/permission.guard';
+import { ModuloGuard } from './guards/modulo.guard'; // 💡 Nuevo Guard
 
 export const routes: Routes = [
     // Ruta de Login (sin protección)
@@ -58,146 +59,146 @@ export const routes: Routes = [
     {
         path: 'inventario',
         component: Inventario,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['inventario.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['inventario.ver'], modulo: 'inventario' }
     },
     {
         path: 'inventario/proveedores',
         component: ProveedoresComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['proveedores.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['proveedores.ver'], modulo: 'proveedores' }
     },
 
     // Compras
     {
         path: 'compras',
         component: ComprasComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['inventario.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['inventario.ver'], modulo: 'compras' }
     },
     {
         path: 'compras/nueva',
         component: NuevaCompraComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['inventario.crear'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['inventario.crear'], modulo: 'compras' }
     },
     {
         path: 'compras/:id',
         component: DetalleCompraComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['inventario.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['inventario.ver'], modulo: 'compras' }
     },
 
     // Clientes
     {
         path: 'clientes',
         component: ClientesComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['clientes.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['clientes.ver'], modulo: 'clientes' }
     },
 
     // Ventas
     {
         path: 'ventas/nueva',
         component: PosComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['ventas.crear'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['ventas.crear'], modulo: 'ventas' }
     },
     {
         path: 'ventas/mesas',
         component: MesasComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['ventas.crear'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['ventas.crear'], modulo: 'mesas' }
     },
     {
         path: 'ventas/historial',
         component: HistorialVentasComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['ventas.historial'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['ventas.historial'], modulo: 'ventas' }
     },
 
     // Caja
     {
         path: 'caja/apertura',
         component: AperturaCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['caja.abrir'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.abrir'], modulo: 'caja' }
     },
     {
         path: 'caja/cierre',
         component: CierreCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['caja.cerrar'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.cerrar'], modulo: 'caja' }
     },
     {
         path: 'caja/entrada-efectivo',
         component: MovimientoCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['caja.movimientos'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.movimientos'], modulo: 'caja' }
     },
     {
         path: 'caja/salida-efectivo',
         component: MovimientoCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['caja.movimientos'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.movimientos'], modulo: 'caja' }
     },
     {
         path: 'caja/arqueo',
         component: ArqueoCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['caja.arqueo'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.arqueo'], modulo: 'caja' }
     },
     {
         path: 'caja/historial',
         component: HistorialCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['caja.historial'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.historial'], modulo: 'caja' }
     },
 
     // Cuentas por Cobrar
     {
         path: 'cuentas-cobrar',
         component: CuentasCobrarComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.ver'], modulo: 'cuentas_cobrar' }
     },
     {
         path: 'cuentas-cobrar/recordatorios',
         component: RecordatoriosComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.recordatorios'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.recordatorios'], modulo: 'cuentas_cobrar' }
     },
 
     // Cuentas por Pagar
     {
         path: 'cuentas-pagar',
         component: CuentasPagarComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.ver'], modulo: 'cuentas_pagar' }
     },
     {
         path: 'cuentas-pagar/nueva',
         component: NuevaCuentaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.crear'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.crear'], modulo: 'cuentas_pagar' }
     },
     {
         path: 'cuentas-pagar/editar/:id',
         component: NuevaCuentaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.editar'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.editar'], modulo: 'cuentas_pagar' }
     },
     {
         path: 'cuentas-pagar/detalle/:id',
         component: DetalleCuentaPagarComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.ver'], modulo: 'cuentas_pagar' }
     },
     {
         path: 'cuentas-pagar/plan-pagos',
         component: PlanPagosComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['cuentas.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['cuentas.ver'], modulo: 'cuentas_pagar' }
     },
 
     // Perfil de Usuario
@@ -211,26 +212,26 @@ export const routes: Routes = [
     {
         path: 'reportes/ventas',
         component: ReportesVentasComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['reportes.ventas'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['reportes.ventas'], modulo: 'reportes' }
     },
     {
         path: 'reportes/inventario',
         component: ReportesInventarioComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['reportes.inventario'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['reportes.inventario'], modulo: 'reportes' }
     },
     {
         path: 'reportes/caja',
         component: ReportesCajaComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['reportes.caja'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['reportes.caja'], modulo: 'reportes' }
     },
     {
         path: 'reportes/clientes',
         component: ReportesClientesComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['reportes.clientes'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['reportes.clientes'], modulo: 'reportes' }
     },
     {
         path: 'reportes',
@@ -242,14 +243,14 @@ export const routes: Routes = [
     {
         path: 'admin/usuarios',
         component: UsuariosComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['usuarios.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['usuarios.ver'], modulo: 'usuarios' }
     },
     {
         path: 'admin/roles',
         component: RolesComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['roles.ver'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['roles.ver'], modulo: 'usuarios' }
     },
     {
         path: 'admin/sistema',
@@ -260,8 +261,8 @@ export const routes: Routes = [
     {
         path: 'admin/fiscal',
         component: ConfiguracionFiscalComponent,
-        canActivate: [AuthGuard, PermissionGuard],
-        data: { permissions: ['config.general'] }
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['config.general'], modulo: 'fiscal' }
     },
     {
         path: 'admin/negocio',

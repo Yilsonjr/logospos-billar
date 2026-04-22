@@ -16,10 +16,13 @@
         routerLink="/admin/sistema">
         <i class="fa-solid fa-cog"></i>
       </button>
+
+      @if (negociosService.tieneModulo('ventas')) {
       <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 fw-bold px-3 btn-sm"
         routerLink="/ventas/nueva">
         <i class="fa-solid fa-plus"></i> Nueva Venta
       </button>
+      }
     </div>
   </header>
 
@@ -58,9 +61,9 @@
 
   <!-- Sección Principal (Flexible para ocupar el resto de altura) -->
   <section class="row g-2 flex-grow-1" style="min-height: 0;">
-    <!-- min-height:0 permite scroll interno en flex items -->
-
-    <!-- Columna Izquierda: Tendencias de Ventas (8 cols) -->
+    
+    <!-- Columna Izquierda: Tendencias de Ventas -->
+    @if (negociosService.tieneModulo('ventas')) {
     <div class="col-lg-8 h-100 d-flex flex-column">
       <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 300px;">
         <div
@@ -90,7 +93,6 @@
             <p>No hay datos de ventas</p>
           </div>
           } @else {
-          <!-- Gráfico simple con barras CSS (Flex) -->
           <div class="d-flex align-items-end justify-content-around flex-grow-1 mt-2 border-bottom pb-2 h-100">
             @for (data of chartData; track data.label) {
             <div class="d-flex flex-column align-items-center gap-1 flex-grow-1 group"
@@ -114,14 +116,16 @@
         </div>
       </div>
     </div>
+    }
 
-    <!-- Columna Derecha: Panel de Pestañas (4 cols) -->
-    <div class="col-lg-4 h-100 d-flex flex-column">
+    <!-- Columna Derecha: Panel de Pestañas (Filtra contenido según módulos) -->
+    <div [class]="negociosService.tieneModulo('ventas') ? 'col-lg-4' : 'col-lg-12'" class="h-100 d-flex flex-column">
       <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 0;">
 
         <!-- Header de Pestañas -->
         <div class="card-header bg-white border-0 pt-2 px-2 pb-0 flex-shrink-0">
           <ul class="nav nav-tabs card-header-tabs border-bottom-0">
+            @if (negociosService.tieneModulo('inventario')) {
             <li class="nav-item">
               <a class="nav-link border-0 fw-bold small text-uppercase py-2" [class.active]="activeTab === 'products'"
                 [class.text-primary]="activeTab === 'products'" [class.text-muted]="activeTab !== 'products'"
@@ -129,6 +133,8 @@
                 <i class="fa-solid fa-star me-1"></i> Top Productos
               </a>
             </li>
+            }
+            @if (negociosService.tieneModulo('ventas')) {
             <li class="nav-item">
               <a class="nav-link border-0 fw-bold small text-uppercase py-2"
                 [class.active]="activeTab === 'transactions'" [class.text-primary]="activeTab === 'transactions'"
@@ -137,6 +143,7 @@
                 <i class="fa-solid fa-clock-rotate-left me-1"></i> Recientes
               </a>
             </li>
+            }
           </ul>
         </div>
 
@@ -144,68 +151,66 @@
         <div class="card-body px-3 py-2 overflow-auto flex-grow-1">
 
           <!-- CONTENIDO TAB 1: PRODUCTOS -->
-          @if (activeTab === 'products') {
-          @if (isLoading) {
-          <div class="d-flex justify-content-center py-4">
-            <div class="spinner-border spinner-border-sm text-primary"></div>
-          </div>
-          } @else if (topProducts.length === 0) {
-          <div class="text-center py-4 text-muted small">No hay datos</div>
-          } @else {
-          <div class="list-group list-group-flush">
-            @for (product of topProducts; track product.name) {
-            <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center gap-2">
-              <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                style="width: 36px; height: 36px; background: linear-gradient(135deg, #3b82f6, #2563eb); font-size: 0.8rem;">
-                {{product.initials}}
+          @if (activeTab === 'products' && negociosService.tieneModulo('inventario')) {
+            <!-- ... contenido productos (Mantenemos igual pero bajo @if) ... -->
+            @if (isLoading) {
+            <div class="d-flex justify-content-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+            } @else if (topProducts.length === 0) {
+            <div class="text-center py-4 text-muted small">No hay productos</div>
+            } @else {
+            <div class="list-group list-group-flush">
+              @for (product of topProducts; track product.name) {
+              <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center gap-2">
+                <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                  style="width: 36px; height: 36px; background: linear-gradient(135deg, #3b82f6, #2563eb); font-size: 0.8rem;">
+                  {{product.initials}}
+                </div>
+                <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
+                  <h6 class="mb-0 text-truncate fw-semibold small">{{product.name}}</h6>
+                  <small class="text-muted" style="font-size: 0.7rem;">{{product.category}}</small>
+                </div>
+                <div class="text-end" style="line-height: 1.2;">
+                  <div class="fw-bold text-dark small">{{product.price}}</div>
+                  <small class="text-success fw-bold" style="font-size: 0.7rem;">{{product.sales}}</small>
+                </div>
               </div>
-              <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
-                <h6 class="mb-0 text-truncate fw-semibold small">{{product.name}}</h6>
-                <small class="text-muted" style="font-size: 0.7rem;">{{product.category}}</small>
-              </div>
-              <div class="text-end" style="line-height: 1.2;">
-                <div class="fw-bold text-dark small">{{product.price}}</div>
-                <small class="text-success fw-bold" style="font-size: 0.7rem;">{{product.sales}}</small>
-              </div>
+              }
             </div>
             }
-          </div>
-          <button class="btn btn-outline-primary btn-sm w-100 mt-2" (click)="viewAllItems()">Ver todo</button>
-          }
           }
 
           <!-- CONTENIDO TAB 2: TRANSACCIONES -->
-          @if (activeTab === 'transactions') {
-          @if (isLoading) {
-          <div class="d-flex justify-content-center py-4">
-            <div class="spinner-border spinner-border-sm text-primary"></div>
-          </div>
-          } @else if (transactions.length === 0) {
-          <div class="text-center py-4 text-muted small">No hay transacciones</div>
-          } @else {
-          <div class="list-group list-group-flush">
-            @for (t of transactions; track t.id) {
-            <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center justify-content-between">
-              <div class="d-flex flex-column" style="line-height: 1.2;">
-                <span class="fw-bold text-dark small">#{{t.id}}</span>
-                <small class="text-muted" style="font-size: 0.75rem;">{{t.customer}}</small>
-                <small class="text-muted" style="font-size: 0.7rem;">{{t.date}}</small>
-              </div>
-              <div class="text-end d-flex flex-column align-items-end" style="line-height: 1.2;">
-                <span class="fw-bold text-primary small">{{t.total}}</span>
-                <span class="badge rounded-pill" style="font-size: 0.65rem;"
-                  [class.bg-success-subtle]="t.status === 'completed'" [class.text-success]="t.status === 'completed'"
-                  [class.bg-warning-subtle]="t.status !== 'completed'" [class.text-warning]="t.status !== 'completed'">
-                  {{t.status === 'completed' ? 'PAGADO' : 'PENDIENTE'}}
-                </span>
-              </div>
-            </div>
-            }
-          </div>
-          <button class="btn btn-outline-secondary btn-sm w-100 mt-2" (click)="exportReport()">
-            <i class="fa-solid fa-download me-1"></i> Exportar
-          </button>
-          }
+          @if (activeTab === 'transactions' && negociosService.tieneModulo('ventas')) {
+             <!-- ... contenido transacciones ... -->
+             @if (isLoading) {
+             <div class="d-flex justify-content-center py-4">
+               <div class="spinner-border spinner-border-sm text-primary"></div>
+             </div>
+             } @else if (transactions.length === 0) {
+             <div class="text-center py-4 text-muted small">No hay transacciones</div>
+             } @else {
+             <div class="list-group list-group-flush">
+               @for (t of transactions; track t.id) {
+               <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center justify-content-between">
+                 <div class="d-flex flex-column" style="line-height: 1.2;">
+                   <span class="fw-bold text-dark small">#{{t.id}}</span>
+                   <small class="text-muted" style="font-size: 0.75rem;">{{t.customer}}</small>
+                   <small class="text-muted" style="font-size: 0.7rem;">{{t.date}}</small>
+                 </div>
+                 <div class="text-end d-flex flex-column align-items-end" style="line-height: 1.2;">
+                   <span class="fw-bold text-primary small">{{t.total}}</span>
+                   <span class="badge rounded-pill" style="font-size: 0.65rem;"
+                     [class.bg-success-subtle]="t.status === 'completed'" [class.text-success]="t.status === 'completed'"
+                     [class.bg-warning-subtle]="t.status !== 'completed'" [class.text-warning]="t.status !== 'completed'">
+                     {{t.status === 'completed' ? 'PAGADO' : 'PENDIENTE'}}
+                   </span>
+                 </div>
+               </div>
+               }
+             </div>
+             }
           }
 
         </div>
