@@ -228,7 +228,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     this.quickActionsFiltrados = this.quickActions.filter(action => {
       const tienePermiso = action.permissions.some((p: string) => this.authService.tienePermiso(p));
-      const tieneModulo = !action.modulo || this.negociosService.tieneModulo(action.modulo as any); // 💡 Eliminado bypass de SuperAdmin
+      const tieneModulo = !action.modulo || this.negociosService.tieneModulo(action.modulo as any); 
+      
+      // El Desarrollador Global (Dev) siempre tiene acceso a todo para soporte
+      if (esSuperAdmin) return true;
+      
       return tienePermiso && tieneModulo;
     });
 
@@ -238,7 +242,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       if (!tienePermisoItem) return false;
 
-      // 💡 Eliminado bypass de SuperAdmin para que respete los módulos activos del negocio
+      // El Desarrollador Global (Dev) siempre ve todo el menú
+      if (esSuperAdmin) return true;
+
+      // Si el ítem tiene módulo, verificamos si el negocio lo tiene activo
       if ((item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
         return false;
       }
@@ -252,8 +259,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
           if (subitem.superAdminOnly && !esSuperAdmin) return false;
 
-          // 💡 Respetar módulos activos incluso para SuperAdmin
-          if (subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
+          // Respetar módulos activos excepto para Desarrollador Global
+          if (!esSuperAdmin && subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
             return false;
           }
 

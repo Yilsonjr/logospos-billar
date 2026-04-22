@@ -53,6 +53,16 @@ export class AuthService {
           // Cargar permisos actualizados
           const permisos = await this.cargarPermisosUsuario(usuario.id);
 
+          // Cargar información del rol si falta (importante para refrescos de página)
+          if (!usuario.rol) {
+            const { data: rol } = await this.supabaseService.client
+              .from('roles')
+              .select('*')
+              .eq('id', usuario.rol_id)
+              .single();
+            if (rol) usuario.rol = rol;
+          }
+
           // Cargar datos del negocio (Tenant)
           await this.negociosService.cargarNegocioActual(usuario.negocio_id);
 
