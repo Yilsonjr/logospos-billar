@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NegociosService } from '../../../services/negocios.service';
@@ -25,7 +25,8 @@ export class IdentidadNegocioComponent implements OnInit {
     private fb: FormBuilder,
     private negociosService: NegociosService,
     private imagenService: ImagenService,
-    private cdr: ChangeDetectorRef // Inyectamos el detector de cambios
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone // 💡 Inyectamos NgZone para sincronización perfecta
   ) {
     this.negocioForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -38,33 +39,33 @@ export class IdentidadNegocioComponent implements OnInit {
     });
   }
 
-  async ngOnInit() {
-    await this.cargarDatos();
+  ngOnInit() {
+    this.cargarDatos();
   }
 
   async cargarDatos() {
     this.loading = true;
-    this.cdr.detectChanges(); // Forzamos mostrar el spinner
+    this.cdr.detectChanges();
 
-    try {
-      const data = await this.negociosService.cargarNegocio();
-      
-      if (data) {
-        this.negocioActual = data;
-        this.negocioForm.patchValue(data);
-        if (data.logo_url) {
-          this.logoPreview = data.logo_url;
+    // 💡 NgZone.run asegura que Angular detecte el final de la carga inmediatamente
+    this.ngZone.run(async () => {
+      try {
+        const data = await this.negociosService.cargarNegocio();
+        
+        if (data) {
+          this.negocioActual = data;
+          this.negocioForm.patchValue(data);
+          if (data.logo_url) {
+            this.logoPreview = data.logo_url;
+          }
         }
-      } else {
-        console.error('No se pudo cargar la información del negocio.');
-        // No mostramos el Swal aquí para evitar interrumpir el flujo si es un error de Zone.js
+      } catch (error) {
+        console.error('Error al cargar datos del negocio:', error);
+      } finally {
+        this.loading = false;
+        this.cdr.detectChanges(); // Refuerzo de detección de cambios
       }
-    } catch (error) {
-      console.error('Error al cargar datos del negocio:', error);
-    } finally {
-      this.loading = false;
-      this.cdr.detectChanges(); // 💡 CRÍTICO: Forzamos a Angular a ocultar el spinner y mostrar los datos
-    }
+    });
   }
 
   onFileSelected(event: any) {
@@ -79,8 +80,10 @@ export class IdentidadNegocioComponent implements OnInit {
       this.selectedFile = file;
       const reader = new FileReader();
       reader.onload = () => {
-        this.logoPreview = reader.result as string;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.logoPreview = reader.result as string;
+          this.cdr.detectChanges();
+        });
       };
       reader.readAsDataURL(file);
     }
