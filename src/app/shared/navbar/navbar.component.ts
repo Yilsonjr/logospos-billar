@@ -39,7 +39,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private router: Router,
     private offlineService: OfflineService,
     private negociosService: NegociosService,
-    private cdr: ChangeDetectorRef // 💡 Detector de cambios inyectado
+    private cdr: ChangeDetectorRef
   ) {
     this.isCollapsed = this.sidebarService.getCollapsed();
     this.online$ = this.offlineService.online$;
@@ -49,13 +49,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.checkMobile();
     
-    // Suscribirse al estado del sidebar
     const sidebarSub = this.sidebarService.isCollapsed$.subscribe(collapsed => {
       this.isCollapsed = collapsed;
       this.cdr.detectChanges();
     });
 
-    // Suscribirse al estado de autenticación
     const authSub = this.authService.authState$.subscribe(authState => {
       this.usuario = authState.usuario;
       this.filtrarMenuPorPermisos();
@@ -63,7 +61,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    // Suscribirse a cambios de ruta para auto-expandir
     const routerSub = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
@@ -73,7 +70,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     const negocioSub = this.negociosService.negocio$.subscribe((data: Negocio | null) => {
       this.negocio = data;
-      this.cdr.detectChanges(); // 💡 CRÍTICO: Actualizar UI cuando cambie el negocio
+      this.filtrarMenuPorPermisos(); // 💡 Re-filtrar cuando cambien los módulos del negocio
+      this.cdr.detectChanges();
     });
 
     this.subscriptions.push(sidebarSub, authSub, routerSub, negocioSub);
@@ -228,7 +226,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     this.quickActionsFiltrados = this.quickActions.filter(action => {
       const tienePermiso = action.permissions.some((p: string) => this.authService.tienePermiso(p));
-      const tieneModulo = esSuperAdmin || !action.modulo || this.negociosService.tieneModulo(action.modulo as any);
+      const tieneModulo = !action.modulo || this.negociosService.tieneModulo(action.modulo as any); // 💡 Eliminado bypass de SuperAdmin
       return tienePermiso && tieneModulo;
     });
 
@@ -238,19 +236,24 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       if (!tienePermisoItem) return false;
 
-      if (!esSuperAdmin && (item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
+      // 💡 Eliminado bypass de SuperAdmin para que respete los módulos activos del negocio
+      if ((item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
         return false;
       }
 
       if (item.submenu) {
-        item.submenu = item.submenu.filter((subitem: any) => {
+        // Creamos una copia del submenu original para no mutar el array de menuItems
+        const originalSubmenu = [...item.submenu];
+        
+        item.submenu = originalSubmenu.filter((subitem: any) => {
           const tienePermisoSub = !subitem.permissions ||
             subitem.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
           if (!tienePermisoSub) return false;
 
           if (subitem.superAdminOnly && !esSuperAdmin) return false;
 
-          if (!esSuperAdmin && subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
+          // 💡 Respetar módulos activos incluso para SuperAdmin
+          if (subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
             return false;
           }
 
