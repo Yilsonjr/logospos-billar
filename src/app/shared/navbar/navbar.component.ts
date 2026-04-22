@@ -249,11 +249,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
       if (esSuperAdmin) return true;
 
       // Si el ítem tiene módulo, verificamos si el negocio lo tiene activo
+      const esAdminNegocio = this.authService.tienePermiso('admin');
+      const esModuloCore = ((item as any).modulo === 'dashboard' || item.label.includes('Administración'));
+
       if ((item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
         // PERMISO ESPECIAL: El administrador del negocio siempre ve el Dashboard y Administración
-        const esAdminNegocio = this.authService.tienePermiso('admin');
-        const esModuloCore = (item as any).modulo === 'dashboard' || item.label.includes('Administración');
-        
         if (!esAdminNegocio || !esModuloCore) {
           return false;
         }
@@ -270,7 +270,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
           // Respetar módulos activos excepto para Desarrollador Global
           if (!esSuperAdmin && subitem.modulo && !this.negociosService.tieneModulo(subitem.modulo)) {
-            return false;
+             // Bypass para los submenús de módulos Core si es Admin del Negocio
+             if (!esAdminNegocio || !esModuloCore) {
+               return false;
+             }
           }
 
           return true;
