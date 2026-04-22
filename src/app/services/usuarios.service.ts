@@ -25,13 +25,26 @@ export class UsuariosService {
   // Cargar todos los usuarios
   async cargarUsuarios(): Promise<void> {
     try {
-      const { data, error } = await this.supabaseService.client
+      let query = this.supabaseService.client
         .from('usuarios')
         .select(`
           *,
           roles (*)
         `)
         .order('nombre', { ascending: true });
+
+      // Aislar por Tenant: Solo mostrar usuarios del negocio actual, excepto si es el Dev
+      const negocioId = this.authService.getNegocioId();
+      const esSuperAdmin = this.authService.isSuperAdmin();
+
+      if (!esSuperAdmin && negocioId) {
+        query = query.eq('negocio_id', negocioId);
+      } else if (esSuperAdmin) {
+        // Opcional: Si el dev solo quiere ver a los devs en su panel o a todos.
+        // Lo ideal es que el dev vea todos para dar soporte, pero lo marcamos.
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -389,7 +402,7 @@ export class UsuariosService {
   // Obtener usuarios por rol
   async obtenerUsuariosPorRol(rolId: number): Promise<Usuario[]> {
     try {
-      const { data, error } = await this.supabaseService.client
+      let query = this.supabaseService.client
         .from('usuarios')
         .select(`
           *,
@@ -397,6 +410,14 @@ export class UsuariosService {
         `)
         .eq('rol_id', rolId)
         .eq('activo', true);
+
+      // Aislar por Tenant
+      const negocioId = this.authService.getNegocioId();
+      if (!this.authService.isSuperAdmin() && negocioId) {
+        query = query.eq('negocio_id', negocioId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
