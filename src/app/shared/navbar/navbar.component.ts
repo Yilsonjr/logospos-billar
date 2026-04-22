@@ -236,7 +236,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
       return tienePermiso && tieneModulo;
     });
 
-    this.menuItemsFiltrados = this.menuItems.map(item => ({ ...item })).filter(item => {
+    this.menuItemsFiltrados = this.menuItems.map(item => ({ 
+      ...item,
+      submenu: item.submenu ? [...item.submenu] : undefined 
+    })).filter(item => {
       const tienePermisoItem = !item.permissions ||
         item.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
 
@@ -249,7 +252,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       if ((item as any).modulo && !this.negociosService.tieneModulo((item as any).modulo)) {
         // PERMISO ESPECIAL: El administrador del negocio siempre ve el Dashboard y Administración
         const esAdminNegocio = this.authService.tienePermiso('admin');
-        const esModuloCore = (item as any).modulo === 'dashboard' || item.label === 'Administración';
+        const esModuloCore = (item as any).modulo === 'dashboard' || item.label.includes('Administración');
         
         if (!esAdminNegocio || !esModuloCore) {
           return false;
