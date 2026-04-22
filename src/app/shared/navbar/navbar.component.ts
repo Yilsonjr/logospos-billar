@@ -87,7 +87,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
       icon: 'fa-solid fa-chart-line',
       link: '/dashboard',
       active: false,
-      permissions: ['dashboard.ver']
+      permissions: ['dashboard.ver'],
+      modulo: 'dashboard'
     },
     {
       label: 'Inventario',
@@ -95,6 +96,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/inventario',
       active: false,
       permissions: ['inventario.ver'],
+      modulo: 'inventario',
       submenu: [
         { label: 'Productos', link: '/inventario', icon: 'fa-solid fa-box', permissions: ['inventario.ver'] }
       ],
@@ -106,6 +108,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/compras',
       active: false,
       permissions: ['inventario.ver'],
+      modulo: 'compras',
       submenu: [
         { label: 'Lista de Compras', link: '/compras', icon: 'fa-solid fa-list', permissions: ['inventario.ver'] },
         { label: 'Nueva Compra', link: '/compras/nueva', icon: 'fa-solid fa-plus-circle', permissions: ['inventario.crear'] },
@@ -184,12 +187,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
       link: '/admin',
       active: false,
       permissions: ['usuarios.ver', 'roles.ver', 'config.general'],
-      modulo: 'usuarios',
       submenu: [
-        { label: 'Identidad del Negocio', link: '/admin/negocio', icon: 'fa-solid fa-id-card', permissions: ['config.general'] },
-        { label: 'Usuarios', link: '/admin/usuarios', icon: 'fa-solid fa-users', permissions: ['usuarios.ver'] },
-        { label: 'Roles', link: '/admin/roles', icon: 'fa-solid fa-user-tag', permissions: ['roles.ver'] },
-        { label: 'Sistema', link: '/admin/sistema', icon: 'fa-solid fa-cogs', permissions: ['config.general'] },
+        { label: 'Identidad del Negocio', link: '/admin/negocio', icon: 'fa-solid fa-id-card', permissions: ['config.general'], modulo: 'identidad' },
+        { label: 'Usuarios', link: '/admin/usuarios', icon: 'fa-solid fa-users', permissions: ['usuarios.ver'], modulo: 'usuarios' },
+        { label: 'Roles', link: '/admin/roles', icon: 'fa-solid fa-user-tag', permissions: ['roles.ver'], modulo: 'roles' },
+        { label: 'Sistema', link: '/admin/sistema', icon: 'fa-solid fa-cogs', permissions: ['config.general'], modulo: 'sistema' },
         { label: 'Gestión de Negocios', link: '/admin/developer/negocios', icon: 'fa-solid fa-server', permissions: ['config.general'], superAdminOnly: true },
         { label: 'Fiscal (DGII)', link: '/admin/fiscal', icon: 'fa-solid fa-file-invoice', permissions: ['config.general'], modulo: 'fiscal' }
       ],

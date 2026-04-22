@@ -26,19 +26,23 @@ export type ModuloSistema =
     | 'proveedores'
     | 'fiscal'
     | 'reportes'
-    | 'usuarios';
+    | 'usuarios'
+    | 'identidad'
+    | 'roles'
+    | 'sistema'
+    | 'dashboard';
 
 // =============================================
 // Módulos por defecto según tipo de negocio
 // =============================================
 export const MODULOS_POR_TIPO: Record<TipoNegocio, ModuloSistema[]> = {
-    general: ['ventas', 'inventario', 'caja', 'clientes', 'reportes', 'usuarios'],
-    tienda: ['ventas', 'inventario', 'caja', 'clientes', 'cuentas_cobrar', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios'],
-    bar: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cuentas_cobrar', 'proveedores', 'compras', 'reportes', 'usuarios'],
-    billar: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cuentas_cobrar', 'reportes', 'usuarios'],
-    restaurante: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cocina', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios'],
-    cafeteria: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'proveedores', 'compras', 'reportes', 'usuarios'],
-    food_truck: ['ventas', 'inventario', 'caja', 'clientes', 'fiscal', 'reportes', 'usuarios']
+    general: ['ventas', 'inventario', 'caja', 'clientes', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    tienda: ['ventas', 'inventario', 'caja', 'clientes', 'cuentas_cobrar', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    bar: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cuentas_cobrar', 'proveedores', 'compras', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    billar: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cuentas_cobrar', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    restaurante: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cocina', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    cafeteria: ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'proveedores', 'compras', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    food_truck: ['ventas', 'inventario', 'caja', 'clientes', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard']
 };
 
 // =============================================
@@ -67,7 +71,11 @@ export const MODULOS_LABELS: Record<ModuloSistema, string> = {
     proveedores: 'Proveedores',
     fiscal: 'Facturación Fiscal (DGII)',
     reportes: 'Reportes',
-    usuarios: 'Gestión de Usuarios'
+    usuarios: 'Gestión de Usuarios',
+    identidad: 'Identidad del Negocio',
+    roles: 'Gestión de Roles',
+    sistema: 'Ajustes del Sistema',
+    dashboard: 'Dashboard / Resumen'
 };
 
 @Injectable({

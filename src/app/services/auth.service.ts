@@ -311,8 +311,9 @@ export class AuthService {
   // Verificar si el usuario tiene un permiso específico
   tienePermiso(permiso: string): boolean {
     const currentState = this.authStateSubject.value;
-    // Si es administrador (rol_id 1 o nombre 'admin'), tiene acceso total
-    if (currentState.usuario?.rol_id === 1 || currentState.usuario?.rol?.nombre.toLowerCase() === 'admin') {
+    // Si es administrador (rol_id 1 o nombre 'admin' / 'super administrador'), tiene acceso total
+    const roleName = currentState.usuario?.rol?.nombre.toLowerCase() || '';
+    if (currentState.usuario?.rol_id === 1 || roleName === 'admin' || roleName === 'super administrador') {
       return true;
     }
     return currentState.permisos.includes(permiso);
@@ -323,7 +324,8 @@ export class AuthService {
     const currentState = this.authStateSubject.value;
 
     // Si es administrador, acceso total
-    if (currentState.usuario?.rol_id === 1 || currentState.usuario?.rol?.nombre.toLowerCase() === 'admin') {
+    const roleName = currentState.usuario?.rol?.nombre.toLowerCase() || '';
+    if (currentState.usuario?.rol_id === 1 || roleName === 'admin' || roleName === 'super administrador') {
       return true;
     }
 
