@@ -230,7 +230,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
       return tienePermiso && tieneModulo;
     });
 
-    this.menuItemsFiltrados = this.menuItems.filter(item => {
+    this.menuItemsFiltrados = this.menuItems.map(item => ({ ...item })).filter(item => {
       const tienePermisoItem = !item.permissions ||
         item.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
 
@@ -242,10 +242,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
 
       if (item.submenu) {
-        // Creamos una copia del submenu original para no mutar el array de menuItems
-        const originalSubmenu = [...item.submenu];
-        
-        item.submenu = originalSubmenu.filter((subitem: any) => {
+        // Filtramos una copia del submenu para no mutar el array original
+        item.submenu = item.submenu.filter((subitem: any) => {
           const tienePermisoSub = !subitem.permissions ||
             subitem.permissions.some((permiso: string) => this.authService.tienePermiso(permiso));
           if (!tienePermisoSub) return false;

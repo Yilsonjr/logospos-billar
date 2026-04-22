@@ -233,8 +233,16 @@ export class NegociosService {
     }
 
     async actualizarNegocio(cambios: Partial<Negocio>): Promise<void> {
-        const negocioActual = this.negocioSubject.value;
-        if (!negocioActual) throw new Error('No hay negocio cargado para actualizar');
+        let negocioActual = this.negocioSubject.value;
+        
+        // 💡 Si no hay negocio cargado, intentamos recuperarlo antes de fallar
+        if (!negocioActual) {
+            negocioActual = await this.cargarNegocio();
+        }
+
+        if (!negocioActual) {
+            throw new Error('No hay negocio cargado para actualizar. Por favor, reinicie sesión.');
+        }
 
         const { error } = await this.supabaseService.client
             .from('negocios')
@@ -248,7 +256,7 @@ export class NegociosService {
 
     tieneModulo(modulo: ModuloSistema): boolean {
         const negocio = this.negocioSubject.value;
-        if (!negocio) return true;
+        if (!negocio) return false;
         return negocio.modulos_activos?.includes(modulo) ?? false;
     }
 

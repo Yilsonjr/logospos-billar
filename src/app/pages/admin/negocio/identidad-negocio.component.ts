@@ -58,6 +58,9 @@ export class IdentidadNegocioComponent implements OnInit {
           if (data.logo_url) {
             this.logoPreview = data.logo_url;
           }
+        } else {
+          console.warn('⚠️ No se pudo obtener la información del negocio.');
+          Swal.fire('Atención', 'No se encontró la información del negocio actual. Asegúrese de estar vinculado a un negocio válido.', 'warning');
         }
       } catch (error) {
         console.error('Error al cargar datos del negocio:', error);
