@@ -10,7 +10,7 @@ import { FiscalService } from '../../services/fiscal.service';
 import { NegociosService, ModuloSistema } from '../../services/negocios.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { Subscription } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, take } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 interface StatCard {
@@ -72,7 +72,7 @@ export class Dashboard implements OnInit, OnDestroy {
     private cuentasCobrarService: CuentasCobrarService,
     private productosService: ProductosService,
     private fiscalService: FiscalService,
-    public negociosService: NegociosService, // 💡 Público para usarlo en el template
+    public negociosService: NegociosService,
     private supabaseService: SupabaseService,
     private router: Router,
     private cdr: ChangeDetectorRef
@@ -82,7 +82,7 @@ export class Dashboard implements OnInit, OnDestroy {
     console.log('🔄 Iniciando dashboard modular...');
     this.isLoading = true;
 
-    // 1. Suscribirse al estado fiscal (Solo si el módulo fiscal está activo para el negocio)
+    // 1. Suscribirse al estado fiscal
     const fiscalSub = this.fiscalService.config$.subscribe(cfg => {
       this.modoFiscalActivo = (cfg?.modo_fiscal ?? false) && this.negociosService.tieneModulo('fiscal');
       this.cdr.detectChanges();
@@ -113,21 +113,21 @@ export class Dashboard implements OnInit, OnDestroy {
       this.subscriptions.push(productosSub);
     }
 
-    // 4. Datos de Caja y Cuentas (Carga inicial y manual)
+    // 4. Datos de Caja y Cuentas
     await this.cargarDatosManuales();
+
+    // 5. Verificar Onboarding (💡 NUEVO)
+    this.verificarOnboarding();
 
     // Recargar cuando se navega al dashboard
     const navSub = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(async (event: any) => {
         if (event.url === '/' || event.url === '/dashboard') {
-          console.log('🔄 Recargando dashboard modular por navegación...');
           const tasks = [];
-          
           if (this.negociosService.tieneModulo('ventas')) tasks.push(this.ventasService.cargarVentas());
           if (this.negociosService.tieneModulo('inventario')) tasks.push(this.productosService.cargarProductos());
           if (this.negociosService.tieneModulo('compras')) tasks.push(this.comprasService.cargarCompras());
-          
           tasks.push(this.cargarDatosManuales());
           await Promise.all(tasks);
         }
@@ -135,18 +135,47 @@ export class Dashboard implements OnInit, OnDestroy {
     this.subscriptions.push(navSub);
   }
 
+  /**
+   * 💡 Muestra un asistente de bienvenida si los datos del negocio están incompletos
+   */
+  private verificarOnboarding() {
+    this.negociosService.negocio$.pipe(
+      take(1),
+      filter(n => n !== null)
+    ).subscribe(negocio => {
+      // Si no tiene teléfono o RNC, es probable que acabe de ser creado
+      if (negocio && !negocio.telefono) {
+        setTimeout(() => {
+          Swal.fire({
+            title: `¡Bienvenido a LogosPOS, ${negocio.nombre}! 🚀`,
+            text: 'Tu ecosistema está listo. Solo falta completar la identidad de tu negocio para empezar a facturar profesionalmente.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '🚀 Configurar ahora',
+            cancelButtonText: 'Después',
+            confirmButtonColor: '#3699ff',
+            reverseButtons: true,
+            backdrop: `
+              rgba(0,0,123,0.4)
+              left top
+              no-repeat
+            `
+          }).then((result) => {
+            if (result.isConfirmed) {
+              this.router.navigate(['/admin/negocio']);
+            }
+          });
+        }, 2000); // 2 segundos de espera para no abrumar al cargar
+      }
+    });
+  }
+
   async cargarDatosManuales() {
     try {
       let efectivoCaja = 0;
       let cuentasPorCobrar = 0;
-
-      if (this.negociosService.tieneModulo('caja')) {
-        efectivoCaja = await this.obtenerEfectivoCaja();
-      }
-
-      if (this.negociosService.tieneModulo('cuentas_cobrar')) {
-        cuentasPorCobrar = await this.obtenerCuentasPorCobrar();
-      }
+      if (this.negociosService.tieneModulo('caja')) efectivoCaja = await this.obtenerEfectivoCaja();
+      if (this.negociosService.tieneModulo('cuentas_cobrar')) cuentasPorCobrar = await this.obtenerCuentasPorCobrar();
 
       this.stats = this.stats.map(s => {
         if (s.title === 'Efectivo en Caja') s.value = this.formatearMoneda(efectivoCaja);
@@ -161,7 +190,6 @@ export class Dashboard implements OnInit, OnDestroy {
 
   actualizarVentasStats(ventas: any[]) {
     if (!this.negociosService.tieneModulo('ventas')) return;
-
     const ahora = new Date();
     const hoy = `${ahora.getFullYear()}-${(ahora.getMonth() + 1).toString().padStart(2, '0')}-${ahora.getDate().toString().padStart(2, '0')}`;
     const totalVentasHoy = ventas
@@ -174,94 +202,57 @@ export class Dashboard implements OnInit, OnDestroy {
 
     const sIndex = this.stats.findIndex(s => s.title === 'Ventas de Hoy');
     const newStat = {
-      title: 'Ventas de Hoy',
-      value: this.formatearMoneda(totalVentasHoy),
-      change: 'Calculado',
-      isPositive: true,
-      icon: 'fa-money-bill-wave',
-      iconBg: 'bg-primary-subtle text-primary'
+      title: 'Ventas de Hoy', value: this.formatearMoneda(totalVentasHoy),
+      change: 'Calculado', isPositive: true, icon: 'fa-money-bill-wave', iconBg: 'bg-primary-subtle text-primary'
     };
 
     if (sIndex > -1) this.stats[sIndex] = newStat;
     else this.stats.push(newStat);
 
-    if (this.negociosService.tieneModulo('caja')) {
-      this.inicializarTarjetaSiFalta('Efectivo en Caja', 'fa-wallet', 'bg-success-subtle text-success');
-    }
-    if (this.negociosService.tieneModulo('cuentas_cobrar')) {
-      this.inicializarTarjetaSiFalta('Cuentas por Cobrar', 'fa-file-invoice-dollar', 'bg-warning-subtle text-warning');
-    }
+    if (this.negociosService.tieneModulo('caja')) this.inicializarTarjetaSiFalta('Efectivo en Caja', 'fa-wallet', 'bg-success-subtle text-success');
+    if (this.negociosService.tieneModulo('cuentas_cobrar')) this.inicializarTarjetaSiFalta('Cuentas por Cobrar', 'fa-file-invoice-dollar', 'bg-warning-subtle text-warning');
   }
 
   actualizarProductosStats(productos: any[]) {
     if (!this.negociosService.tieneModulo('inventario')) return;
-
     const stockCritico = productos.filter(p => (p.stock_actual || 0) < (p.stock_minimo || 5)).length;
-
     const sIndex = this.stats.findIndex(s => s.title === 'Stock Crítico');
     const newStat = {
-      title: 'Stock Crítico',
-      value: `${stockCritico} items`,
-      change: stockCritico > 0 ? 'Revisar' : 'OK',
-      isPositive: stockCritico === 0,
-      icon: 'fa-box-open',
-      iconBg: stockCritico > 0 ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success',
-      isUrgent: stockCritico > 0
+      title: 'Stock Crítico', value: `${stockCritico} items`, change: stockCritico > 0 ? 'Revisar' : 'OK',
+      isPositive: stockCritico === 0, icon: 'fa-box-open', iconBg: stockCritico > 0 ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success', isUrgent: stockCritico > 0
     };
-
     if (sIndex > -1) this.stats[sIndex] = newStat;
     else this.stats.push(newStat);
   }
 
   private inicializarTarjetaSiFalta(title: string, icon: string, iconBg: string) {
     if (!this.stats.find(s => s.title === title)) {
-      this.stats.push({
-        title,
-        value: this.formatearMoneda(0),
-        change: '0%',
-        isPositive: true,
-        icon,
-        iconBg
-      });
+      this.stats.push({ title, value: this.formatearMoneda(0), change: '0%', isPositive: true, icon, iconBg });
     }
   }
 
   actualizarTopProductos(productos: any[]) {
     if (!this.negociosService.tieneModulo('inventario')) return;
-    
     this.topProducts = productos.slice(0, 5).map(p => ({
-      name: p.nombre,
-      category: p.categoria || 'Sin categoría',
-      price: this.formatearMoneda(p.precio_venta),
-      sales: `Stock: ${p.stock_actual}`,
-      initials: this.obtenerIniciales(p.nombre)
+      name: p.nombre, category: p.categoria || 'Sin categoría', price: this.formatearMoneda(p.precio_venta),
+      sales: `Stock: ${p.stock_actual}`, initials: this.obtenerIniciales(p.nombre)
     }));
   }
 
   actualizarTransacciones(ventas: any[]) {
     if (!this.negociosService.tieneModulo('ventas')) return;
-
     this.transactions = ventas.slice(0, 10).map(v => ({
-      id: v.numero_venta,
-      customer: v.cliente_nombre || 'Cliente General',
-      customerInitials: this.obtenerIniciales(v.cliente_nombre || 'Cliente General'),
-      date: this.formatearFecha(v.created_at),
-      status: v.estado === 'completada' ? 'completed' : 'pending',
-      total: this.formatearMoneda(v.total)
+      id: v.numero_venta, customer: v.cliente_nombre || 'Cliente General', customerInitials: this.obtenerIniciales(v.cliente_nombre || 'Cliente General'),
+      date: this.formatearFecha(v.created_at), status: v.estado === 'completada' ? 'completed' : 'pending', total: this.formatearMoneda(v.total)
     }));
   }
 
   actualizarChartDesdeVentas(ventas: any[]) {
     if (!this.negociosService.tieneModulo('ventas')) return;
-
     const fechaFin = new Date();
     const fechaInicio = new Date();
     fechaInicio.setDate(fechaFin.getDate() - 7); 
-
-    const ventasFiltradas = ventas.filter(v =>
-      new Date(v.created_at) >= fechaInicio &&
-      v.estado === 'completada'
-    );
+    const ventasFiltradas = ventas.filter(v => new Date(v.created_at) >= fechaInicio && v.estado === 'completada');
 
     const ventasPorDia = new Map<string, number>();
     ventasFiltradas.forEach(venta => {
@@ -275,9 +266,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.chartData = Array.from(ventasPorDia.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([fecha, total]) => ({
-        label: this.formatearDia(fecha),
-        value: total,
-        percentage: (total / maxVenta) * 100
+        label: this.formatearDia(fecha), value: total, percentage: (total / maxVenta) * 100
       }));
   }
 
@@ -287,40 +276,22 @@ export class Dashboard implements OnInit, OnDestroy {
 
   async obtenerEfectivoCaja(): Promise<number> {
     try {
-      const { data, error } = await this.supabaseService.client
-        .from('cajas')
-        .select('monto_inicial, total_ventas_efectivo, total_entradas, total_salidas')
-        .eq('estado', 'abierta')
-        .order('fecha_apertura', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
+      const { data, error } = await this.supabaseService.client.from('cajas').select('monto_inicial, total_ventas_efectivo, total_entradas, total_salidas').eq('estado', 'abierta').order('fecha_apertura', { ascending: false }).limit(1).maybeSingle();
       if (error || !data) return 0;
       return data.monto_inicial + data.total_ventas_efectivo + data.total_entradas - data.total_salidas;
-    } catch (error) {
-      return 0;
-    }
+    } catch (error) { return 0; }
   }
 
   async obtenerCuentasPorCobrar(): Promise<number> {
     try {
-      const { data, error } = await this.supabaseService.client
-        .from('cuentas_por_cobrar')
-        .select('monto_pendiente')
-        .eq('estado', 'pendiente');
-
+      const { data, error } = await this.supabaseService.client.from('cuentas_por_cobrar').select('monto_pendiente').eq('estado', 'pendiente');
       if (error) return 0;
       return data?.reduce((sum, cuenta) => sum + cuenta.monto_pendiente, 0) || 0;
-    } catch (error) {
-      return 0;
-    }
+    } catch (error) { return 0; }
   }
 
   async setPeriod(period: 'weekly' | 'monthly' | 'yearly') {
     this.selectedPeriod = period;
-    if (this.negociosService.tieneModulo('ventas')) {
-       // Re-trigger chart update if needed or use existing data
-    }
     this.cdr.detectChanges();
   }
 
@@ -329,19 +300,12 @@ export class Dashboard implements OnInit, OnDestroy {
     const csv = this.transactions.map(t => `${t.id},${t.customer},${t.date},${t.total}`).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'reporte.csv';
-    a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'reporte.csv'; a.click();
   }
 
-  viewAllItems() {
-    this.router.navigate(['/inventario']);
-  }
+  viewAllItems() { this.router.navigate(['/inventario']); }
 
-  formatearMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(valor);
-  }
+  formatearMoneda(valor: number): string { return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(valor); }
 
   formatearFecha(fecha: string): string {
     const date = new Date(fecha);
@@ -355,17 +319,8 @@ export class Dashboard implements OnInit, OnDestroy {
     return dias[date.getDay()];
   }
 
-  obtenerIniciales(nombre: string): string {
-    return nombre.split(' ').map(p => p[0]).join('').toUpperCase().substring(0, 2);
-  }
+  obtenerIniciales(nombre: string): string { return nombre.split(' ').map(p => p[0]).join('').toUpperCase().substring(0, 2); }
 
-  async generarReporte607() {
-     // Lógica de reporte fiscal (abreviada para brevedad)
-     Swal.fire('Reporte 607', 'Generando formato fiscal para ventas...', 'info');
-  }
-
-  async generarReporte606() {
-     // Lógica de reporte fiscal (abreviada para brevedad)
-     Swal.fire('Reporte 606', 'Generando formato fiscal para compras...', 'info');
-  }
+  async generarReporte607() { Swal.fire('Reporte 607', 'Generando formato fiscal para ventas...', 'info'); }
+  async generarReporte606() { Swal.fire('Reporte 606', 'Generando formato fiscal para compras...', 'info'); }
 }

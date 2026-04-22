@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Negocio } from '../models/negocio.model';
+import { ROLES_PREDEFINIDOS } from '../models/usuario.model';
+import * as bcrypt from 'bcryptjs';
 
 // =============================================
 // Tipos de negocio soportados por la plataforma
@@ -95,7 +97,6 @@ export class NegociosService {
      */
     async obtenerPorId(id: string): Promise<Negocio | null> {
         try {
-            // Timeout de 10 segundos para evitar bloqueos por 504
             const timeoutPromise = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Timeout de base de datos')), 10000)
             );
@@ -121,21 +122,80 @@ export class NegociosService {
     }
 
     /**
-     * Registrar un nuevo negocio (Onboarding)
+     * Registrar un nuevo negocio (Onboarding Completo)
+     * Crea el negocio, sus roles por defecto y el primer administrador
      */
-    async crearNegocio(negocio: Partial<Negocio>): Promise<Negocio> {
-        if (negocio.tipo_negocio && !negocio.modulos_activos) {
+    async crearNegocio(negocio: Partial<Negocio>, adminData?: any): Promise<Negocio> {
+        // 1. Configurar módulos por defecto si no vienen
+        if (negocio.tipo_negocio && (!negocio.modulos_activos || negocio.modulos_activos.length === 0)) {
             negocio.modulos_activos = [...MODULOS_POR_TIPO[negocio.tipo_negocio]];
         }
 
-        const { data, error } = await this.supabaseService.client
+        // 2. Insertar Negocio
+        const { data: nuevoNegocio, error: errorNegocio } = await this.supabaseService.client
             .from('negocios')
             .insert([negocio])
             .select()
             .single();
 
-        if (error) throw error;
-        return data;
+        if (errorNegocio) throw errorNegocio;
+
+        // 3. Si vienen datos de administrador, crear estructura inicial
+        if (adminData && adminData.email && adminData.password) {
+            try {
+                console.log('🏗️ Generando estructura inicial para el nuevo negocio...');
+                
+                // A. Crear Roles por defecto para este negocio
+                let idRolAdmin = 0;
+                
+                for (const rolDef of ROLES_PREDEFINIDOS) {
+                    const { data: nuevoRol, error: errorRol } = await this.supabaseService.client
+                        .from('roles')
+                        .insert([{
+                            nombre: rolDef.nombre,
+                            descripcion: rolDef.descripcion,
+                            permisos: [...rolDef.permisos],
+                            color: rolDef.color,
+                            activo: true,
+                            negocio_id: nuevoNegocio.id // Aseguramos que el rol sea de este negocio
+                        }])
+                        .select()
+                        .single();
+
+                    if (!errorRol && nuevoRol && rolDef.nombre === 'Super Administrador') {
+                        idRolAdmin = nuevoRol.id;
+                    }
+                }
+
+                // B. Crear Usuario Administrador primario
+                const passwordHasheada = await bcrypt.hash(adminData.password, 10);
+                
+                const { error: errorUsuario } = await this.supabaseService.client
+                    .from('usuarios')
+                    .insert([{
+                        nombre: adminData.nombre || 'Administrador',
+                        apellido: adminData.apellido || nuevoNegocio.nombre,
+                        email: adminData.email,
+                        username: adminData.username || adminData.email.split('@')[0],
+                        password: passwordHasheada,
+                        rol_id: idRolAdmin,
+                        negocio_id: nuevoNegocio.id,
+                        activo: true
+                    }]);
+
+                if (errorUsuario) {
+                    console.error('❌ Error al crear usuario administrador inicial:', errorUsuario);
+                    // No lanzamos error para no revertir la creación del negocio, el admin puede crearlo manual
+                } else {
+                    console.log('✅ Estructura de onboarding completada.');
+                }
+
+            } catch (err) {
+                console.error('❌ Error en proceso de onboarding:', err);
+            }
+        }
+
+        return nuevoNegocio;
     }
 
     /**
@@ -151,7 +211,7 @@ export class NegociosService {
     }
 
     /**
-     * Cargar el negocio actual en el estado (usado después del login)
+     * Cargar el negocio actual en el estado
      */
     async cargarNegocioActual(id: string): Promise<void> {
         const negocio = await this.obtenerPorId(id);
@@ -162,9 +222,6 @@ export class NegociosService {
         this.negocioSubject.next(negocio);
     }
 
-    /**
-     * Alias para cargar el negocio actual (usado por IdentidadNegocioComponent)
-     */
     async cargarNegocio(): Promise<Negocio | null> {
         if (!this.negocioSubject.value) {
             const savedId = localStorage.getItem('logos_negocio_id');
@@ -175,9 +232,6 @@ export class NegociosService {
         return this.negocioSubject.value;
     }
 
-    /**
-     * Actualizar los datos del negocio actual
-     */
     async actualizarNegocio(cambios: Partial<Negocio>): Promise<void> {
         const negocioActual = this.negocioSubject.value;
         if (!negocioActual) throw new Error('No hay negocio cargado para actualizar');
@@ -189,7 +243,6 @@ export class NegociosService {
 
         if (error) throw error;
 
-        // Actualizar el estado local
         this.negocioSubject.next({ ...negocioActual, ...cambios });
     }
 

@@ -39,6 +39,15 @@ export class DeveloperNegociosComponent implements OnInit, OnDestroy {
         modulos_activos: []
     };
 
+    // 💡 NUEVO: Datos para el administrador inicial
+    formularioAdmin = {
+        email: '',
+        username: '',
+        password: '',
+        nombre: '',
+        apellido: ''
+    };
+
     // Constantes expuestas al template
     tiposNegocio = TIPOS_NEGOCIO_LABELS;
     modulosLabels = MODULOS_LABELS;
@@ -57,12 +66,10 @@ export class DeveloperNegociosComponent implements OnInit, OnDestroy {
     ) { }
 
     async ngOnInit() {
-        // Solo permitir al Super Admin Global del sistema
         if (!this.authService.isSuperAdmin()) {
             this.router.navigate(['/dashboard']);
             return;
         }
-
         await this.cargarNegocios();
     }
 
@@ -112,6 +119,14 @@ export class DeveloperNegociosComponent implements OnInit, OnDestroy {
             tipo_negocio: 'general',
             modulos_activos: [...MODULOS_POR_TIPO['general']]
         };
+        // Resetear admin form
+        this.formularioAdmin = {
+            email: '',
+            username: '',
+            password: '',
+            nombre: '',
+            apellido: ''
+        };
         this.mostrarModal = true;
     }
 
@@ -129,7 +144,6 @@ export class DeveloperNegociosComponent implements OnInit, OnDestroy {
         this.mostrarModal = false;
     }
 
-    // Cuando cambia el tipo de negocio, cargar módulos por defecto
     onTipoNegocioChange() {
         const tipo = this.formularioNegocio.tipo_negocio as TipoNegocio;
         if (tipo && MODULOS_POR_TIPO[tipo]) {
@@ -137,15 +151,11 @@ export class DeveloperNegociosComponent implements OnInit, OnDestroy {
         }
     }
 
-    // Toggle un módulo individual
     toggleModulo(modulo: ModuloSistema) {
         const activos = this.formularioNegocio.modulos_activos || [];
         const index = activos.indexOf(modulo);
-        if (index > -1) {
-            activos.splice(index, 1);
-        } else {
-            activos.push(modulo);
-        }
+        if (index > -1) activos.splice(index, 1);
+        else activos.push(modulo);
         this.formularioNegocio.modulos_activos = [...activos];
     }
 
@@ -159,20 +169,26 @@ export class DeveloperNegociosComponent implements OnInit, OnDestroy {
             return;
         }
 
+        if (this.modoModal === 'crear' && (!this.formularioAdmin.email || !this.formularioAdmin.password)) {
+            Swal.fire('Atención', 'Debe especificar un Email y Contraseña para el Administrador del nuevo negocio', 'warning');
+            return;
+        }
+
         this.isSaving = true;
         try {
             if (this.modoModal === 'crear') {
-                await this.negociosService.crearNegocio(this.formularioNegocio);
-                Swal.fire('Éxito', 'Negocio creado correctamente', 'success');
+                // Pasamos los datos del negocio + los datos del admin
+                await this.negociosService.crearNegocio(this.formularioNegocio, this.formularioAdmin);
+                Swal.fire('¡Bien hecho!', 'Negocio y Administrador creados correctamente.', 'success');
             } else {
                 await this.negociosService.actualizarLicencia(this.negocioSeleccionado!.id, this.formularioNegocio);
-                Swal.fire('Éxito', 'Licencia actualizada', 'success');
+                Swal.fire('Éxito', 'Configuración actualizada', 'success');
             }
             this.cerrarModal();
             await this.cargarNegocios();
         } catch (error: any) {
             console.error('Error al guardar negocio:', error);
-            Swal.fire('Error', error.message || 'No se pudo guardar el negocio', 'error');
+            Swal.fire('Error', error.message || 'No se pudo completar el registro', 'error');
         } finally {
             this.isSaving = false;
             this.cdr.detectChanges();

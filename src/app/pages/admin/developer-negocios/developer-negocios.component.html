@@ -29,7 +29,7 @@
     </div>
 
     <!-- Business List -->
-    <div class="row g-4 overflow-auto animate__animated animate__fadeInUp">
+    <div class="row g-4 overflow-auto animate__animated animate__fadeInUp pb-5">
         <!-- Loading State -->
         <div *ngIf="isLoading" class="col-12 text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
@@ -86,11 +86,11 @@
                         'Indefinido' }}
                     </div>
 
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 mt-auto">
                         <button class="btn btn-outline-primary btn-sm flex-grow-1" (click)="abrirModalEditar(negocio)">
-                            <i class="fa-solid fa-pen-to-square me-1"></i>Editar
+                            <i class="fa-solid fa-pen-to-square me-1"></i>Configurar
                         </button>
-                        <button class="btn btn-sm flex-grow-1"
+                        <button class="btn btn-sm flex-grow-1 shadow-sm"
                             [class.btn-outline-danger]="negocio.estado_licencia === 'activa'"
                             [class.btn-outline-success]="negocio.estado_licencia !== 'activa'"
                             (click)="toggleEstado(negocio)">
@@ -104,61 +104,41 @@
         </div>
     </div>
 
-    <!-- Modal Admin -->
+    <!-- Modal Admin (Creación/Edición) -->
     <div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-white p-4">
                     <h5 class="modal-title fw-bold">
-                        <i class="fa-solid me-2" [class.fa-plus]="modoModal === 'crear'"
+                        <i class="fa-solid me-2" [class.fa-rocket]="modoModal === 'crear'"
                             [class.fa-edit]="modoModal === 'editar'"></i>
-                        {{ modoModal === 'crear' ? 'Registrar Nuevo Negocio' : 'Editar Suscripción' }}
+                        {{ modoModal === 'crear' ? 'Registrar y Desplegar Negocio' : 'Actualizar Suscripción' }}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-4 overflow-auto" style="max-height: 80vh;">
                     <form (ngSubmit)="guardarNegocio()">
-                        <div class="row g-3">
+                        
+                        <!-- SECCIÓN 1: DATOS DEL NEGOCIO -->
+                        <h6 class="text-indigo fw-bold mb-3 d-flex align-items-center">
+                            <span class="badge bg-indigo me-2">1</span> Identidad del Negocio
+                        </h6>
+                        <div class="row g-3 mb-4">
                             <div class="col-12">
-                                <label class="form-label small fw-bold">Nombre del Negocio</label>
+                                <label class="form-label small fw-bold">Nombre Comercial</label>
                                 <input type="text" class="form-control" name="nombre"
-                                    [(ngModel)]="formularioNegocio.nombre" required>
+                                    [(ngModel)]="formularioNegocio.nombre" required placeholder="Ej: Billar Los Amigos">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Subdominio / ID Corto</label>
-                                <input type="text" class="form-control" name="subdominio"
-                                    [(ngModel)]="formularioNegocio.subdominio" required
-                                    [disabled]="modoModal === 'editar'">
+                                <label class="form-label small fw-bold">Subdominio (ID Único)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text small">@</span>
+                                    <input type="text" class="form-control" name="subdominio"
+                                        [(ngModel)]="formularioNegocio.subdominio" required
+                                        [disabled]="modoModal === 'editar'" placeholder="billar-amigos">
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">RNC (Opcional)</label>
-                                <input type="text" class="form-control" name="rnc" [(ngModel)]="formularioNegocio.rnc">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">Plan</label>
-                                <select class="form-select" name="plan_tipo" [(ngModel)]="formularioNegocio.plan_tipo">
-                                    <option value="basico">Básico</option>
-                                    <option value="profesional">Profesional</option>
-                                    <option value="pro">Pro (Full)</option>
-                                    <option value="perpetual">Perpetuo</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">Estado</label>
-                                <select class="form-select" name="estado_licencia"
-                                    [(ngModel)]="formularioNegocio.estado_licencia">
-                                    <option value="activa">Activa</option>
-                                    <option value="suspendida">Suspendida</option>
-                                    <option value="vencida">Vencida</option>
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small fw-bold">Fecha de Vencimiento</label>
-                                <input type="date" class="form-control" name="fecha_vencimiento"
-                                    [(ngModel)]="formularioNegocio.fecha_vencimiento">
-                            </div>
-                            <!-- Tipo de Negocio -->
-                            <div class="col-12">
                                 <label class="form-label small fw-bold">Tipo de Negocio</label>
                                 <select class="form-select" name="tipo_negocio"
                                     [(ngModel)]="formularioNegocio.tipo_negocio"
@@ -168,27 +148,98 @@
                                     </option>
                                 </select>
                             </div>
-                            <!-- Módulos Activos -->
-                            <div class="col-12">
-                                <label class="form-label small fw-bold">Módulos Activos</label>
-                                <div class="row g-2">
-                                    <div *ngFor="let modulo of modulosKeys" class="col-md-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" [id]="'mod_' + modulo"
-                                                [checked]="moduloActivo(modulo)" (change)="toggleModulo(modulo)">
-                                            <label class="form-check-label small" [for]="'mod_' + modulo">
-                                                {{ modulosLabels[modulo] }}
-                                            </label>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">RNC / Cédula</label>
+                                <input type="text" class="form-control" name="rnc" [(ngModel)]="formularioNegocio.rnc" placeholder="131-XXXXX-X">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Plan Contratado</label>
+                                <select class="form-select" name="plan_tipo" [(ngModel)]="formularioNegocio.plan_tipo">
+                                    <option value="basico">Básico (Lite)</option>
+                                    <option value="profesional">Profesional (Recomendado)</option>
+                                    <option value="pro">Pro (Todo incluido)</option>
+                                    <option value="perpetual">Licencia Perpetua</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 💡 SECCIÓN 2: DATOS DEL ADMINISTRADOR (SOLO AL CREAR) -->
+                        <div *ngIf="modoModal === 'crear'" class="animate__animated animate__fadeIn">
+                            <hr class="my-4">
+                            <h6 class="text-success fw-bold mb-3 d-flex align-items-center">
+                                <span class="badge bg-success me-2">2</span> Credenciales de Acceso (Dueño)
+                            </h6>
+                            <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Nombre del Administrador</label>
+                                    <input type="text" class="form-control" name="adm_nombre" [(ngModel)]="formularioAdmin.nombre" placeholder="Nombre completo">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Email (Para Login)</label>
+                                    <input type="email" class="form-control" name="adm_email" [(ngModel)]="formularioAdmin.email" required placeholder="correo@ejemplo.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Usuario (Único)</label>
+                                    <input type="text" class="form-control" name="adm_user" [(ngModel)]="formularioAdmin.username" placeholder="admin123">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Contraseña Temporal</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" name="adm_pass" [(ngModel)]="formularioAdmin.password" required placeholder="••••••••">
+                                        <span class="input-group-text bg-transparent">
+                                            <i class="fa-solid fa-key text-muted"></i>
+                                        </span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.65rem;">El sistema hasheará esta contraseña automáticamente.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 3: LICENCIA Y MÓDULOS -->
+                        <hr class="my-4">
+                        <h6 class="text-warning-emphasis fw-bold mb-3 d-flex align-items-center">
+                            <span class="badge bg-warning me-2">3</span> Configuración de Licencia
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Vencimiento de Licencia</label>
+                                <input type="date" class="form-control" name="fecha_vencimiento"
+                                    [(ngModel)]="formularioNegocio.fecha_vencimiento">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Estado Inicial</label>
+                                <select class="form-select" name="estado_licencia"
+                                    [(ngModel)]="formularioNegocio.estado_licencia">
+                                    <option value="activa">Activa / Full Acceso</option>
+                                    <option value="suspendida">Suspendida / Solo Lectura</option>
+                                    <option value="vencida">Vencida</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12 mt-4">
+                                <label class="form-label small fw-bold mb-2">Módulos que este negocio podrá usar:</label>
+                                <div class="bg-white border rounded p-3 shadow-inner">
+                                    <div class="row g-2">
+                                        <div *ngFor="let modulo of modulosKeys" class="col-md-6">
+                                            <div class="form-check form-switch card-modulo p-2 px-3 rounded-pill border-0">
+                                                <input class="form-check-input" type="checkbox" [id]="'mod_' + modulo"
+                                                    [checked]="moduloActivo(modulo)" (change)="toggleModulo(modulo)">
+                                                <label class="form-check-label small ms-2 fw-medium" [for]="'mod_' + modulo">
+                                                    {{ modulosLabels[modulo] }}
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-4 text-end">
-                            <button type="button" class="btn btn-light me-2" (click)="cerrarModal()">Cancelar</button>
-                            <button type="submit" class="btn btn-indigo px-4" [disabled]="isSaving">
-                                <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
-                                {{ modoModal === 'crear' ? 'Registrar Negocio' : 'Guardar Cambios' }}
+
+                        <div class="mt-5 text-end border-top pt-3">
+                            <button type="button" class="btn btn-light me-2 px-4" (click)="cerrarModal()">Descartar</button>
+                            <button type="submit" class="btn btn-indigo px-5 shadow" [disabled]="isSaving">
+                                <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+                                <i class="fa-solid fa-cloud-arrow-up me-2"></i>
+                                {{ modoModal === 'crear' ? 'Registrar y Activar' : 'Actualizar Configuración' }}
                             </button>
                         </div>
                     </form>
@@ -196,5 +247,6 @@
             </div>
         </div>
     </div>
+    
     <div *ngIf="mostrarModal" class="modal-backdrop fade show"></div>
 </div>
