@@ -14,6 +14,7 @@ export interface PedidoMesa {
     nombre_cliente?: string; // Alias para búsqueda rápida
     estado: 'abierto' | 'finalizado' | 'cancelado';
     total: number;
+    negocio_id?: string; // Multi-tenant support
     created_at?: string;
     updated_at?: string;
 
@@ -30,6 +31,7 @@ export interface PedidoMesaDetalle {
     cantidad: number;
     precio_unitario: number;
     subtotal: number;
+    negocio_id?: string; // Multi-tenant support
     estado_pago: 'pendiente' | 'pagado'; // Para permitir pagos parciales
     estado_preparacion?: 'solicitado' | 'en_cocina' | 'listo' | 'entregado';
     notas?: string; // Ej: "Sin cebolla", "Bien cocido"
