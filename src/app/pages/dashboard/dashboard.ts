@@ -136,36 +136,41 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   /**
-   * 💡 Muestra un asistente de bienvenida si los datos del negocio están incompletos
+   * 💡 Muestra un asistente de bienvenida si los datos del negocio están totalmente vacíos
    */
   private verificarOnboarding() {
+    // Si ya lo vio en esta sesión, no molestar
+    if (localStorage.getItem('onboarding_visto') === 'true') return;
+
     this.negociosService.negocio$.pipe(
       take(1),
       filter(n => n !== null)
     ).subscribe(negocio => {
-      // Si no tiene teléfono o RNC, es probable que acabe de ser creado
-      if (negocio && !negocio.telefono) {
+      // Solo mostrar si faltan los campos críticos de identidad (Teléfono Y RNC Y Logo)
+      const incompleto = negocio && !negocio.telefono && !negocio.rnc && !negocio.logo_url;
+
+      if (incompleto) {
         setTimeout(() => {
           Swal.fire({
             title: `¡Bienvenido a LogosPOS, ${negocio.nombre}! 🚀`,
-            text: 'Tu ecosistema está listo. Solo falta completar la identidad de tu negocio para empezar a facturar profesionalmente.',
+            text: 'Tu ecosistema está listo. Completa la identidad de tu negocio cuando puedas para empezar a facturar profesionalmente.',
             icon: 'info',
             showCancelButton: true,
-            confirmButtonText: '🚀 Configurar ahora',
+            confirmButtonText: '🚀 Configurar identidad',
             cancelButtonText: 'Después',
             confirmButtonColor: '#3699ff',
-            reverseButtons: true,
-            backdrop: `
-              rgba(0,0,123,0.4)
-              left top
-              no-repeat
-            `
+            reverseButtons: true
           }).then((result) => {
+            // Marcar como visto sin importar la elección
+            localStorage.setItem('onboarding_visto', 'true');
             if (result.isConfirmed) {
               this.router.navigate(['/admin/negocio']);
             }
           });
-        }, 2000); // 2 segundos de espera para no abrumar al cargar
+        }, 1500);
+      } else {
+        // Si ya tiene datos, marcar como visto para no volver a evaluar
+        localStorage.setItem('onboarding_visto', 'true');
       }
     });
   }
