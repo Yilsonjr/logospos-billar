@@ -69,7 +69,7 @@ export class OfflineService {
     // Catálogo (Productos)
     async actualizarProductosLocales(productos: any[]): Promise<void> {
         await db.productos.clear();
-        await db.productos.bulkAdd(productos);
+        await db.productos.bulkPut(productos);
     }
 
     async obtenerProductosLocales(): Promise<any[]> {
@@ -79,7 +79,7 @@ export class OfflineService {
     // Categorías
     async actualizarCategoriasLocales(categorias: any[]): Promise<void> {
         await db.categorias.clear();
-        await db.categorias.bulkAdd(categorias);
+        await db.categorias.bulkPut(categorias);
     }
 
     async obtenerCategoriasLocales(): Promise<any[]> {
@@ -89,7 +89,7 @@ export class OfflineService {
     // Clientes
     async actualizarClientesLocales(clientes: any[]): Promise<void> {
         await db.clientes.clear();
-        await db.clientes.bulkAdd(clientes);
+        await db.clientes.bulkPut(clientes);
     }
 
     async obtenerClientesLocales(): Promise<any[]> {

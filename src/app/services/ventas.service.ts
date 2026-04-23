@@ -122,8 +122,13 @@ export class VentasService {
       }
 
       console.log('✅ Venta procesada atómicamente:', data.numero_venta);
+
+      // --- CORRECCIÓN: Registrar movimiento en caja ---
+      if (venta.caja_id) {
+        await this.registrarMovimientosVentaCaja(venta, data.id, data.numero_venta);
+      }
       
-      // Retornar la venta creada (el RPC devuelve {id, numero_venta})
+      // Retornar la venta creada
       return {
         id: data.id,
         numero_venta: data.numero_venta,
