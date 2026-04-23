@@ -190,11 +190,55 @@ export class CuentasCobrarService {
       }
 
       await this.cargarCuentas();
+
+      // 7. Recalcular el balance total del cliente para asegurar sincronización (Self-healing)
+      if (cuenta.cliente_id) {
+        await this.recalcularBalanceCliente(cuenta.cliente_id);
+      }
+
       return data;
 
     } catch (error) {
       console.error('💥 Error en registrarPago:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 🛡️ Función de Sincronización Crítica:
+   * Recalcula el balance total de un cliente basado en la suma SUM(monto_pendiente)
+   * de sus facturas reales. Esto corrige cualquier error de redondeo o desactualización.
+   */
+  async recalcularBalanceCliente(clienteId: number): Promise<void> {
+    try {
+      console.log('🔄 Sincronizando balance real del cliente:', clienteId);
+
+      // 1. Obtener suma de todas las deudas pendientes del cliente
+      const { data, error } = await this.supabaseService.client
+        .from('cuentas_por_cobrar')
+        .select('monto_pendiente')
+        .eq('cliente_id', clienteId)
+        .neq('estado', 'pagada');
+
+      if (error) throw error;
+
+      const balanceReal = (data || []).reduce((sum, item) => sum + (item.monto_pendiente || 0), 0);
+
+      // 2. Actualizar la ficha del cliente con el valor REAL
+      const { error: errorUpdate } = await this.supabaseService.client
+        .from('clientes')
+        .update({
+          balance_pendiente: balanceReal,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clienteId);
+
+      if (errorUpdate) throw errorUpdate;
+
+      console.log(`✅ Sincronización exitosa. El balance real es: RD$${balanceReal}`);
+
+    } catch (error) {
+      console.error('❌ Error al recalcular balance del cliente:', error);
     }
   }
 
