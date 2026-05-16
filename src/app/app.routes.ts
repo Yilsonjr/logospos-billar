@@ -1,4 +1,8 @@
 import { Routes } from '@angular/router';
+// Módulo Restaurante
+import { RestauranteComponent } from './pages/restaurante/restaurante.component';
+import { KitchenDisplayComponent } from './pages/restaurante/kitchen-display/kitchen-display.component';
+import { PrintersAdminComponent } from './pages/restaurante/printers-admin/printers-admin.component';
 import { Inventario } from './pages/inventario/inventario.component';
 import { Dashboard } from './pages/dashboard/dashboard';
 import { ProveedoresComponent } from './pages/inventario/proveedores/proveedores.component';
@@ -275,6 +279,26 @@ export const routes: Routes = [
         component: DeveloperNegociosComponent,
         canActivate: [AuthGuard, PermissionGuard],
         data: { permissions: ['config.general'] }
+    },
+
+    // ---- MÓDULO RESTAURANTE ----
+    {
+        path: 'restaurante',
+        component: RestauranteComponent,
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['ventas.crear'], modulo: 'restaurante' }
+    },
+    {
+        path: 'restaurante/cocina',
+        component: KitchenDisplayComponent,
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['ventas.crear'], modulo: 'cocina' }
+    },
+    {
+        path: 'restaurante/impresoras',
+        component: PrintersAdminComponent,
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['config.general'], modulo: 'restaurante' }
     },
 
     // Redirecciones

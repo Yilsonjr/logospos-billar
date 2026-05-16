@@ -30,6 +30,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   quickActions = [
     { label: 'Nueva Venta', icon: 'fa-solid fa-plus-circle', link: '/ventas/nueva', permissions: ['ventas.crear'], color: '#3699ff', modulo: 'ventas' },
     { label: 'Mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', link: '/ventas/mesas', permissions: ['ventas.crear'], color: '#ef4444', modulo: 'mesas' },
+    { label: 'Restaurante', icon: 'fa-solid fa-utensils', link: '/restaurante', permissions: ['ventas.crear'], color: '#f97316', modulo: 'restaurante' },
     { label: 'Cierre', icon: 'fa-solid fa-door-closed', link: '/caja/cierre', permissions: ['caja.cerrar'], color: '#f59e0b', modulo: 'caja' }
   ];
 
@@ -127,6 +128,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
         { label: 'Nueva Transaccion', link: '/ventas/nueva', icon: 'fa-solid fa-plus-circle', permissions: ['ventas.crear'] },
         { label: 'Mesas', link: '/ventas/mesas', icon: 'fa-solid fa-table-tennis-paddle-ball', permissions: ['ventas.crear'], modulo: 'mesas' },
         { label: 'Historial', link: '/ventas/historial', icon: 'fa-solid fa-clock-rotate-left', permissions: ['ventas.historial'] }
+      ],
+      expanded: false
+    },
+    {
+      label: 'Restaurante',
+      icon: 'fa-solid fa-utensils',
+      link: '/restaurante',
+      active: false,
+      permissions: ['ventas.crear'],
+      modulo: 'restaurante',
+      submenu: [
+        { label: 'Mapa de Mesas', link: '/restaurante', icon: 'fa-solid fa-border-all', permissions: ['ventas.crear'], modulo: 'restaurante' },
+        { label: 'Pantalla Cocina (KDS)', link: '/restaurante/cocina', icon: 'fa-solid fa-fire-burner', permissions: ['ventas.crear'], modulo: 'cocina' },
+        { label: 'Impresoras de Red', link: '/restaurante/impresoras', icon: 'fa-solid fa-print', permissions: ['config.general'], modulo: 'restaurante' }
       ],
       expanded: false
     },

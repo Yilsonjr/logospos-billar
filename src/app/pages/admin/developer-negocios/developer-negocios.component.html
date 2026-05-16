@@ -1,125 +1,330 @@
-<div class="developer-container container-fluid p-4">
-    <!-- Header & Stats -->
-    <div class="row mb-4 animate__animated animate__fadeInDown">
-        <div class="col-md-8">
-            <h1 class="fw-bold text-dark">
+<div class="developer-container container-fluid px-3 px-md-4 pt-4 pb-5">
+
+    <!-- ── HEADER ───────────────────────────────────────────── -->
+    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center
+                justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-0 fs-4 fs-md-2">
                 <i class="fa-solid fa-server me-2 text-indigo"></i>Gestión de Negocios
             </h1>
-            <p class="text-muted">Control maestro de suscripciones y licencias del sistema.</p>
+            <p class="text-muted mb-0 small">Control maestro de suscripciones y licencias.</p>
         </div>
-        <div class="col-md-4 text-end">
-            <button class="btn btn-primary btn-lg shadow-sm" (click)="abrirModalCrear()">
-                <i class="fa-solid fa-plus me-2"></i>Nuevo Negocio
-            </button>
-        </div>
+        <button class="btn btn-indigo shadow-sm px-4 flex-shrink-0" (click)="abrirModalCrear()">
+            <i class="fa-solid fa-plus me-2"></i>Nuevo Negocio
+        </button>
     </div>
 
-    <!-- Search & Filters -->
-    <div class="card border-0 shadow-sm mb-4 animate__animated animate__fadeIn">
-        <div class="card-body">
-            <div class="input-group">
-                <span class="input-group-text bg-transparent border-end-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text" class="form-control border-start-0 ps-0"
-                    placeholder="Buscar por nombre, subdominio o RNC..." [(ngModel)]="filtroTexto"
-                    (ngModelChange)="aplicarFiltros()">
+    <!-- ── MÉTRICAS ──────────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon bg-primary-subtle rounded-3 flex-shrink-0">
+                        <i class="fa-solid fa-store text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fs-3 fw-bold lh-1">{{ totalNegocios }}</div>
+                        <div class="small text-muted">Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon bg-success-subtle rounded-3 flex-shrink-0">
+                        <i class="fa-solid fa-circle-check text-success"></i>
+                    </div>
+                    <div>
+                        <div class="fs-3 fw-bold lh-1 text-success">{{ negociosActivosCount }}</div>
+                        <div class="small text-muted">Activos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3" style="cursor:pointer" (click)="mostrarAlertaVencimiento = true">
+            <div class="stat-card card border-0 shadow-sm h-100"
+                [class.ring-warning]="negociosProximosVencer.length > 0">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon bg-warning-subtle rounded-3 flex-shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                    </div>
+                    <div>
+                        <div class="fs-3 fw-bold lh-1 text-warning">{{ negociosProximosVencer.length }}</div>
+                        <div class="small text-muted">Por vencer</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon bg-danger-subtle rounded-3 flex-shrink-0">
+                        <i class="fa-solid fa-ban text-danger"></i>
+                    </div>
+                    <div>
+                        <div class="fs-3 fw-bold lh-1 text-danger">{{ negociosSuspendidosCount }}</div>
+                        <div class="small text-muted">Suspendidos</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Business List -->
-    <div class="row g-4 overflow-auto animate__animated animate__fadeInUp pb-5">
-        <!-- Loading State -->
+    <!-- ── MRR BANNER ────────────────────────────────────────── -->
+    <div class="card border-0 shadow-sm mb-4 mrr-banner">
+        <div class="card-body d-flex flex-column flex-sm-row align-items-start
+                    align-items-sm-center justify-content-between gap-3 p-3 px-4">
+            <div class="text-white">
+                <div class="small opacity-75 fw-semibold text-uppercase" style="letter-spacing:.05em">
+                    Ingreso Mensual Recurrente (estimado)
+                </div>
+                <div class="fs-2 fw-bold lh-1">RD$ {{ mrrEstimado | number:'1.0-0' }}</div>
+                <div class="small opacity-75 mt-1">
+                    {{ negociosActivosCount }} negocio(s) activo(s)
+                </div>
+            </div>
+            <div class="d-flex gap-3 gap-sm-4 flex-wrap">
+                <div class="text-center text-white">
+                    <div class="fw-bold small">RD$ 1,500</div>
+                    <div class="opacity-60" style="font-size:.7rem">Básico/mes</div>
+                </div>
+                <div class="text-center text-white">
+                    <div class="fw-bold small">RD$ 3,000</div>
+                    <div class="opacity-60" style="font-size:.7rem">Profesional/mes</div>
+                </div>
+                <div class="text-center text-white">
+                    <div class="fw-bold small">RD$ 5,000</div>
+                    <div class="opacity-60" style="font-size:.7rem">Pro/mes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ALERTA VENCIMIENTO ────────────────────────────────── -->
+    <div *ngIf="negociosProximosVencer.length && mostrarAlertaVencimiento"
+        class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-start gap-3">
+        <i class="fa-solid fa-triangle-exclamation flex-shrink-0 mt-1"></i>
+        <div class="flex-grow-1">
+            <strong>{{ negociosProximosVencer.length }} negocio(s) vencen en los próximos 30 días:</strong>
+            <div class="mt-2 d-flex flex-wrap gap-2">
+                <span *ngFor="let n of negociosProximosVencer"
+                    class="badge bg-warning text-dark rounded-pill px-3 py-2"
+                    style="cursor:pointer; font-size:.8rem"
+                    (click)="abrirModalEditar(n)">
+                    <i class="fa-solid fa-clock me-1"></i>{{ n.nombre }} · {{ diasParaVencer(n.fecha_vencimiento) }}d
+                </span>
+            </div>
+        </div>
+        <button type="button" class="btn-close flex-shrink-0"
+            (click)="mostrarAlertaVencimiento = false"></button>
+    </div>
+
+    <!-- ── BÚSQUEDA + FILTROS ────────────────────────────────── -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-sm">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 ps-0"
+                            placeholder="Buscar por nombre, subdominio o RNC..."
+                            [(ngModel)]="filtroTexto" (ngModelChange)="aplicarFiltros()">
+                        <button *ngIf="filtroTexto" class="btn btn-outline-secondary border-start-0"
+                            (click)="filtroTexto=''; aplicarFiltros()">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-auto">
+                    <select class="form-select" [(ngModel)]="filtroEstado"
+                        (ngModelChange)="aplicarFiltros()" style="min-width:160px">
+                        <option value="">Todos los estados</option>
+                        <option value="activa">Solo Activos</option>
+                        <option value="suspendida">Solo Suspendidos</option>
+                        <option value="vencida">Solo Vencidos</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-auto text-muted small">
+                    {{ negociosFiltrados.length }} resultado(s)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CARDS GRID ────────────────────────────────────────── -->
+    <div class="row g-3">
+
+        <!-- Loading -->
         <div *ngIf="isLoading" class="col-12 text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
+            <div class="spinner-border text-primary"></div>
             <p class="mt-2 text-muted">Cargando ecosistema...</p>
         </div>
 
-        <!-- Empty State -->
-        <div *ngIf="!isLoading && negociosFiltrados.length === 0" class="col-12 text-center py-5">
-            <i class="fa-solid fa-cloud-open fs-1 text-muted mb-3"></i>
-            <h3>No se encontraron negocios</h3>
-            <p class="text-muted">Intenta ajustar los filtros de búsqueda.</p>
+        <!-- Empty -->
+        <div *ngIf="!isLoading && negociosFiltrados.length === 0" class="col-12 text-center py-5 text-muted">
+            <i class="fa-solid fa-store-slash fs-1 mb-3 d-block"></i>
+            <h5>No se encontraron negocios</h5>
+            <p class="mb-0 small">Ajusta los filtros o registra un nuevo negocio.</p>
         </div>
 
-        <!-- Business Card -->
-        <div *ngFor="let negocio of negociosFiltrados" class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-hover transition-all"
-                [class.border-start-danger]="negocio.estado_licencia === 'suspendida'">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h5 class="card-title fw-bold mb-0">{{ negocio.nombre }}</h5>
+        <!-- Negocio Card -->
+        <div *ngFor="let negocio of negociosFiltrados" class="col-sm-6 col-lg-4 col-xxl-3">
+            <div class="negocio-card card border-0 shadow-sm h-100 transition-all"
+                [class.card-suspendida]="negocio.estado_licencia !== 'activa'">
+
+                <!-- Barra de color por plan -->
+                <div class="plan-accent-bar" [style.background]="accentPlan(negocio.plan_tipo)"></div>
+
+                <div class="card-body p-3 d-flex flex-column gap-2">
+
+                    <!-- Nombre + Estado -->
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div style="min-width:0">
+                            <h6 class="mb-0 fw-bold text-truncate" [title]="negocio.nombre">
+                                {{ negocio.nombre }}
+                            </h6>
                             <small class="text-indigo fw-semibold">@{{ negocio.subdominio }}</small>
                         </div>
-                        <span class="badge rounded-pill px-3 py-2"
+                        <span class="badge rounded-pill flex-shrink-0"
                             [ngClass]="obtenerClaseEstado(negocio.estado_licencia)">
                             {{ negocio.estado_licencia | titlecase }}
                         </span>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center mb-1">
-                            <i class="fa-solid fa-store text-muted me-2 small"></i>
-                            <span class="small text-muted">Tipo: {{ $any(tiposNegocio)[negocio.tipo_negocio] ||
-                                negocio.tipo_negocio }}</span>
-                        </div>
-                        <div class="d-flex align-items-center mb-1">
-                            <i class="fa-solid fa-id-card-clip text-muted me-2 small"></i>
-                            <span class="small text-muted">RNC: {{ negocio.rnc || 'N/A' }}</span>
-                        </div>
-                        <div class="d-flex align-items-center mb-1">
-                            <i class="fa-solid fa-box text-muted me-2 small"></i>
-                            <span class="small fw-bold">Plan: {{ negocio.plan_tipo | uppercase }}</span>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-puzzle-piece text-muted me-2 small"></i>
-                            <span class="small text-muted">{{ (negocio.modulos_activos || []).length }} módulos</span>
-                        </div>
+                    <!-- Badges: tipo + plan + módulos -->
+                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <span class="badge bg-light text-secondary border" style="font-size:.7rem">
+                            <i class="fa-solid fa-store me-1"></i>
+                            {{ $any(tiposNegocio)[negocio.tipo_negocio] || negocio.tipo_negocio }}
+                        </span>
+                        <span class="badge text-white" style="font-size:.7rem"
+                            [style.background]="accentPlan(negocio.plan_tipo)">
+                            {{ negocio.plan_tipo | uppercase }}
+                        </span>
+                        <span class="badge bg-light text-secondary border ms-auto" style="font-size:.7rem">
+                            <i class="fa-solid fa-puzzle-piece me-1"></i>
+                            {{ (negocio.modulos_activos || []).length }} mód.
+                        </span>
                     </div>
 
-                    <div class="alert small mb-4"
-                        [ngClass]="negocio.estado_licencia === 'activa' ? 'alert-info' : 'alert-secondary'">
-                        <i class="fa-solid fa-calendar-check me-2"></i>
-                        Vence: {{ negocio.fecha_vencimiento ? (negocio.fecha_vencimiento | date:'mediumDate') :
-                        'Indefinido' }}
+                    <!-- Vencimiento -->
+                    <div class="vence-row rounded-2 px-2 py-1 mt-auto"
+                        [ngClass]="'bg-' + claseDiasVencimiento(negocio) + '-subtle'">
+                        <i class="fa-solid fa-calendar-day small me-1"
+                            [ngClass]="'text-' + claseDiasVencimiento(negocio)"></i>
+                        <span class="small fw-semibold"
+                            [ngClass]="'text-' + claseDiasVencimiento(negocio) + '-emphasis'">
+                            {{ textoVencimiento(negocio.fecha_vencimiento) }}
+                        </span>
                     </div>
 
-                    <div class="d-flex gap-2 mt-auto">
-                        <button class="btn btn-outline-primary btn-sm flex-grow-1" (click)="abrirModalEditar(negocio)">
+                    <!-- Acciones -->
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary btn-sm flex-grow-1"
+                            (click)="abrirModalEditar(negocio)">
                             <i class="fa-solid fa-pen-to-square me-1"></i>Configurar
                         </button>
-                        <button class="btn btn-sm flex-grow-1 shadow-sm"
+                        <button class="btn btn-sm"
                             [class.btn-outline-danger]="negocio.estado_licencia === 'activa'"
                             [class.btn-outline-success]="negocio.estado_licencia !== 'activa'"
+                            [title]="negocio.estado_licencia === 'activa' ? 'Suspender' : 'Activar'"
                             (click)="toggleEstado(negocio)">
-                            <i class="fa-solid me-1" [class.fa-ban]="negocio.estado_licencia === 'activa'"
-                                [class.fa-check]="negocio.estado_licencia !== 'activa'"></i>
-                            {{ negocio.estado_licencia === 'activa' ? 'Suspender' : 'Activar' }}
+                            <i class="fa-solid"
+                                [class.fa-ban]="negocio.estado_licencia === 'activa'"
+                                [class.fa-circle-check]="negocio.estado_licencia !== 'activa'"></i>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </div><!-- /cards -->
 
-    <!-- Modal Admin (Creación/Edición) -->
-    <div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <!-- ── MODAL CREAR / EDITAR ──────────────────────────────── -->
+    <div class="modal fade" [class.show]="mostrarModal"
+        [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-white p-4">
                     <h5 class="modal-title fw-bold">
-                        <i class="fa-solid me-2" [class.fa-rocket]="modoModal === 'crear'"
+                        <i class="fa-solid me-2"
+                            [class.fa-rocket]="modoModal === 'crear'"
                             [class.fa-edit]="modoModal === 'editar'"></i>
                         {{ modoModal === 'crear' ? 'Registrar y Desplegar Negocio' : 'Actualizar Suscripción' }}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
                 </div>
-                <div class="modal-body p-4 overflow-auto" style="max-height: 80vh;">
+
+                <!-- Tabs (solo en editar) -->
+                <div *ngIf="modoModal === 'editar'" class="border-bottom px-4 pt-2 bg-light">
+                    <ul class="nav nav-tabs border-0">
+                        <li class="nav-item">
+                            <button class="nav-link fw-semibold" [class.active]="tabActiva === 'config'"
+                                type="button" (click)="tabActiva = 'config'">
+                                <i class="fa-solid fa-sliders me-1"></i> Configuración
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-semibold" [class.active]="tabActiva === 'historial'"
+                                type="button" (click)="tabActiva = 'historial'">
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i> Historial
+                                <span *ngIf="historial.length"
+                                    class="badge bg-secondary ms-1 rounded-pill">{{ historial.length }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="modal-body p-4">
+
+                    <!-- TAB HISTORIAL -->
+                    <div *ngIf="tabActiva === 'historial'">
+                        <div *ngIf="cargandoHistorial" class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm text-primary"></div>
+                        </div>
+                        <div *ngIf="!cargandoHistorial && historial.length === 0"
+                            class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-inbox fs-2 mb-2 d-block"></i>
+                            Sin cambios registrados aún.
+                        </div>
+                        <div *ngFor="let cambio of historial" class="border rounded-3 p-3 mb-3 bg-white">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <small class="text-muted">
+                                    <i class="fa-solid fa-user-gear me-1"></i>{{ cambio.realizado_por }}
+                                    &nbsp;·&nbsp;{{ formatearFecha(cambio.created_at) }}
+                                </small>
+                                <span *ngIf="cambio.plan_anterior !== cambio.plan_nuevo"
+                                    class="badge bg-warning-subtle text-warning-emphasis small">
+                                    Plan: {{ cambio.plan_anterior }} → {{ cambio.plan_nuevo }}
+                                </span>
+                            </div>
+                            <div *ngIf="cambio.modulos_activados?.length" class="mb-1">
+                                <span class="text-success small fw-bold">+ Activados: </span>
+                                <span *ngFor="let m of cambio.modulos_activados"
+                                    class="badge bg-success-subtle text-success me-1 small">
+                                    {{ $any(modulosLabels)[m] || m }}
+                                </span>
+                            </div>
+                            <div *ngIf="cambio.modulos_desactivados?.length" class="mb-1">
+                                <span class="text-danger small fw-bold">- Desactivados: </span>
+                                <span *ngFor="let m of cambio.modulos_desactivados"
+                                    class="badge bg-danger-subtle text-danger me-1 small">
+                                    {{ $any(modulosLabels)[m] || m }}
+                                </span>
+                            </div>
+                            <div *ngIf="cambio.notas" class="mt-2 text-muted small fst-italic">
+                                <i class="fa-solid fa-note-sticky me-1"></i>{{ cambio.notas }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB CONFIGURACIÓN -->
+                    <div [style.display]="tabActiva === 'config' ? 'block' : 'none'">
                     <form (ngSubmit)="guardarNegocio()">
-                        
-                        <!-- SECCIÓN 1: DATOS DEL NEGOCIO -->
+
+                        <!-- 1: Identidad -->
                         <h6 class="text-indigo fw-bold mb-3 d-flex align-items-center">
                             <span class="badge bg-indigo me-2">1</span> Identidad del Negocio
                         </h6>
@@ -127,7 +332,8 @@
                             <div class="col-12">
                                 <label class="form-label small fw-bold">Nombre Comercial</label>
                                 <input type="text" class="form-control" name="nombre"
-                                    [(ngModel)]="formularioNegocio.nombre" required placeholder="Ej: Billar Los Amigos">
+                                    [(ngModel)]="formularioNegocio.nombre" required
+                                    placeholder="Ej: Billar Los Amigos">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Subdominio (ID Único)</label>
@@ -150,20 +356,26 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">RNC / Cédula</label>
-                                <input type="text" class="form-control" name="rnc" [(ngModel)]="formularioNegocio.rnc" placeholder="131-XXXXX-X">
+                                <input type="text" class="form-control" name="rnc"
+                                    [(ngModel)]="formularioNegocio.rnc" placeholder="131-XXXXX-X">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Plan Contratado</label>
-                                <select class="form-select" name="plan_tipo" [(ngModel)]="formularioNegocio.plan_tipo">
-                                    <option value="basico">Básico (Lite)</option>
-                                    <option value="profesional">Profesional (Recomendado)</option>
-                                    <option value="pro">Pro (Todo incluido)</option>
-                                    <option value="perpetual">Licencia Perpetua</option>
+                                <select class="form-select" name="plan_tipo"
+                                    [(ngModel)]="formularioNegocio.plan_tipo"
+                                    (ngModelChange)="onPlanChange()">
+                                    <option value="basico">Básico — RD$ 1,500/mes</option>
+                                    <option value="profesional">Profesional — RD$ 3,000/mes</option>
+                                    <option value="pro">Pro — RD$ 5,000/mes</option>
+                                    <option value="perpetual">Licencia Perpetua (pago único)</option>
                                 </select>
+                                <small class="text-muted" style="font-size:.65rem">
+                                    Al cambiar el plan se recalculan los módulos automáticamente.
+                                </small>
                             </div>
                         </div>
 
-                        <!-- 💡 SECCIÓN 2: DATOS DEL ADMINISTRADOR (SOLO AL CREAR) -->
+                        <!-- 2: Credenciales admin (solo crear) -->
                         <div *ngIf="modoModal === 'crear'" class="animate__animated animate__fadeIn">
                             <hr class="my-4">
                             <h6 class="text-success fw-bold mb-3 d-flex align-items-center">
@@ -172,33 +384,36 @@
                             <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Nombre del Administrador</label>
-                                    <input type="text" class="form-control" name="adm_nombre" [(ngModel)]="formularioAdmin.nombre" placeholder="Nombre completo">
+                                    <input type="text" class="form-control" name="adm_nombre"
+                                        [(ngModel)]="formularioAdmin.nombre" placeholder="Nombre completo">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Email (Para Login)</label>
-                                    <input type="email" class="form-control" name="adm_email" [(ngModel)]="formularioAdmin.email" required placeholder="correo@ejemplo.com">
+                                    <label class="form-label small fw-bold">Email (para login)</label>
+                                    <input type="email" class="form-control" name="adm_email"
+                                        [(ngModel)]="formularioAdmin.email" required placeholder="correo@ejemplo.com">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Usuario (Único)</label>
-                                    <input type="text" class="form-control" name="adm_user" [(ngModel)]="formularioAdmin.username" placeholder="admin123">
+                                    <label class="form-label small fw-bold">Usuario (único)</label>
+                                    <input type="text" class="form-control" name="adm_user"
+                                        [(ngModel)]="formularioAdmin.username" placeholder="admin123">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Contraseña Temporal</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" name="adm_pass" [(ngModel)]="formularioAdmin.password" required placeholder="••••••••">
+                                        <input type="password" class="form-control" name="adm_pass"
+                                            [(ngModel)]="formularioAdmin.password" required placeholder="••••••••">
                                         <span class="input-group-text bg-transparent">
                                             <i class="fa-solid fa-key text-muted"></i>
                                         </span>
                                     </div>
-                                    <small class="text-muted" style="font-size: 0.65rem;">El sistema hasheará esta contraseña automáticamente.</small>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 3: LICENCIA Y MÓDULOS -->
+                        <!-- 3: Licencia y módulos -->
                         <hr class="my-4">
                         <h6 class="text-warning-emphasis fw-bold mb-3 d-flex align-items-center">
-                            <span class="badge bg-warning me-2">3</span> Configuración de Licencia
+                            <span class="badge bg-warning me-2">3</span> Licencia y Módulos
                         </h6>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -207,7 +422,7 @@
                                     [(ngModel)]="formularioNegocio.fecha_vencimiento">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Estado Inicial</label>
+                                <label class="form-label small fw-bold">Estado</label>
                                 <select class="form-select" name="estado_licencia"
                                     [(ngModel)]="formularioNegocio.estado_licencia">
                                     <option value="activa">Activa / Full Acceso</option>
@@ -215,38 +430,72 @@
                                     <option value="vencida">Vencida</option>
                                 </select>
                             </div>
-                            
-                            <div class="col-12 mt-4">
-                                <label class="form-label small fw-bold mb-2">Módulos que este negocio podrá usar:</label>
-                                <div class="bg-white border rounded p-3 shadow-inner">
-                                    <div class="row g-2">
-                                        <div *ngFor="let modulo of modulosKeys" class="col-md-6">
-                                            <div class="form-check form-switch card-modulo p-2 px-3 rounded-pill border-0">
-                                                <input class="form-check-input" type="checkbox" [id]="'mod_' + modulo"
-                                                    [checked]="moduloActivo(modulo)" (change)="toggleModulo(modulo)">
-                                                <label class="form-check-label small ms-2 fw-medium" [for]="'mod_' + modulo">
-                                                    {{ modulosLabels[modulo] }}
-                                                </label>
+
+                            <div class="col-12 mt-2">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label small fw-bold mb-0">Módulos habilitados:</label>
+                                    <span class="badge bg-primary rounded-pill">
+                                        {{ (formularioNegocio.modulos_activos || []).length }} / {{ modulosKeys.length }}
+                                    </span>
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    <div *ngFor="let grupo of gruposModulos" class="border rounded-3 overflow-hidden">
+                                        <div class="d-flex align-items-center gap-2 px-3 py-2"
+                                            [ngClass]="'bg-' + grupo.color + '-subtle'">
+                                            <i [class]="grupo.icono + ' small text-' + grupo.color"></i>
+                                            <span class="small fw-bold"
+                                                [ngClass]="'text-' + grupo.color + '-emphasis'">
+                                                {{ grupo.grupo }}
+                                            </span>
+                                            <span class="ms-auto badge rounded-pill"
+                                                [ngClass]="'bg-' + grupo.color">
+                                                {{ contarModulosActivos(grupo.modulos) }} / {{ grupo.modulos.length }}
+                                            </span>
+                                        </div>
+                                        <div class="modulos-chips-wrap">
+                                            <div *ngFor="let modulo of grupo.modulos"
+                                                class="modulo-chip"
+                                                [class.modulo-chip-on]="moduloActivo(modulo)"
+                                                (click)="toggleModulo(modulo)">
+                                                <span class="modulo-chip-dot"></span>
+                                                <span class="modulo-chip-label">{{ modulosLabels[modulo] }}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <p class="text-muted mt-2 mb-0" style="font-size:.65rem">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    Puedes ajustar manualmente. El cambio de plan o tipo recalcula automáticamente.
+                                </p>
                             </div>
                         </div>
 
-                        <div class="mt-5 text-end border-top pt-3">
-                            <button type="button" class="btn btn-light me-2 px-4" (click)="cerrarModal()">Descartar</button>
+                        <!-- Notas internas -->
+                        <hr class="my-4">
+                        <h6 class="text-secondary fw-bold mb-3 d-flex align-items-center">
+                            <i class="fa-solid fa-note-sticky me-2 text-warning"></i>
+                            Notas Internas
+                            <small class="fw-normal ms-2 text-muted">(solo visible para el desarrollador)</small>
+                        </h6>
+                        <textarea class="form-control font-monospace" name="notas_internas" rows="3"
+                            [(ngModel)]="formularioNegocio.notas_internas"
+                            placeholder="Ej: Cliente pagó plan Pro + add-on Fiscal el 15/05/2026. Contacto: Juan 809-XXX-XXXX. Renovar mayo 2027."></textarea>
+
+                        <div class="mt-4 d-flex flex-column flex-sm-row justify-content-end gap-2 border-top pt-3">
+                            <button type="button" class="btn btn-light px-4" (click)="cerrarModal()">Descartar</button>
                             <button type="submit" class="btn btn-indigo px-5 shadow" [disabled]="isSaving">
                                 <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
-                                <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-                                {{ modoModal === 'crear' ? 'Registrar y Activar' : 'Actualizar Configuración' }}
+                                <i *ngIf="!isSaving" class="fa-solid fa-cloud-arrow-up me-2"></i>
+                                {{ modoModal === 'crear' ? 'Registrar y Activar' : 'Guardar Cambios' }}
                             </button>
                         </div>
                     </form>
-                </div>
+                    </div><!-- /tab config -->
+
+                </div><!-- /modal-body -->
             </div>
         </div>
     </div>
-    
     <div *ngIf="mostrarModal" class="modal-backdrop fade show"></div>
+
 </div>

@@ -1,0 +1,266 @@
+<div class="order-modal-overlay" (click)="cerrar.emit()">
+  <div class="order-modal-container" (click)="$event.stopPropagation()">
+
+    <!-- HEADER -->
+    <div class="order-modal-header">
+      <div>
+        <h5 class="mb-0">
+          <i class="bi bi-table me-2"></i>Mesa {{ mesa.numero_mesa }}
+          @if (mesa.zona) { <small class="text-muted fw-normal">— {{ mesa.zona.nombre }}</small> }
+        </h5>
+        @if (orden) {
+          <small class="text-light opacity-75">
+            Orden #{{ orden.id.slice(0,8).toUpperCase() }} ·
+            {{ orden.cantidad_comensales }} comensal(es)
+          </small>
+        }
+      </div>
+      <button class="btn btn-close btn-close-white" (click)="cerrar.emit()"></button>
+    </div>
+
+    <!-- CUERPO: 3 columnas -->
+    <div class="order-modal-body">
+
+      <!-- COL 1: Categorías -->
+      <div class="col-categorias">
+        <h6 class="section-title">Categorías</h6>
+        <div class="categorias-list">
+          @for (cat of categorias; track trackByCat($index, cat)) {
+            <button class="categoria-btn"
+              [class.active]="categoriaActiva?.id === cat.id"
+              (click)="seleccionarCategoria(cat)">
+              @if (cat.icono) { <span class="me-1">{{ cat.icono }}</span> }
+              {{ cat.nombre }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- COL 2: Items del menú -->
+      <div class="col-menu">
+        <h6 class="section-title">{{ categoriaActiva?.nombre || 'Selecciona categoría' }}</h6>
+        <div class="menu-items-grid">
+          @for (item of itemsCategoria; track trackByMenuItem($index, item)) {
+            <div class="menu-item-card" (click)="abrirDetalleItem(item)">
+              @if (item.imagen_url) {
+                <img [src]="item.imagen_url" [alt]="item.nombre" class="menu-item-img">
+              } @else {
+                <div class="menu-item-placeholder">
+                  <i class="bi bi-egg-fried"></i>
+                </div>
+              }
+              <div class="menu-item-info">
+                <span class="menu-item-nombre">{{ item.nombre }}</span>
+                <span class="menu-item-precio">RD$ {{ item.precio | number:'1.2-2' }}</span>
+                @if (item.tiempo_preparacion_minutos) {
+                  <small class="text-muted">⏱ {{ item.tiempo_preparacion_minutos }} min</small>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Panel flotante: detalle de item seleccionado -->
+        @if (itemSeleccionado) {
+          <div class="item-detalle-panel">
+            <div class="item-detalle-header">
+              <strong>{{ itemSeleccionado.nombre }}</strong>
+              <button class="btn btn-sm btn-close" (click)="itemSeleccionado = null"></button>
+            </div>
+
+            @if (itemSeleccionado.descripcion) {
+              <p class="text-muted small mb-2">{{ itemSeleccionado.descripcion }}</p>
+            }
+
+            <!-- Modificadores agrupados -->
+            @if (itemSeleccionado.modificadores?.length) {
+              <div class="modificadores-section">
+                <small class="text-muted fw-bold d-block mb-1">Opciones:</small>
+                @for (mod of itemSeleccionado.modificadores; track mod.id) {
+                  @if (mod.activo) {
+                    <label class="modificador-label">
+                      <input type="checkbox"
+                        [checked]="tieneModificador(mod.nombre)"
+                        (change)="toggleModificador(mod)">
+                      {{ mod.nombre }}
+                      @if (mod.precio_adicional > 0) {
+                        <span class="text-success ms-1">+RD$ {{ mod.precio_adicional | number:'1.2-2' }}</span>
+                      }
+                    </label>
+                  }
+                }
+              </div>
+            }
+
+            <!-- Notas especiales -->
+            <div class="mt-2">
+              <label class="small text-muted">Notas especiales:</label>
+              <textarea class="form-control form-control-sm" rows="2"
+                [(ngModel)]="notasItem" placeholder="Sin cebolla, término…"></textarea>
+            </div>
+
+            <!-- Comensal -->
+            @if (cantidadComensales > 1) {
+              <div class="mt-2">
+                <label class="small text-muted">Asignar a comensal:</label>
+                <select class="form-select form-select-sm" [(ngModel)]="comensalItem">
+                  <option [value]="null">General</option>
+                  @for (n of comensalesRange; track n) {
+                    <option [value]="n">Comensal {{ n }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Cantidad + agregar -->
+            <div class="d-flex align-items-center gap-2 mt-3">
+              <div class="cantidad-control">
+                <button class="btn btn-sm btn-outline-secondary" (click)="cantidadItem = cantidadItem > 1 ? cantidadItem - 1 : 1">−</button>
+                <span class="cantidad-display">{{ cantidadItem }}</span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="cantidadItem = cantidadItem + 1">+</button>
+              </div>
+              <button class="btn btn-primary btn-sm flex-grow-1" (click)="agregarAlCarrito()">
+                <i class="bi bi-cart-plus"></i>
+                Agregar · RD$ {{ (itemSeleccionado.precio * cantidadItem) | number:'1.2-2' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- COL 3: Carrito + Orden -->
+      <div class="col-carrito">
+
+        <!-- Comensales (si es orden nueva) -->
+        @if (!orden) {
+          <div class="mb-3">
+            <label class="small text-muted">Comensales:</label>
+            <div class="cantidad-control">
+              <button class="btn btn-sm btn-outline-secondary"
+                (click)="cantidadComensales = cantidadComensales > 1 ? cantidadComensales - 1 : 1">−</button>
+              <span class="cantidad-display">{{ cantidadComensales }}</span>
+              <button class="btn btn-sm btn-outline-secondary"
+                (click)="cantidadComensales = cantidadComensales + 1">+</button>
+            </div>
+          </div>
+        }
+
+        <!-- Carrito pendiente de confirmar -->
+        @if (carrito.length > 0) {
+          <h6 class="section-title text-warning">
+            <i class="bi bi-cart-fill"></i> Carrito ({{ carrito.length }})
+          </h6>
+          <div class="carrito-items">
+            @for (item of carrito; track trackByItem($index, item)) {
+              <div class="carrito-item">
+                <div class="d-flex justify-content-between align-items-start">
+                  <span class="carrito-nombre">{{ item.cantidad }}× {{ item.menu_item.nombre }}</span>
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="text-success fw-bold">RD$ {{ item.precio_total | number:'1.2-2' }}</span>
+                    <button class="btn btn-sm p-0 text-danger" (click)="quitarDelCarrito($index)">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </div>
+                @if (item.modificadores_seleccionados.length) {
+                  <small class="text-muted d-block">
+                    {{ formatModificadores(item.modificadores_seleccionados) }}
+                  </small>
+                }
+                @if (item.notas_especiales) {
+                  <small class="text-info d-block">📝 {{ item.notas_especiales }}</small>
+                }
+              </div>
+            }
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal carrito:</span>
+            <strong>RD$ {{ subtotalCarrito | number:'1.2-2' }}</strong>
+          </div>
+          <button class="btn btn-success w-100 mb-3" (click)="confirmarItems()" [disabled]="cargando">
+            @if (cargando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="bi bi-check-circle"></i> Confirmar Items
+          </button>
+        }
+
+        <!-- Items persistidos en la orden -->
+        @if (itemsPersistidos.length > 0) {
+          <h6 class="section-title">
+            <i class="bi bi-receipt"></i> Orden
+          </h6>
+          <div class="orden-items">
+            @for (item of itemsPersistidos; track item.id) {
+              <div class="orden-item">
+                <div class="d-flex justify-content-between">
+                  <span>{{ item.cantidad }}× {{ item.menu_item?.nombre || 'Item' }}</span>
+                  <span>RD$ {{ item.subtotal | number:'1.2-2' }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="badge rounded-pill"
+                    [class.bg-warning]="item.estado === 'pendiente'"
+                    [class.bg-info]="item.estado === 'en_preparacion'"
+                    [class.bg-success]="item.estado === 'listo' || item.estado === 'entregado'">
+                    {{ item.estado }}
+                  </small>
+                  @if (item.estado === 'pendiente') {
+                    <button class="btn btn-xs text-danger" (click)="cancelarItem(item.id)">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Totalizador -->
+          <div class="totalizador mt-2">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Subtotal:</span>
+              <span>RD$ {{ subtotalOrden | number:'1.2-2' }}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">ITBIS (18%):</span>
+              <span>RD$ {{ impuestoOrden | number:'1.2-2' }}</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold border-top pt-1 mt-1">
+              <span>TOTAL:</span>
+              <span class="text-success fs-5">RD$ {{ totalOrden | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        }
+
+        @if (carrito.length === 0 && itemsPersistidos.length === 0 && !cargando) {
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-cart display-4 d-block mb-2"></i>
+            Selecciona items del menú
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="order-modal-footer">
+      <button class="btn btn-outline-secondary" (click)="cerrar.emit()">Cerrar</button>
+      <div class="d-flex gap-2">
+        @if (hayItemsPendientes && orden) {
+          <button class="btn btn-warning" (click)="enviarACocina()" [disabled]="enviandoCocina">
+            @if (enviandoCocina) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            <i class="bi bi-send"></i> Enviar a Cocina
+          </button>
+        }
+        @if (orden && totalOrden > 0) {
+          <span class="btn btn-outline-success fw-bold" style="pointer-events:none;">
+            Total: RD$ {{ totalOrden | number:'1.2-2' }}
+          </span>
+        }
+      </div>
+    </div>
+
+    <!-- OVERLAY DE CARGA GLOBAL -->
+    @if (cargando && !itemsPersistidos.length) {
+      <div class="loading-overlay">
+        <div class="spinner-border text-primary"></div>
+      </div>
+    }
+  </div>
+</div>

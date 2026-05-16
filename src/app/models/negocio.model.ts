@@ -18,7 +18,16 @@ export interface Negocio {
     logo_url?: string;
     email?: string;
     web?: string;
-    
+
+    // Configuración fiscal
+    tasa_itbis?: number | null;        // Ej: 0.18 = 18%. NULL o 0 = sin impuesto
+
+    // Notas internas del desarrollador (no visibles para el cliente)
+    notas_internas?: string | null;
+
+    // Agente de impresión local (LAN)
+    print_agent_url?: string | null;
+
     created_at?: string;
     updated_at?: string;
 }

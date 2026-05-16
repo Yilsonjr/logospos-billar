@@ -1,78 +1,130 @@
-/* Dashboard Developer Styles */
+/* ── Base ───────────────────────────────────────────────── */
 .developer-container {
     background-color: #f8fafc;
     min-height: 100vh;
 }
 
-.text-indigo {
-    color: #6366f1;
-}
+/* ── Colors ─────────────────────────────────────────────── */
+.text-indigo  { color: #6366f1; }
+.bg-indigo    { background-color: #6366f1 !important; }
+.btn-indigo   { background-color: #6366f1; color: #fff; border: none; transition: all .2s; }
+.btn-indigo:hover { background-color: #4f46e5; color: #fff; transform: translateY(-1px); }
 
-.btn-indigo {
-    background-color: #6366f1;
-    color: white;
-    border: none;
-    transition: all 0.2s ease;
+/* ── Stat Cards ─────────────────────────────────────────── */
+.stat-card {
+    border-radius: 14px;
+    transition: box-shadow .2s, transform .2s;
 }
-
-.btn-indigo:hover {
-    background-color: #4f46e5;
-    color: white;
-    transform: translateY(-1px);
-}
-
-.shadow-hover:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+.stat-card:hover {
     transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.1) !important;
 }
-
-.transition-all {
-    transition: all 0.3s ease;
+.stat-icon {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
 }
+.ring-warning { box-shadow: 0 0 0 2px #f59e0b !important; }
 
-.border-start-danger {
-    border-left: 4px solid #ef4444 !important;
-}
-
-.card {
+/* ── MRR Banner ─────────────────────────────────────────── */
+.mrr-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
     border-radius: 16px;
 }
 
-.badge {
-    font-weight: 600;
-    letter-spacing: 0.5px;
+/* ── Negocio Cards ──────────────────────────────────────── */
+.negocio-card {
+    border-radius: 16px;
+    overflow: hidden;
+    transition: box-shadow .25s, transform .25s;
+}
+.negocio-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.12) !important;
+}
+.card-suspendida { opacity: .65; }
+
+.plan-accent-bar {
+    height: 4px;
+    width: 100%;
 }
 
-/* Modal Customization */
+.vence-row {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+/* ── Modal ──────────────────────────────────────────────── */
 .modal-content {
     border-radius: 20px;
     overflow: hidden;
 }
 
-.form-control,
-.form-select {
+/* Modal full-width on mobile */
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: .5rem;
+        max-width: calc(100vw - 1rem);
+    }
+}
+
+/* ── Forms ──────────────────────────────────────────────── */
+.form-control, .form-select {
     border-radius: 10px;
-    padding: 0.75rem 1rem;
+    padding: .65rem 1rem;
     border: 1px solid #e2e8f0;
 }
-
-.form-control:focus,
-.form-select:focus {
+.form-control:focus, .form-select:focus {
     border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.12);
 }
 
-/* Animations (using standard animation or animate.css if available) */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
+/* ── Transitions ────────────────────────────────────────── */
+.transition-all { transition: all .25s ease; }
 
-    to {
-        opacity: 1;
-    }
-}
+/* ── Utilities ──────────────────────────────────────────── */
+.badge { font-weight: 600; letter-spacing: .4px; }
 
-.animate__fadeIn {
-    animation: fadeIn 0.5s ease-out;
+/* ── Module chips ───────────────────────────────────────── */
+.modulos-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 14px;
+    background: #fff;
 }
+.modulo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #64748b;
+    user-select: none;
+    transition: all .15s;
+    white-space: nowrap;
+}
+.modulo-chip:hover { border-color: #c7d2fe; background: #eef2ff; color: #4f46e5; }
+.modulo-chip-on {
+    border-color: #6366f1;
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 700;
+}
+.modulo-chip-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.modulo-chip-on .modulo-chip-dot { background: #6366f1; }

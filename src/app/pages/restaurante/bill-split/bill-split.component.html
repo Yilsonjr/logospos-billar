@@ -1,0 +1,215 @@
+<div class="bill-split-overlay" (click)="cerrar.emit()">
+  <div class="bill-split-container" (click)="$event.stopPropagation()">
+
+    <!-- HEADER -->
+    <div class="bs-header">
+      <h5 class="mb-0">
+        <i class="bi bi-receipt-cutoff me-2"></i>
+        Pago de Orden
+        @if (orden) { <small class="text-light">#{{ orden.id.slice(0,8).toUpperCase() }}</small> }
+      </h5>
+      <button class="btn btn-close btn-close-white" (click)="cerrar.emit()"></button>
+    </div>
+
+    @if (cargando) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+      </div>
+    } @else if (orden) {
+
+      <div class="bs-body">
+
+        <!-- PANEL IZQUIERDO: resumen de la orden -->
+        <div class="bs-left">
+          <h6 class="section-title">Resumen de Orden</h6>
+
+          <!-- Items de la orden -->
+          <div class="items-list mb-3">
+            @for (item of itemsActivos; track trackByItem($index, item)) {
+              <div class="item-row">
+                <div class="d-flex justify-content-between">
+                  <span>{{ item.cantidad }}× {{ item.menu_item?.nombre }}</span>
+                  <span class="fw-bold">RD$ {{ item.subtotal | number:'1.2-2' }}</span>
+                </div>
+                @if (item.modificadores?.length) {
+                  <small class="text-muted">
+                    + {{ formatModificadores(item.modificadores) }}
+                  </small>
+                }
+                @if (item.comensal_asignado) {
+                  <small class="badge bg-primary">C{{ item.comensal_asignado }}</small>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Totalizador -->
+          <div class="totalizador-resumen">
+            <div class="d-flex justify-content-between text-muted">
+              <span>Subtotal:</span><span>RD$ {{ subtotalOrden | number:'1.2-2' }}</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted">
+              <span>ITBIS (18%):</span><span>RD$ {{ impuestoOrden | number:'1.2-2' }}</span>
+            </div>
+            @if (descuentoOrden > 0) {
+              <div class="d-flex justify-content-between text-danger">
+                <span>Descuento:</span><span>-RD$ {{ descuentoOrden | number:'1.2-2' }}</span>
+              </div>
+            }
+            <div class="d-flex justify-content-between fw-bold border-top pt-1 mt-1">
+              <span>Subtotal neto:</span><span>RD$ {{ totalOrden | number:'1.2-2' }}</span>
+            </div>
+
+            <!-- Propina -->
+            <div class="propina-section mt-2">
+              <label class="small fw-bold mb-1 d-block">Propina:</label>
+              <div class="btn-group btn-group-sm w-100 mb-2">
+                @for (pct of [0, 10, 15, 18]; track pct) {
+                  <button type="button" class="btn"
+                    [class.btn-primary]="propinaOpcion === pct"
+                    [class.btn-outline-secondary]="propinaOpcion !== pct"
+                    (click)="aplicarPropinaPct($any(pct))">
+                    {{ pct === 0 ? 'Sin propina' : pct + '%' }}
+                  </button>
+                }
+              </div>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">RD$</span>
+                <input type="number" class="form-control" [(ngModel)]="propinaGlobal"
+                  min="0" placeholder="0.00" (change)="aplicarPropinaPct(0)">
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between fw-bold fs-5 border-top pt-2 mt-2 text-success">
+              <span>TOTAL A COBRAR:</span>
+              <span>RD$ {{ totalConPropina | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL DERECHO: modo de división + cuentas -->
+        <div class="bs-right">
+
+          <!-- Selector de modo de división -->
+          <h6 class="section-title">Modo de Pago</h6>
+          <div class="division-tabs mb-3">
+            <button class="tab-btn"
+              [class.active]="modoDivision === 'individual'"
+              (click)="inicializarCuentaSimple()">
+              <i class="bi bi-person-fill"></i> Cuenta Única
+            </button>
+            <button class="tab-btn"
+              [class.active]="modoDivision === 'partes_iguales'"
+              (click)="dividirEnPartesIguales()">
+              <i class="bi bi-people-fill"></i> Partes Iguales
+            </button>
+            <button class="tab-btn"
+              [class.active]="modoDivision === 'por_comensal'"
+              (click)="dividirPorComensal()">
+              <i class="bi bi-person-lines-fill"></i> Por Comensal
+            </button>
+          </div>
+
+          <!-- Config partes iguales -->
+          @if (modoDivision === 'partes_iguales') {
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <label class="text-muted small">Dividir en:</label>
+              <div class="cantidad-control">
+                <button class="btn btn-sm btn-outline-secondary"
+                  (click)="partesIguales = partesIguales > 2 ? partesIguales - 1 : 2; dividirEnPartesIguales()">−</button>
+                <span class="cantidad-display">{{ partesIguales }}</span>
+                <button class="btn btn-sm btn-outline-secondary"
+                  (click)="partesIguales = partesIguales + 1; dividirEnPartesIguales()">+</button>
+              </div>
+              <span class="text-muted small">partes</span>
+            </div>
+          }
+
+          <!-- Validación de suma -->
+          @if (diferencia !== 0) {
+            <div class="alert alert-warning py-1 px-2 small mb-2">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              Diferencia: RD$ {{ diferencia | number:'1.2-2' }}
+            </div>
+          }
+
+          <!-- CUENTAS -->
+          <div class="cuentas-list">
+            @for (cuenta of cuentas; track trackByCuenta($index, cuenta)) {
+              <div class="cuenta-card" [class.cuenta-pagada]="cuenta.pagado">
+
+                <div class="cuenta-header">
+                  <strong>
+                    @if (modoDivision === 'individual') { Cuenta Total }
+                    @else { Cuenta {{ cuenta.numero }} }
+                  </strong>
+                  @if (cuenta.pagado) {
+                    <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> PAGADO</span>
+                  }
+                </div>
+
+                <!-- Items asignados (solo en modo por comensal) -->
+                @if (modoDivision === 'por_comensal' && cuenta.items.length > 0) {
+                  <div class="cuenta-items">
+                    @for (item of cuenta.items; track item.id) {
+                      <div class="d-flex justify-content-between small">
+                        <span>{{ item.cantidad }}× {{ item.menu_item.nombre }}</span>
+                        <span>RD$ {{ item.subtotal | number:'1.2-2' }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Totales de la cuenta -->
+                <div class="cuenta-totales">
+                  <div class="d-flex justify-content-between text-muted small">
+                    <span>Subtotal:</span><span>RD$ {{ cuenta.subtotal | number:'1.2-2' }}</span>
+                  </div>
+                  @if (cuenta.propina > 0) {
+                    <div class="d-flex justify-content-between text-muted small">
+                      <span>Propina:</span><span>RD$ {{ cuenta.propina | number:'1.2-2' }}</span>
+                    </div>
+                  }
+                  <div class="d-flex justify-content-between fw-bold">
+                    <span>Total:</span>
+                    <span class="text-success">RD$ {{ cuenta.total | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+
+                <!-- Forma de pago + botón pagar -->
+                @if (!cuenta.pagado) {
+                  <div class="cuenta-pago">
+                    <select class="form-select form-select-sm" [(ngModel)]="cuenta.forma_pago">
+                      @for (forma of formasPago; track forma) {
+                        <option [value]="forma">{{ forma | titlecase }}</option>
+                      }
+                    </select>
+                    <button class="btn btn-success btn-sm fw-bold" (click)="procesarPago(cuenta)">
+                      <i class="bi bi-cash-coin"></i> Cobrar
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Botón cobrar todo -->
+          @if (cuentas.length > 1 && !todasPagadas) {
+            <button class="btn btn-success w-100 mt-3 fw-bold" (click)="procesarTodosLosPagos()" [disabled]="procesando">
+              @if (procesando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              <i class="bi bi-cash-stack"></i>
+              Cobrar Todo · RD$ {{ totalConPropina | number:'1.2-2' }}
+            </button>
+          }
+
+          @if (todasPagadas) {
+            <div class="alert alert-success text-center mt-3">
+              <i class="bi bi-check-circle-fill display-6 d-block mb-1"></i>
+              <strong>¡Orden completamente pagada!</strong>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

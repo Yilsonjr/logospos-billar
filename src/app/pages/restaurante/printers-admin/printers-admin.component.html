@@ -1,0 +1,243 @@
+<div class="printers-page">
+
+    <!-- Header -->
+    <div class="printers-header">
+        <div>
+            <h1 class="printers-title">
+                <span class="printers-title-icon"><i class="fa-solid fa-print"></i></span>
+                Impresoras de Red
+            </h1>
+            <p class="printers-subtitle">Gestiona las impresoras térmicas ESC/POS y el agente de impresión local.</p>
+        </div>
+        <button class="btn-nueva-impresora" (click)="abrirModalCrear()">
+            <i class="fa-solid fa-plus"></i> Nueva Impresora
+        </button>
+    </div>
+
+    <!-- Agente de Impresión -->
+    <div class="agent-card">
+        <div class="agent-card-inner">
+            <div class="agent-info">
+                <div class="agent-icon-wrap">
+                    <i class="fa-solid fa-server"></i>
+                </div>
+                <div>
+                    <div class="agent-label">Agente de Impresión Local (LAN)</div>
+                    <div class="agent-desc">
+                        Servidor HTTP en tu red local que recibe órdenes y las reenvía por TCP a las impresoras.
+                        Todos los dispositivos deben alcanzar esta IP.
+                    </div>
+                </div>
+            </div>
+            <div class="agent-url-row">
+                <div class="agent-url-input-wrap">
+                    <i class="fa-solid fa-link agent-url-icon"></i>
+                    <input type="url" class="agent-url-input"
+                        [(ngModel)]="agentUrl"
+                        placeholder="http://192.168.1.100:3700">
+                </div>
+                <button class="btn-guardar-agent" (click)="guardarAgentUrl()" [disabled]="savingAgent">
+                    <span *ngIf="savingAgent" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!savingAgent" class="fa-solid fa-floppy-disk me-1"></i>
+                    Guardar
+                </button>
+            </div>
+            <div class="agent-hint">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Ejecuta el agente: <code>node print-agent/server.js</code> · Puerto por defecto: <code>3700</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="printers-loading">
+        <div class="spinner-border text-primary" style="width:2.2rem;height:2.2rem"></div>
+        <p class="text-muted mt-3 mb-0">Cargando impresoras…</p>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoading && impresoras.length === 0" class="printers-empty">
+        <div class="printers-empty-icon">🖨️</div>
+        <h5 class="mt-3 mb-1 fw-bold">Sin impresoras configuradas</h5>
+        <p class="text-muted mb-3 small">Agrega una impresora térmica de red para imprimir comandas y recibos.</p>
+        <button class="btn-nueva-impresora" (click)="abrirModalCrear()">
+            <i class="fa-solid fa-plus me-1"></i> Agregar primera impresora
+        </button>
+    </div>
+
+    <!-- Printer cards -->
+    <div *ngIf="!isLoading && impresoras.length > 0" class="printers-grid">
+        <div *ngFor="let p of impresoras" class="printer-card" [class.printer-off]="!p.activa">
+
+            <!-- Top strip por tipo -->
+            <div class="printer-strip" [ngClass]="'strip-' + p.tipo"></div>
+
+            <div class="printer-card-body">
+
+                <!-- Header -->
+                <div class="printer-card-header">
+                    <div class="printer-icon-wrap" [ngClass]="'icon-' + p.tipo">
+                        <i [class]="'fa-solid ' + tipoInfo(p.tipo).icon"></i>
+                    </div>
+                    <div class="printer-info">
+                        <div class="printer-name">{{ p.nombre }}</div>
+                        <span class="printer-tipo-badge" [ngClass]="'badge-' + p.tipo">
+                            {{ tipoInfo(p.tipo).label }}
+                        </span>
+                    </div>
+                    <div class="printer-toggle-wrap">
+                        <span class="printer-status-dot" [class.dot-on]="p.activa"></span>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox"
+                                [checked]="p.activa"
+                                (change)="toggleActiva(p)"
+                                [title]="p.activa ? 'Deshabilitar' : 'Habilitar'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network info -->
+                <div class="printer-net-info">
+                    <div class="printer-net-row">
+                        <i class="fa-solid fa-network-wired fa-fw text-muted"></i>
+                        <code class="printer-ip">{{ p.ip }}:{{ p.puerto }}</code>
+                    </div>
+                    <div class="printer-net-row">
+                        <i class="fa-solid fa-ruler-horizontal fa-fw text-muted"></i>
+                        <span>{{ p.caracteres_por_linea }} chars/línea</span>
+                        <span class="separator">·</span>
+                        <i class="fa-solid fa-copy fa-fw text-muted"></i>
+                        <span>{{ p.copies }} {{ p.copies !== 1 ? 'copias' : 'copia' }}</span>
+                        <span class="separator">·</span>
+                        <span [class.text-success]="p.corte_automatico" [class.text-muted]="!p.corte_automatico">
+                            <i class="fa-solid fa-scissors fa-fw"></i>
+                            {{ p.corte_automatico ? 'Corte auto' : 'Sin corte' }}
+                        </span>
+                    </div>
+                    <div *ngIf="p.descripcion" class="printer-net-row text-muted fst-italic">
+                        <i class="fa-solid fa-note-sticky fa-fw"></i>
+                        <span>{{ p.descripcion }}</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="printer-actions">
+                    <button class="printer-btn printer-btn-edit" (click)="abrirModalEditar(p)">
+                        <i class="fa-solid fa-pen-to-square me-1"></i>Editar
+                    </button>
+                    <button class="printer-btn printer-btn-ping" (click)="probarConexion(p)"
+                        [disabled]="testingId === p.id" title="Probar conexión">
+                        <span *ngIf="testingId === p.id" class="spinner-border spinner-border-sm"></span>
+                        <i *ngIf="testingId !== p.id" class="fa-solid fa-plug-circle-check"></i>
+                        <span *ngIf="testingId !== p.id" class="ms-1 d-none d-sm-inline">Ping</span>
+                    </button>
+                    <button class="printer-btn printer-btn-del" (click)="eliminar(p)" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+
+            </div><!-- /body -->
+        </div>
+    </div><!-- /grid -->
+
+</div><!-- /page -->
+
+<!-- Modal Crear/Editar -->
+<div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:20px;overflow:hidden">
+            <div class="modal-header text-white p-4" style="background:#0f172a">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-print me-2"></i>
+                    {{ modoModal === 'crear' ? 'Registrar Impresora' : 'Editar Impresora' }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form (ngSubmit)="guardar()">
+                    <div class="row g-3">
+
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Nombre de la impresora</label>
+                            <input type="text" class="form-control" [(ngModel)]="formulario.nombre"
+                                name="nombre" required placeholder="Ej: Cocina Principal">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Estación / Tipo</label>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                <div *ngFor="let t of tipos">
+                                    <input type="radio" class="btn-check" [id]="'tipo_' + t.value"
+                                        [value]="t.value" [(ngModel)]="formulario.tipo" name="tipo">
+                                    <label class="btn btn-sm btn-outline-secondary" [for]="'tipo_' + t.value">
+                                        <i [class]="'fa-solid ' + t.icon + ' me-1'"></i>{{ t.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold">Dirección IP</label>
+                            <input type="text" class="form-control font-monospace" [(ngModel)]="formulario.ip"
+                                name="ip" required placeholder="192.168.1.10">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Puerto TCP</label>
+                            <input type="number" class="form-control font-monospace" [(ngModel)]="formulario.puerto"
+                                name="puerto" min="1" max="65535">
+                            <small class="text-muted" style="font-size:.65rem">ESC/POS: 9100</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Caracteres / línea</label>
+                            <select class="form-select" [(ngModel)]="formulario.caracteres_por_linea" name="chars">
+                                <option [value]="32">32 (papel 57mm)</option>
+                                <option [value]="42">42 (papel 80mm) — estándar</option>
+                                <option [value]="48">48 (papel 80mm amplio)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Copias</label>
+                            <input type="number" class="form-control" [(ngModel)]="formulario.copies"
+                                name="copies" min="1" max="5">
+                        </div>
+
+                        <div class="col-md-3 d-flex flex-column justify-content-end pb-1">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="chk_corte"
+                                    [(ngModel)]="formulario.corte_automatico" name="corte">
+                                <label class="form-check-label small fw-bold" for="chk_corte">Corte auto</label>
+                            </div>
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" id="chk_activa"
+                                    [(ngModel)]="formulario.activa" name="activa">
+                                <label class="form-check-label small fw-bold" for="chk_activa">Activa</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">
+                                Descripción / Ubicación <span class="text-muted fw-normal">(opcional)</span>
+                            </label>
+                            <input type="text" class="form-control" [(ngModel)]="formulario.descripcion"
+                                name="descripcion" placeholder="Ej: Junto al wok, segundo piso">
+                        </div>
+
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <button type="button" class="btn btn-light px-4" (click)="cerrarModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-dark px-5" [disabled]="isSaving">
+                            <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+                            <i *ngIf="!isSaving" class="fa-solid fa-floppy-disk me-2"></i>
+                            {{ modoModal === 'crear' ? 'Registrar' : 'Guardar cambios' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div *ngIf="mostrarModal" class="modal-backdrop fade show"></div>

@@ -1,0 +1,151 @@
+<div class="floor-map-wrapper">
+
+  <!-- STATS + ZONAS -->
+  <div class="fm-topbar mb-4">
+    <div class="fm-stats">
+      <div class="fm-stat">
+        <div class="fm-stat-icon" style="background:#f1f5f9">
+          <i class="bi bi-grid-3x3-gap-fill" style="color:#64748b"></i>
+        </div>
+        <div>
+          <div class="fm-stat-val">{{ totalMesas }}</div>
+          <div class="fm-stat-lbl">Total</div>
+        </div>
+      </div>
+      <div class="fm-stat">
+        <div class="fm-stat-icon" style="background:#dcfce7">
+          <i class="bi bi-check-circle-fill" style="color:#16a34a"></i>
+        </div>
+        <div>
+          <div class="fm-stat-val" style="color:#16a34a">{{ mesasLibres }}</div>
+          <div class="fm-stat-lbl">Libres</div>
+        </div>
+      </div>
+      <div class="fm-stat">
+        <div class="fm-stat-icon" style="background:#fee2e2">
+          <i class="bi bi-people-fill" style="color:#dc2626"></i>
+        </div>
+        <div>
+          <div class="fm-stat-val" style="color:#dc2626">{{ mesasOcupadas }}</div>
+          <div class="fm-stat-lbl">Ocupadas</div>
+        </div>
+      </div>
+      <div class="fm-stat">
+        <div class="fm-stat-icon" style="background:#dbeafe">
+          <i class="bi bi-bar-chart-fill" style="color:#2563eb"></i>
+        </div>
+        <div>
+          <div class="fm-stat-val" style="color:#2563eb">{{ ocupacionPct }}%</div>
+          <div class="fm-stat-lbl">Ocupación</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="fm-zone-tabs">
+        <button class="fm-zone-tab" [class.active]="!zonaSeleccionadaId"
+          (click)="onZonaChange('')">Todas</button>
+        @for (zona of zonas; track trackByZona($index, zona)) {
+          <button class="fm-zone-tab"
+            [class.active]="zonaSeleccionadaId === zona.id"
+            (click)="onZonaChange(zona.id)">{{ zona.nombre }}</button>
+        }
+      </div>
+      <button class="fm-refresh-btn" (click)="cargarDatos()" title="Actualizar">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- LEYENDA -->
+  <div class="fm-legend mb-4">
+    @for (estado of estadosLeyenda; track estado) {
+      <span class="fm-legend-item">
+        <span class="fm-legend-dot fm-dot-{{ estado }}"></span>
+        {{ labelEstado[estado] }}
+      </span>
+    }
+  </div>
+
+  <!-- CARGANDO -->
+  @if (cargando) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" style="width:2.5rem;height:2.5rem" role="status"></div>
+      <p class="mt-3 text-muted">Cargando mesas…</p>
+    </div>
+  }
+
+  <!-- ERROR -->
+  @else if (errorMsg) {
+    <div class="alert alert-danger d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+      <span>{{ errorMsg }}</span>
+      <button class="btn btn-sm btn-outline-danger ms-auto" (click)="cargarDatos()">Reintentar</button>
+    </div>
+  }
+
+  <!-- GRID DE MESAS -->
+  @else {
+    @if (mesasFiltradas.length === 0) {
+      <div class="fm-empty">
+        <div class="fm-empty-icon">🪑</div>
+        <h6 class="fw-bold mt-3 mb-1">Sin mesas en esta zona</h6>
+        <p class="text-muted small mb-0">Configura las mesas desde el panel de administración.</p>
+      </div>
+    } @else {
+      <div class="mesas-grid">
+        @for (mesa of mesasFiltradas; track trackByMesa($index, mesa)) {
+          <div class="mesa-card mesa-{{ mesa.estado }}"
+               (click)="seleccionarMesa(mesa)">
+
+            <!-- Barra de estado superior -->
+            <div class="mesa-strip"></div>
+
+            <!-- Cuerpo central -->
+            <div class="mesa-body">
+              <div class="mesa-numero">{{ mesa.numero_mesa }}</div>
+              @if (mesa.nombre_mesa) {
+                <div class="mesa-alias">{{ mesa.nombre_mesa }}</div>
+              }
+              <div class="mesa-estado-pill">
+                {{ labelEstado[mesa.estado] }}
+              </div>
+
+              @if (mesa.orden_activa) {
+                <div class="mesa-orden-row">
+                  <span class="mesa-tiempo">
+                    <i class="bi bi-clock-fill"></i> {{ mesa.tiempo_ocupada_minutos }}m
+                  </span>
+                  <span class="mesa-total">
+                    RD$ {{ mesa.orden_activa.total | number:'1.0-0' }}
+                  </span>
+                </div>
+              }
+            </div>
+
+            <!-- Footer -->
+            <div class="mesa-foot">
+              <span class="mesa-cap">
+                <i class="bi bi-people-fill"></i> {{ mesa.capacidad }}
+              </span>
+              @if (mesa.zona && mesa.zona.nombre) {
+                <span class="mesa-zona-tag">{{ mesa.zona.nombre }}</span>
+              }
+            </div>
+
+            <!-- Acción rápida: Limpieza lista -->
+            @if (mesa.estado === 'limpieza') {
+              <div class="mesa-quick-action">
+                <button class="btn btn-success btn-sm w-100 fw-semibold"
+                  (click)="$event.stopPropagation(); cambiarEstado(mesa, 'libre')">
+                  <i class="bi bi-check2-circle me-1"></i>Marcar lista
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+
+</div>

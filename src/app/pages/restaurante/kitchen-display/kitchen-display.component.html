@@ -1,0 +1,163 @@
+<div class="kds-wrapper">
+
+  <!-- TOPBAR -->
+  <div class="kds-topbar">
+    <div class="d-flex align-items-center gap-3">
+      <div class="kds-brand">
+        <i class="bi bi-fire kds-fire-icon"></i>
+        <span class="kds-brand-text">COCINA</span>
+      </div>
+      <div class="kds-active-badge">
+        <span class="kds-active-dot"></span>
+        {{ columnas[0].tickets.length + columnas[1].tickets.length }} activos
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+      <div class="kds-clock-display">
+        <i class="bi bi-clock me-1 opacity-50"></i>
+        {{ horaActual | date:'HH:mm' }}
+      </div>
+      <button class="kds-alert-btn"
+        [class.kds-alert-on]="alertaActiva"
+        (click)="toggleAlerta()"
+        [title]="alertaActiva ? 'Silenciar alerta' : 'Activar alerta'">
+        <i class="bi" [class.bi-bell-fill]="alertaActiva" [class.bi-bell-slash]="!alertaActiva"></i>
+        <span>{{ alertaActiva ? 'Sonido ON' : 'Silenciado' }}</span>
+      </button>
+      <button class="kds-refresh-btn" (click)="cargarTickets()" title="Actualizar">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- CARGANDO -->
+  @if (cargando) {
+    <div class="kds-loading">
+      <div class="spinner-border text-warning" style="width:2.5rem;height:2.5rem" role="status"></div>
+      <p class="text-light mt-3 mb-0">Cargando órdenes…</p>
+    </div>
+  }
+
+  <!-- BOARD -->
+  @else {
+    <div class="kds-board">
+      @for (col of columnas; track col.estado) {
+        <div class="kds-column"
+          (dragover)="onDragOver($event)"
+          (drop)="onDrop($event, col.estado)">
+
+          <!-- Header de columna -->
+          <div class="kds-col-header kds-col-{{ col.estado }}">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi {{ col.icono }}"></i>
+              <span>{{ col.titulo }}</span>
+            </div>
+            <span class="kds-col-count">{{ col.tickets.length }}</span>
+          </div>
+
+          <!-- Cuerpo scrollable -->
+          <div class="kds-col-body">
+
+            @if (col.tickets.length === 0) {
+              <div class="kds-empty">
+                <i class="bi bi-inbox"></i>
+                <span>Sin pedidos</span>
+              </div>
+            }
+
+            @for (ticket of col.tickets; track trackByTicket($index, ticket)) {
+              <div class="ticket-card"
+                [class.ticket-alta]="ticket.prioridad === 'alta'"
+                [class.ticket-urgente]="ticket.prioridad === 'urgente'"
+                [class.ticket-excedido]="esTiempoExcedido(ticket)"
+                draggable="true"
+                (dragstart)="onDragStart(ticket)">
+
+                <!-- Barra de urgencia por tiempo -->
+                <div class="ticket-urgencia-bar"
+                  [class.urgencia-ok]="tiempoTranscurrido(ticket.hora_creacion) < 10"
+                  [class.urgencia-warn]="tiempoTranscurrido(ticket.hora_creacion) >= 10 && tiempoTranscurrido(ticket.hora_creacion) < 20"
+                  [class.urgencia-crit]="tiempoTranscurrido(ticket.hora_creacion) >= 20"></div>
+
+                <!-- Header -->
+                <div class="ticket-header">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="ticket-mesa-num">Mesa {{ ticket.numero_mesa }}</span>
+                    @if (ticket.prioridad === 'urgente') {
+                      <span class="ticket-badge-urgente">🚨 Urgente</span>
+                    } @else if (ticket.prioridad === 'alta') {
+                      <span class="ticket-badge-alta">⬆ Alta</span>
+                    }
+                  </div>
+                  <div class="{{ colorTiempo(tiempoTranscurrido(ticket.hora_creacion)) }} ticket-timer">
+                    <i class="bi bi-stopwatch-fill"></i>
+                    {{ tiempoTranscurrido(ticket.hora_creacion) }}m
+                  </div>
+                </div>
+
+                <!-- Items -->
+                <div class="ticket-items">
+                  @for (item of ticket.items; track item.order_item_id) {
+                    <div class="ticket-item">
+                      <span class="ticket-qty">{{ item.cantidad }}×</span>
+                      <div class="ticket-item-info">
+                        <span class="ticket-nombre">{{ item.nombre }}</span>
+                        @if (item.modificadores && item.modificadores.length) {
+                          <div class="ticket-mods">
+                            @for (mod of item.modificadores; track mod.nombre) {
+                              <span class="ticket-mod">+ {{ mod.nombre }}</span>
+                            }
+                          </div>
+                        }
+                        @if (item.notas_especiales) {
+                          <div class="ticket-nota">
+                            <i class="bi bi-chat-left-text-fill"></i> {{ item.notas_especiales }}
+                          </div>
+                        }
+                        @if (item.comensal_asignado) {
+                          <span class="ticket-comensal">C{{ item.comensal_asignado }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Acciones -->
+                <div class="ticket-actions">
+                  <select class="ticket-prioridad-select"
+                    [value]="ticket.prioridad"
+                    (change)="cambiarPrioridad(ticket, $any($event.target).value)"
+                    (click)="$event.stopPropagation()">
+                    <option value="baja">↓ Baja</option>
+                    <option value="normal">→ Normal</option>
+                    <option value="alta">↑ Alta</option>
+                    <option value="urgente">🚨 Urgente</option>
+                  </select>
+
+                  @if (ticket.estado !== 'entregado') {
+                    <button class="ticket-avanzar-btn" (click)="avanzarEstado(ticket)">
+                      @switch (ticket.estado) {
+                        @case ('nuevo') {
+                          <i class="bi bi-play-circle-fill me-1"></i>Iniciar
+                        }
+                        @case ('en_preparacion') {
+                          <i class="bi bi-check-circle-fill me-1"></i>Listo
+                        }
+                        @case ('listo') {
+                          <i class="bi bi-bag-check-fill me-1"></i>Entregar
+                        }
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+          </div><!-- /col-body -->
+        </div><!-- /column -->
+      }
+    </div><!-- /board -->
+  }
+
+</div>

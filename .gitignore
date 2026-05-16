@@ -41,3 +41,19 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+schema.sql
+database/seed_staging.sql
+database/restaurant/02_tablas_operacion.sql
+database/restaurant/01_tablas_base.sql
+database/restaurant/04_triggers_funciones.sql
+database/restaurant/03_rls_politicas.sql
+database/restaurant/05_impresoras_ruteo.sql
+database/restaurant/06_notas_historial_negocios.sql
+database/restaurant/check_scripts_ejecutados.sql
+scratch/check_db_health.sql
+schema.sql
+
+# Claude Code memory (local only)
+.claude/
+scratch/check_db_health.sql
+scratch/check_db_health.sql
