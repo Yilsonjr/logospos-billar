@@ -147,7 +147,7 @@ export class OrderModalComponent implements OnInit, OnDestroy {
       // Crear orden si no existe
       if (!this.orden) {
         const usuarioData = JSON.parse(localStorage.getItem('logos_usuario') || '{}');
-        const meseroId: number = usuarioData.id ?? 0;
+        const meseroId: number | null = usuarioData.id ?? null;
         const negocioId = localStorage.getItem('logos_negocio_id') || '';
 
         this.orden = await this.ordersService.crearOrden({

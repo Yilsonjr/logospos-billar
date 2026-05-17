@@ -343,7 +343,7 @@ export interface CartItem {
 export interface CrearOrden {
   negocio_id: string;
   table_id: string;
-  mesero_id: number;
+  mesero_id: number | null;
   cantidad_comensales: number;
   notas_generales?: string;
 }
