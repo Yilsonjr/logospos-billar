@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RestaurantTablesService } from '../../../services/restaurant-tables.service';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
+import { NegociosService } from '../../../services/negocios.service';
 import { RestaurantZone, RestaurantTable, MenuCategory, MenuItem } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
@@ -45,14 +46,20 @@ export class RestaurantAdminComponent implements OnInit {
   platoForm: {
     categoria_id: string; nombre: string; descripcion: string;
     precio: number; tiempo_preparacion_minutos: number; notas_cocina: string;
-  } = { categoria_id: '', nombre: '', descripcion: '', precio: 0, tiempo_preparacion_minutos: 15, notas_cocina: '' };
+    requiere_inventario: boolean; disponible: boolean;
+  } = { categoria_id: '', nombre: '', descripcion: '', precio: 0, tiempo_preparacion_minutos: 15, notas_cocina: '', requiere_inventario: false, disponible: true };
   editandoPlato: MenuItem | null = null;
   mostrarFormPlato = false;
   categoriaFiltroPlatos = '';
 
+  get usaInventario(): boolean {
+    return this.negociosService.tieneModulo('inventario');
+  }
+
   constructor(
     private tablesService: RestaurantTablesService,
     private ordersService: RestaurantOrdersService,
+    private negociosService: NegociosService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -236,9 +243,12 @@ export class RestaurantAdminComponent implements OnInit {
     this.platoForm = plato
       ? { categoria_id: plato.categoria_id, nombre: plato.nombre, descripcion: plato.descripcion || '',
           precio: plato.precio, tiempo_preparacion_minutos: plato.tiempo_preparacion_minutos,
-          notas_cocina: plato.notas_cocina || '' }
+          notas_cocina: plato.notas_cocina || '',
+          requiere_inventario: plato.requiere_inventario ?? false,
+          disponible: plato.disponible ?? true }
       : { categoria_id: this.categorias[0]?.id || '', nombre: '', descripcion: '',
-          precio: 0, tiempo_preparacion_minutos: 15, notas_cocina: '' };
+          precio: 0, tiempo_preparacion_minutos: 15, notas_cocina: '',
+          requiere_inventario: false, disponible: true };
     this.mostrarFormPlato = true;
   }
 

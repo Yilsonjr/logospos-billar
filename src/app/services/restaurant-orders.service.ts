@@ -406,10 +406,17 @@ export class RestaurantOrdersService {
   async crearMenuItem(item: {
     categoria_id: string; nombre: string; descripcion?: string;
     precio: number; tiempo_preparacion_minutos: number; notas_cocina?: string;
+    requiere_inventario?: boolean; disponible?: boolean;
   }): Promise<MenuItem> {
     const { data, error } = await this.supabaseService.client
       .from('menu_items')
-      .insert({ ...item, negocio_id: this.negocioId, disponible: true, activo: true, requiere_inventario: false })
+      .insert({
+        ...item,
+        negocio_id: this.negocioId,
+        activo: true,
+        disponible: item.disponible ?? true,
+        requiere_inventario: item.requiere_inventario ?? false
+      })
       .select().single();
     if (error) throw error;
     return data;
