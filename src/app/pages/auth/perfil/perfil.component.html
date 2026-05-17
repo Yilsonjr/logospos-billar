@@ -1,11 +1,10 @@
-<div class="p-4 p-lg-6 bg-light min-vh-100 profile-container">
+<div class="p-3 p-lg-4 bg-light min-vh-100 profile-container">
   <div class="max-w-xxl mx-auto">
 
-    <!-- Header Premium -->
-    <div
-      class="profile-header mb-5 text-white position-relative overflow-hidden shadow-lg animate__animated animate__fadeIn">
+    <!-- Header -->
+    <div class="profile-header mb-4 text-white position-relative overflow-hidden shadow-lg">
       <div class="header-blur"></div>
-      <div class="row align-items-center g-4">
+      <div class="row align-items-center g-3">
         <div class="col-auto">
           <div class="profile-avatar-wrapper">
             <div class="profile-avatar shadow-lg" [style.background-color]="obtenerColorRol()">
@@ -15,20 +14,17 @@
           </div>
         </div>
         <div class="col">
-          <div class="d-flex flex-column h-100 justify-content-center">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <h1 class="h2 fw-bolder mb-0 text-white">{{ usuario?.nombre }} {{ usuario?.apellido }}</h1>
-              <i class="fa-solid fa-circle-check text-info fs-5" title="Cuenta Verificada"></i>
-            </div>
-            <div class="d-flex flex-wrap gap-3 align-items-center opacity-75">
-              <span><i class="fa-solid fa-briefcase me-2"></i>{{ usuario?.rol?.nombre }}</span>
-              <span><i class="fa-solid fa-envelope me-2"></i>{{ usuario?.email }}</span>
-              <span><i class="fa-solid fa-clock me-2"></i>Acceso: {{ formatearFecha(usuario?.ultimo_acceso || '')
-                }}</span>
-            </div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="h4 fw-bolder mb-0 text-white">{{ usuario?.nombre }} {{ usuario?.apellido }}</h1>
+            <i class="fa-solid fa-circle-check text-info fs-6" title="Cuenta Verificada"></i>
+          </div>
+          <div class="d-flex flex-wrap gap-3 align-items-center opacity-75 small">
+            <span><i class="fa-solid fa-briefcase me-1"></i>{{ usuario?.rol?.nombre }}</span>
+            <span><i class="fa-solid fa-envelope me-1"></i>{{ usuario?.email }}</span>
+            <span><i class="fa-solid fa-clock me-1"></i>{{ formatearFecha(usuario?.ultimo_acceso || '') }}</span>
           </div>
         </div>
-        <div class="col-12 col-md-auto ms-auto d-flex gap-2">
+        <div class="col-12 col-md-auto">
           <button class="btn btn-premium btn-premium-primary" (click)="toggleCambioContrasena()">
             <i class="fa-solid fa-shield-halved me-2"></i>{{ mostrarCambioContrasena ? 'Ver Perfil' : 'Seguridad' }}
           </button>
@@ -36,43 +32,40 @@
       </div>
     </div>
 
-    <div class="row g-4 animate__animated animate__fadeInUp">
+    <div class="row g-3">
 
-      <!-- Columna Principal: Info o Seguridad -->
+      <!-- Columna Principal -->
       <div class="col-lg-8">
 
-        <!-- VISTA: INFORMACIÓN GENERAL -->
         @if (!mostrarCambioContrasena) {
-        <div class="premium-card mb-4 shadow-sm border-0 rounded-4">
+
+        <!-- Información General -->
+        <div class="premium-card mb-3 shadow-sm border-0 rounded-4">
           <h2 class="card-title">
             <i class="fa-solid fa-user-tie"></i>
             Información de la Cuenta
           </h2>
 
-          <div class="row g-4 mt-2">
-            <div class="col-md-6">
+          <div class="row g-3">
+            <div class="col-sm-6">
               <div class="info-group">
                 <span class="info-label">Nombre Completo</span>
-                <div class="info-value d-flex align-items-center">
-                  {{ usuario?.nombre }} {{ usuario?.apellido }}
-                </div>
+                <div class="info-value">{{ usuario?.nombre }} {{ usuario?.apellido }}</div>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-sm-6">
               <div class="info-group">
                 <span class="info-label">Nombre de Usuario</span>
-                <div class="info-value text-primary fw-bold">
-                  @{{ usuario?.username }}
-                </div>
+                <div class="info-value text-primary fw-bold">@{{ usuario?.username }}</div>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-sm-6">
               <div class="info-group">
                 <span class="info-label">Correo Electrónico</span>
                 <div class="info-value">{{ usuario?.email }}</div>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-sm-6">
               <div class="info-group">
                 <span class="info-label">Teléfono de Contacto</span>
                 <div class="info-value">{{ usuario?.telefono || 'No registrado' }}</div>
@@ -80,60 +73,57 @@
             </div>
           </div>
 
-          <div class="mt-5 pt-4 border-top border-light">
-            <div class="d-flex align-items-center gap-3">
-              <div class="badge bg-soft-info p-3 rounded-pill" [style.background-color]="obtenerColorRol() + '20'"
-                [style.color]="obtenerColorRol()">
-                <i class="fa-solid fa-id-card fs-4"></i>
-              </div>
-              <div>
-                <span class="d-block fw-bold text-dark">Identificador de Usuario</span>
-                <code class="text-muted small">#{{ usuario?.id }}</code>
-              </div>
+          <!-- Identificador compacto -->
+          <div class="user-id-row mt-3 pt-3 border-top border-light">
+            <div class="user-id-icon" [style.background-color]="obtenerColorRol() + '20'" [style.color]="obtenerColorRol()">
+              <i class="fa-solid fa-id-card"></i>
+            </div>
+            <div>
+              <span class="info-label mb-0">ID de Usuario</span>
+              <code class="text-muted small d-block">#{{ usuario?.id }}</code>
             </div>
           </div>
         </div>
 
-        <!-- MI ROL Y PERMISOS -->
+        <!-- Rol y Permisos -->
         <div class="premium-card shadow-sm border-0 rounded-4">
           <h2 class="card-title">
             <i class="fa-solid fa-key"></i>
             Mi Rol y Capacidades
           </h2>
 
-          <div class="role-info-box">
-            <span class="badge rounded-pill mb-2 px-3 py-2 text-white" [style.background-color]="obtenerColorRol()">
+          <div class="role-row mb-3">
+            <span class="badge rounded-pill px-3 py-2 text-white flex-shrink-0"
+              [style.background-color]="obtenerColorRol()">
               {{ usuario?.rol?.nombre }}
             </span>
-            <p class="mb-0 text-muted small px-lg-5">{{ usuario?.rol?.descripcion }}</p>
+            <p class="mb-0 text-muted small">{{ usuario?.rol?.descripcion }}</p>
           </div>
 
-          <div class="mt-4">
-            <span class="info-label mb-3 d-block text-center">Permisos del Sistema ({{ usuario?.rol?.permisos?.length ||
-              0 }})</span>
-            <div class="permisos-container">
-              @for (permiso of usuario?.rol?.permisos; track permiso) {
-              <span class="permiso-tag animate__animated animate__fadeIn">
-                <i class="fa-solid fa-check-circle text-success me-1"></i>
-                {{ permiso }}
-              </span>
-              }
-            </div>
+          <span class="info-label mb-2 d-block">
+            Permisos del Sistema ({{ usuario?.rol?.permisos?.length || 0 }})
+          </span>
+          <div class="permisos-container">
+            @for (permiso of usuario?.rol?.permisos; track permiso) {
+            <span class="permiso-tag animate__animated animate__fadeIn">
+              <i class="fa-solid fa-check-circle text-success me-1"></i>{{ permiso }}
+            </span>
+            }
           </div>
         </div>
-        }
 
-        <!-- VISTA: SEGURIDAD (CAMBIO DE CLAVE) -->
-        @else {
-        <div class="premium-card mb-4 shadow-sm border-0 rounded-4 animate__animated animate__fadeIn">
+        } @else {
+
+        <!-- Seguridad -->
+        <div class="premium-card shadow-sm border-0 rounded-4 animate__animated animate__fadeIn">
           <h2 class="card-title">
             <i class="fa-solid fa-lock text-danger"></i>
             Seguridad de la Cuenta
           </h2>
-          <p class="text-muted mb-4">Actualiza tu contraseña regularmente para mantener el acceso seguro.</p>
+          <p class="text-muted small mb-3">Actualiza tu contraseña regularmente para mantener el acceso seguro.</p>
 
-          <form (ngSubmit)="cambiarContrasena()" #passwordForm="ngForm" class="mt-4">
-            <div class="row g-4">
+          <form (ngSubmit)="cambiarContrasena()" #passwordForm="ngForm">
+            <div class="row g-3">
               <div class="col-12">
                 <div class="form-floating">
                   <input type="password" class="form-control" id="actual" placeholder="Contraseña Actual"
@@ -155,17 +145,18 @@
                   <label for="confirmar">Confirmar Nueva Contraseña *</label>
                 </div>
               </div>
-              <div class="col-12 pt-3">
+              <div class="col-12">
                 <div class="d-flex gap-2">
                   <button type="submit" class="btn btn-premium btn-premium-primary"
                     [disabled]="isLoading || !passwordForm.form.valid">
                     @if (isLoading) {
                     <span class="spinner-border spinner-border-sm me-2"></span>Cambiando...
                     } @else {
-                    <i class="fa-solid fa-save me-2"></i>Guardar Nueva Contraseña
+                    <i class="fa-solid fa-save me-2"></i>Guardar Contraseña
                     }
                   </button>
-                  <button type="button" class="btn btn-premium btn-premium-outline" (click)="toggleCambioContrasena()">
+                  <button type="button" class="btn btn-premium btn-premium-outline"
+                    (click)="toggleCambioContrasena()">
                     Volver
                   </button>
                 </div>
@@ -173,18 +164,19 @@
             </div>
           </form>
         </div>
+
         }
       </div>
 
       <!-- Columna Lateral: Sesiones -->
       <div class="col-lg-4">
         <div class="premium-card border-0 shadow-sm rounded-4">
-          <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="card-title mb-0">
               <i class="fa-solid fa-desktop"></i>
               Sesiones Activas
             </h2>
-            <button (click)="cargarSesionesActivas()" class="btn btn-icon btn-sm btn-light rounded-circle"
+            <button (click)="cargarSesionesActivas()" class="btn btn-sm btn-light rounded-circle"
               title="Actualizar">
               <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="isLoading"></i>
             </button>
@@ -192,9 +184,8 @@
 
           <div class="session-list">
             @for (sesion of sesionesActivas; track sesion.id) {
-            <div class="session-item shadow-sm animate__animated animate__fadeIn"
-              [class.border-primary]="esSesionActual(sesion)">
-              <div class="d-flex align-items-center gap-3 mb-2">
+            <div class="session-item shadow-sm" [class.border-primary]="esSesionActual(sesion)">
+              <div class="d-flex align-items-center gap-2 mb-2">
                 <div class="session-icon" [class.text-primary]="esSesionActual(sesion)"
                   [class.text-muted]="!esSesionActual(sesion)">
                   <i class="fa-solid"
@@ -202,48 +193,49 @@
                     [class.fa-display]="obtenerDispositivo(sesion.user_agent || '') === 'Escritorio'"></i>
                 </div>
                 <div class="flex-grow-1 overflow-hidden">
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="fw-bold text-dark text-truncate">{{ obtenerNavegador(sesion.user_agent || '') }}</div>
+                  <div class="d-flex align-items-center gap-1 flex-wrap">
+                    <div class="fw-bold text-dark text-truncate small">
+                      {{ obtenerNavegador(sesion.user_agent || '') }}
+                    </div>
                     @if (esSesionActual(sesion)) {
-                    <span class="badge bg-soft-primary text-primary xsmall-text px-2 py-1" style="font-size: 0.6rem;">Tu
-                      sesión (Actual)</span>
+                    <span class="badge bg-primary" style="font-size: 0.6rem;">Actual</span>
                     }
                   </div>
-                  <div class="text-muted small text-truncate">IP: {{ sesion.ip_address || '127.0.0.1' }}</div>
+                  <div class="text-muted xsmall-text">IP: {{ sesion.ip_address || '127.0.0.1' }}</div>
                 </div>
                 @if (!esSesionActual(sesion)) {
-                <button class="btn btn-sm btn-icon btn-light-danger rounded-pill" (click)="cerrarSesion(sesion)"
-                  title="Finalizar Sesión">
+                <button class="btn btn-sm btn-icon btn-light-danger rounded-pill"
+                  (click)="cerrarSesion(sesion)" title="Finalizar Sesión">
                   <i class="fa-solid fa-times-circle text-danger"></i>
                 </button>
                 }
               </div>
-              <div class="d-flex justify-content-between mt-3 pt-2 border-top border-light opacity-75 xsmall-text"
-                style="font-size: 0.7rem;">
+              <div class="d-flex justify-content-between border-top border-light pt-1 xsmall-text opacity-75">
                 <span><i class="fa-regular fa-calendar me-1"></i>{{ formatearFecha(sesion.fecha_inicio) }}</span>
                 <span [class.text-success]="esSesionActual(sesion)" [class.text-muted]="!esSesionActual(sesion)">
-                  <i class="fa-solid fa-shield-check me-1"></i>{{ esSesionActual(sesion) ? 'Activa ahora' : 'Hace un
-                  momento' }}
+                  <i class="fa-solid fa-shield-check me-1"></i>{{ esSesionActual(sesion) ? 'Activa' : 'Reciente' }}
                 </span>
               </div>
             </div>
             } @empty {
-            <div class="text-center py-5 opacity-50">
-              <i class="fa-solid fa-ghost fa-3x mb-3"></i>
-              <p>No se encontraron registros de sesiones activas.</p>
-              <p class="small">Es posible que la tabla de sesiones aún no esté configurada en la base de datos.</p>
+            <div class="text-center py-4 opacity-50">
+              <i class="fa-solid fa-ghost fa-2x mb-2 d-block"></i>
+              <p class="small mb-1">No hay sesiones registradas.</p>
+              <p class="xsmall-text text-muted mb-0">La tabla de sesiones puede no estar configurada aún.</p>
             </div>
             }
           </div>
 
           @if (sesionesActivas.length > 1) {
-          <button class="btn btn-premium w-100 bg-soft-danger text-danger mt-3" (click)="cerrarTodasLasSesiones()"
-            style="background: rgba(239, 68, 68, 0.1); border: 1px dashed rgba(239, 68, 68, 0.3);">
+          <button class="btn btn-premium w-100 mt-3"
+            style="background: rgba(239,68,68,.08); border: 1px dashed rgba(239,68,68,.35); color:#ef4444;"
+            (click)="cerrarTodasLasSesiones()">
             <i class="fa-solid fa-power-off me-2"></i>Finalizar todas las sesiones
           </button>
           }
         </div>
       </div>
+
     </div>
   </div>
 </div>

@@ -57,3 +57,5 @@ schema.sql
 .claude/
 scratch/check_db_health.sql
 scratch/check_db_health.sql
+database/fix_rls_main_tables.sql
+database/migration_add_negocio_id.sql

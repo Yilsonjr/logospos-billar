@@ -10,17 +10,58 @@ import { TableWithOrder } from '../../models/restaurant.models';
   selector: 'app-restaurante',
   standalone: true,
   imports: [CommonModule, RouterModule, FloorMapComponent, OrderModalComponent, BillSplitComponent],
+  styles: [`
+    .rest-header {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      border: 1px solid #f0f0f0;
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+    }
+    .rest-title { font-size: 1.25rem; font-weight: 800; color: #111827; margin: 0; }
+    .rest-subtitle { font-size: 0.75rem; color: #9ca3af; margin: 0; }
+    .btn-kds {
+      background: linear-gradient(135deg, #1e1e2d 0%, #374151 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.55rem 1.1rem;
+      font-size: 0.83rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: box-shadow .2s, transform .2s;
+      box-shadow: 0 3px 10px rgba(0,0,0,.18);
+    }
+    .btn-kds:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.22); }
+    .btn-kds .kds-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+      animation: kds-pulse 2s ease-in-out infinite;
+    }
+    @keyframes kds-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
+      50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+    }
+  `],
   template: `
     <div class="container-fluid py-3">
 
-      <!-- Título de página -->
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <h4 class="mb-0">
-          <i class="bi bi-house-door-fill text-primary me-2"></i>
-          Mapa de Mesas
-        </h4>
+      <!-- Page header -->
+      <div class="rest-header d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="bi bi-grid-3x3-gap-fill text-white fs-5"></i>
+          </div>
+          <div>
+            <p class="rest-title">Mapa de Mesas</p>
+            <p class="rest-subtitle">Módulo Restaurante</p>
+          </div>
+        </div>
         <div class="d-flex gap-2">
-          <a routerLink="/restaurante/cocina" class="btn btn-outline-dark btn-sm">
+          <a routerLink="/restaurante/cocina" class="btn-kds">
+            <span class="kds-dot"></span>
             <i class="bi bi-fire"></i> Pantalla Cocina
           </a>
         </div>
