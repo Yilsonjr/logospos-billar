@@ -1,0 +1,7 @@
+
+🖨️  LogosPOS Print Agent corriendo en http://0.0.0.0:3000
+   Rutas disponibles:
+   GET  /health   → Estado del agente
+   POST /print    → { ip, puerto, data: number[], copies? }
+   POST /ping     → { ip, puerto } → verifica si la impresora responde
+
