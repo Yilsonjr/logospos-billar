@@ -22,21 +22,25 @@ export class PedidosMesaService {
     }
 
     private suscribirPedidos() {
-        // Suscribir a cambios en los pedidos
+        const onError = (status: string) => {
+            if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+                console.warn('[Realtime] pedidos canal no disponible:', status);
+            }
+        };
+
         this.supabaseService.client
             .channel('public:pedidos_mesa')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_mesa' }, () => {
                 this.cargarPedidosActivos();
             })
-            .subscribe();
+            .subscribe(onError);
 
-        // Suscribir a cambios en los detalles (importante para el carrito)
         this.supabaseService.client
             .channel('public:pedidos_mesa_detalle')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_mesa_detalle' }, () => {
                 this.cargarPedidosActivos();
             })
-            .subscribe();
+            .subscribe(onError);
     }
 
     async cargarPedidosActivos(): Promise<void> {

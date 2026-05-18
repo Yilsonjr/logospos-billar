@@ -25,7 +25,11 @@ export class MesasService {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, () => {
                 this.cargarMesas();
             })
-            .subscribe();
+            .subscribe((status: string) => {
+                if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+                    console.warn('[Realtime] mesas canal no disponible:', status);
+                }
+            });
     }
 
     async cargarMesas(): Promise<void> {

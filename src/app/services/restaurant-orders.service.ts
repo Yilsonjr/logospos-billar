@@ -341,7 +341,11 @@ export class RestaurantOrdersService {
         table: 'restaurant_orders',
         filter: `id=eq.${orderId}`
       }, onCambio)
-      .subscribe();
+      .subscribe((status: string, err?: Error) => {
+        if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+          console.warn('[Realtime] Canal no disponible, sin actualizaciones en tiempo real:', status);
+        }
+      });
   }
 
   desuscribir(): void {
