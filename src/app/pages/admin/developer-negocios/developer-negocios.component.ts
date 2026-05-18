@@ -16,61 +16,93 @@ interface GrupoModulo {
     modulos: ModuloSistema[];
 }
 
-const MODULOS_CORE: ModuloSistema[] = ['ventas', 'caja', 'clientes', 'dashboard', 'usuarios', 'roles', 'identidad', 'sistema'];
+// Módulos presentes en TODOS los negocios sin excepción
+const CORE_UNIVERSAL: ModuloSistema[] = ['caja', 'dashboard', 'usuarios', 'roles', 'identidad', 'sistema'];
+
+// Módulos adicionales para negocios POS/Billar (ventas directas, clientes en mostrador)
+const CORE_POS: ModuloSistema[] = [...CORE_UNIVERSAL, 'ventas', 'clientes'];
+
+// Módulos base para negocios de restaurante (sin POS de mostrador, sin inventario general)
+const CORE_REST: ModuloSistema[] = [...CORE_UNIVERSAL, 'clientes'];
 
 const PLAN_PRESETS: Partial<Record<TipoNegocio, Record<string, ModuloSistema[]>>> = {
-    // Tipos con módulo restaurante completo
+    // ── TIPOS RESTAURANTE: sin 'ventas' POS ni 'inventario' general ───────────
     restaurante: {
-        basico:      [...MODULOS_CORE, 'mesas', 'restaurante'],
-        profesional: [...MODULOS_CORE, 'mesas', 'restaurante', 'cocina', 'inventario', 'compras', 'proveedores', 'reportes'],
-        pro:         [...MODULOS_CORE, 'mesas', 'restaurante', 'cocina', 'inventario', 'compras', 'proveedores', 'fiscal', 'cuentas_cobrar', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'mesas', 'restaurante', 'cocina', 'inventario', 'compras', 'proveedores', 'fiscal', 'cuentas_cobrar', 'cuentas_pagar', 'reportes']
+        basico:      [...CORE_REST, 'mesas', 'restaurante'],
+        profesional: [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'reportes'],
+        pro:         [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'fiscal', 'cuentas_cobrar', 'reportes'],
+        perpetual:   [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'fiscal', 'cuentas_cobrar', 'cuentas_pagar', 'reportes']
     },
     cafeteria: {
-        basico:      [...MODULOS_CORE, 'mesas', 'restaurante'],
-        profesional: [...MODULOS_CORE, 'mesas', 'restaurante', 'inventario', 'compras', 'proveedores', 'reportes'],
-        pro:         [...MODULOS_CORE, 'mesas', 'restaurante', 'inventario', 'compras', 'proveedores', 'fiscal', 'cuentas_cobrar', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'mesas', 'restaurante', 'inventario', 'compras', 'proveedores', 'fiscal', 'cuentas_cobrar', 'cuentas_pagar', 'reportes']
+        basico:      [...CORE_REST, 'mesas', 'restaurante'],
+        profesional: [...CORE_REST, 'mesas', 'restaurante', 'restaurante_inventario', 'reportes'],
+        pro:         [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'fiscal', 'cuentas_cobrar', 'reportes'],
+        perpetual:   [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'fiscal', 'cuentas_cobrar', 'cuentas_pagar', 'reportes']
     },
     bar: {
-        basico:      [...MODULOS_CORE, 'mesas', 'restaurante'],
-        profesional: [...MODULOS_CORE, 'mesas', 'restaurante', 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'reportes'],
-        pro:         [...MODULOS_CORE, 'mesas', 'restaurante', 'cocina', 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'fiscal', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'mesas', 'restaurante', 'cocina', 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
+        basico:      [...CORE_REST, 'mesas', 'restaurante'],
+        profesional: [...CORE_REST, 'mesas', 'restaurante', 'restaurante_inventario', 'cuentas_cobrar', 'reportes'],
+        pro:         [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'cuentas_cobrar', 'fiscal', 'reportes'],
+        perpetual:   [...CORE_REST, 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
     },
     food_truck: {
-        basico:      [...MODULOS_CORE, 'restaurante'],
-        profesional: [...MODULOS_CORE, 'restaurante', 'inventario', 'fiscal', 'reportes'],
-        pro:         [...MODULOS_CORE, 'restaurante', 'inventario', 'fiscal', 'cuentas_cobrar', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'restaurante', 'inventario', 'fiscal', 'cuentas_cobrar', 'cuentas_pagar', 'reportes']
+        basico:      [...CORE_REST, 'restaurante'],
+        profesional: [...CORE_REST, 'restaurante', 'restaurante_inventario', 'fiscal', 'reportes'],
+        pro:         [...CORE_REST, 'restaurante', 'restaurante_inventario', 'fiscal', 'cuentas_cobrar', 'reportes'],
+        perpetual:   [...CORE_REST, 'restaurante', 'restaurante_inventario', 'fiscal', 'cuentas_cobrar', 'cuentas_pagar', 'reportes']
     },
-    // Tipos SIN módulo restaurante (usan /ventas/mesas para sus mesas)
+    // ── TIPOS POS: con 'ventas' e 'inventario' general ────────────────────────
     billar: {
-        basico:      [...MODULOS_CORE, 'mesas'],
-        profesional: [...MODULOS_CORE, 'mesas', 'inventario', 'cuentas_cobrar', 'reportes'],
-        pro:         [...MODULOS_CORE, 'mesas', 'inventario', 'cuentas_cobrar', 'cuentas_pagar', 'compras', 'proveedores', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'mesas', 'inventario', 'cuentas_cobrar', 'cuentas_pagar', 'compras', 'proveedores', 'fiscal', 'reportes']
+        basico:      [...CORE_POS, 'mesas'],
+        profesional: [...CORE_POS, 'mesas', 'inventario', 'cuentas_cobrar', 'reportes'],
+        pro:         [...CORE_POS, 'mesas', 'inventario', 'cuentas_cobrar', 'cuentas_pagar', 'compras', 'proveedores', 'reportes'],
+        perpetual:   [...CORE_POS, 'mesas', 'inventario', 'cuentas_cobrar', 'cuentas_pagar', 'compras', 'proveedores', 'fiscal', 'reportes']
     },
     tienda: {
-        basico:      [...MODULOS_CORE, 'inventario'],
-        profesional: [...MODULOS_CORE, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'reportes'],
-        pro:         [...MODULOS_CORE, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
+        basico:      [...CORE_POS, 'inventario'],
+        profesional: [...CORE_POS, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'reportes'],
+        pro:         [...CORE_POS, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes'],
+        perpetual:   [...CORE_POS, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
     },
     general: {
-        basico:      [...MODULOS_CORE],
-        profesional: [...MODULOS_CORE, 'inventario', 'reportes'],
-        pro:         [...MODULOS_CORE, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes'],
-        perpetual:   [...MODULOS_CORE, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
+        basico:      [...CORE_POS],
+        profesional: [...CORE_POS, 'inventario', 'reportes'],
+        pro:         [...CORE_POS, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes'],
+        perpetual:   [...CORE_POS, 'inventario', 'compras', 'proveedores', 'cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
     }
 };
 
 const GRUPOS_MODULOS: GrupoModulo[] = [
-    { grupo: 'Núcleo del Sistema',    icono: 'fa-solid fa-star',          color: 'primary',   modulos: ['ventas', 'caja', 'clientes', 'dashboard'] },
-    { grupo: 'Mesas y Restaurante',   icono: 'fa-solid fa-utensils',      color: 'warning',   modulos: ['mesas', 'restaurante', 'cocina'] },
-    { grupo: 'Inventario y Compras',  icono: 'fa-solid fa-boxes-stacked', color: 'success',   modulos: ['inventario', 'compras', 'proveedores'] },
-    { grupo: 'Finanzas y Reportes',   icono: 'fa-solid fa-coins',         color: 'info',      modulos: ['cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes'] },
-    { grupo: 'Administración',        icono: 'fa-solid fa-gears',         color: 'secondary', modulos: ['usuarios', 'roles', 'identidad', 'sistema'] }
+    {
+        grupo: 'Núcleo del Sistema',
+        icono: 'fa-solid fa-star',
+        color: 'primary',
+        modulos: ['ventas', 'caja', 'clientes', 'dashboard']
+    },
+    {
+        grupo: 'Restaurante',
+        icono: 'fa-solid fa-utensils',
+        color: 'warning',
+        modulos: ['restaurante', 'cocina', 'restaurante_inventario', 'mesas']
+    },
+    {
+        grupo: 'Inventario POS y Compras',
+        icono: 'fa-solid fa-boxes-stacked',
+        color: 'success',
+        modulos: ['inventario', 'compras', 'proveedores']
+    },
+    {
+        grupo: 'Finanzas y Reportes',
+        icono: 'fa-solid fa-coins',
+        color: 'info',
+        modulos: ['cuentas_cobrar', 'cuentas_pagar', 'fiscal', 'reportes']
+    },
+    {
+        grupo: 'Administración',
+        icono: 'fa-solid fa-gears',
+        color: 'secondary',
+        modulos: ['usuarios', 'roles', 'identidad', 'sistema']
+    }
 ];
 
 @Component({

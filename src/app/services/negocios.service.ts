@@ -18,9 +18,10 @@ export type ModuloSistema =
     | 'inventario'
     | 'caja'
     | 'clientes'
-    | 'mesas'       // Mesas genéricas (billar, bar, etc.) → usa /ventas/mesas
-    | 'restaurante' // Módulo restaurante completo (mapa, órdenes, menú) → usa /restaurante
-    | 'cocina'      // Pantalla KDS → solo negocios con cocina real
+    | 'mesas'                  // Mesas genéricas (billar, bar) → /ventas/mesas
+    | 'restaurante'            // Módulo restaurante completo (mapa, órdenes, menú) → /restaurante
+    | 'cocina'                 // Pantalla KDS → negocios con cocina real
+    | 'restaurante_inventario' // Inventario de insumos y recetas del restaurante
     | 'cuentas_cobrar'
     | 'cuentas_pagar'
     | 'compras'
@@ -37,16 +38,16 @@ export type ModuloSistema =
 // Módulos por defecto según tipo de negocio
 // =============================================
 export const MODULOS_POR_TIPO: Record<TipoNegocio, ModuloSistema[]> = {
-    // Sin módulo 'restaurante' — usan /ventas/mesas para sus mesas
-    general: ['ventas', 'inventario', 'caja', 'clientes', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
-    tienda:  ['ventas', 'inventario', 'caja', 'clientes', 'cuentas_cobrar', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
-    billar:  ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'cuentas_cobrar', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    // ── POS: tienen 'ventas' e 'inventario' general ──────────────────────────
+    general:    ['ventas', 'caja', 'clientes', 'inventario', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    tienda:     ['ventas', 'caja', 'clientes', 'inventario', 'cuentas_cobrar', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    billar:     ['ventas', 'caja', 'clientes', 'mesas', 'inventario', 'cuentas_cobrar', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
 
-    // Con módulo 'restaurante' — usan /restaurante para pedidos, menú, cocina
-    bar:        ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'restaurante', 'cuentas_cobrar', 'proveedores', 'compras', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
-    restaurante:['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'restaurante', 'cocina', 'proveedores', 'compras', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
-    cafeteria:  ['ventas', 'inventario', 'caja', 'clientes', 'mesas', 'restaurante', 'proveedores', 'compras', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
-    food_truck: ['ventas', 'inventario', 'caja', 'clientes', 'restaurante', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard']
+    // ── RESTAURANTE: sin 'ventas' POS ni 'inventario' general ────────────────
+    bar:        ['caja', 'clientes', 'mesas', 'restaurante', 'restaurante_inventario', 'cuentas_cobrar', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    restaurante:['caja', 'clientes', 'mesas', 'restaurante', 'cocina', 'restaurante_inventario', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    cafeteria:  ['caja', 'clientes', 'mesas', 'restaurante', 'restaurante_inventario', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard'],
+    food_truck: ['caja', 'clientes', 'restaurante', 'restaurante_inventario', 'fiscal', 'reportes', 'usuarios', 'identidad', 'roles', 'sistema', 'dashboard']
 };
 
 // =============================================
@@ -63,19 +64,20 @@ export const TIPOS_NEGOCIO_LABELS: Record<TipoNegocio, string> = {
 };
 
 export const MODULOS_LABELS: Record<ModuloSistema, string> = {
-    ventas: 'Ventas',
-    inventario: 'Inventario',
+    ventas: 'Ventas / POS',
+    inventario: 'Inventario General (POS)',
     caja: 'Caja Registradora',
     clientes: 'Gestión de Clientes',
-    mesas: 'Mesas y Pedidos',
-    restaurante: 'Módulo Restaurante (Menú, Órdenes)',
+    mesas: 'Mesas (Billar / Bar)',
+    restaurante: 'Restaurante (Mapa, Órdenes, Menú)',
     cocina: 'Pantalla de Cocina (KDS)',
+    restaurante_inventario: 'Inventario Restaurante (Insumos y Recetas)',
     cuentas_cobrar: 'Cuentas por Cobrar',
     cuentas_pagar: 'Cuentas por Pagar',
-    compras: 'Compras',
-    proveedores: 'Proveedores',
+    compras: 'Compras (a Proveedores)',
+    proveedores: 'Gestión de Proveedores',
     fiscal: 'Facturación Fiscal (DGII)',
-    reportes: 'Reportes',
+    reportes: 'Reportes y Estadísticas',
     usuarios: 'Gestión de Usuarios',
     identidad: 'Identidad del Negocio',
     roles: 'Gestión de Roles',

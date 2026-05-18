@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FloorMapComponent } from './floor-map/floor-map.component';
 import { OrderModalComponent } from './order-modal/order-modal.component';
 import { BillSplitComponent } from './bill-split/bill-split.component';
+import { RestaurantTablesService } from '../../services/restaurant-tables.service';
 import { TableWithOrder } from '../../models/restaurant.models';
 
 @Component({
@@ -44,6 +45,25 @@ import { TableWithOrder } from '../../models/restaurant.models';
       0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
       50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
     }
+    .barra-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 0.6rem 1rem;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .barra-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+      border: 2px solid #0d6efd; background: #fff; color: #0d6efd; cursor: pointer;
+      transition: all .15s;
+    }
+    .barra-btn:hover { background: #0d6efd; color: #fff; }
+    .barra-btn.ocupada { border-color: #f59e0b; color: #92400e; background: #fef3c7; }
+    .barra-btn.ocupada:hover { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+    .barra-tip {
+      font-size: 0.75rem; color: #9ca3af;
+    }
   `],
   template: `
     <div class="container-fluid py-3">
@@ -70,6 +90,36 @@ import { TableWithOrder } from '../../models/restaurant.models';
         </div>
       </div>
 
+      <!-- Venta Rápida / Barra -->
+      @if (mesasRapidas.length > 0) {
+        <div class="barra-section mb-3">
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="fw-bold small text-muted">
+              <i class="bi bi-lightning-fill text-warning me-1"></i>Venta Rápida:
+            </span>
+            @for (m of mesasRapidas; track m.id) {
+              <button class="barra-btn" [class.ocupada]="!!m.orden_activa" (click)="abrirOrden(m)">
+                <i class="bi bi-cup-straw"></i>
+                {{ m.nombre_mesa || 'Barra ' + m.numero_mesa }}
+                @if (m.orden_activa) {
+                  <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">EN USO</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <!-- Tip si no hay zona Barra configurada -->
+        <div class="barra-section mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle text-muted"></i>
+          <span class="barra-tip">
+            Para activar <strong>Venta Rápida</strong>, ve a
+            <a routerLink="/restaurante/admin" class="text-primary text-decoration-none fw-semibold">Configurar</a>
+            → Zonas → crea una zona llamada <strong>"Barra"</strong> y agrégale mesas.
+          </span>
+        </div>
+      }
+
       <!-- Mapa de mesas -->
       <app-floor-map (mesaSeleccionada)="abrirOrden($event)"></app-floor-map>
 
@@ -94,10 +144,33 @@ import { TableWithOrder } from '../../models/restaurant.models';
     </div>
   `
 })
-export class RestauranteComponent {
+export class RestauranteComponent implements OnInit {
 
   mesaActiva: TableWithOrder | null = null;
   ordenParaPagar: string | null = null;
+  mesasRapidas: TableWithOrder[] = [];
+
+  constructor(
+    private tablesService: RestaurantTablesService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  async ngOnInit(): Promise<void> {
+    await this.cargarMesasRapidas();
+  }
+
+  async cargarMesasRapidas(): Promise<void> {
+    try {
+      const todas = await this.tablesService.cargarMesasConOrden();
+      this.mesasRapidas = todas.filter(m =>
+        m.zona?.nombre?.toLowerCase().includes('barra') ||
+        m.zona?.nombre?.toLowerCase().includes('bar') ||
+        m.nombre_mesa?.toLowerCase().includes('barra') ||
+        m.nombre_mesa?.toLowerCase().includes('mostrador')
+      );
+      this.cdr.detectChanges();
+    } catch { /* silencioso */ }
+  }
 
   abrirOrden(mesa: TableWithOrder): void {
     this.mesaActiva = mesa;
@@ -108,7 +181,7 @@ export class RestauranteComponent {
   }
 
   onOrdenActualizada(): void {
-    // El FloorMap se actualiza via Realtime automáticamente
+    // FloorMap se actualiza vía Realtime automáticamente
   }
 
   abrirPago(orderId: string): void {
@@ -122,5 +195,6 @@ export class RestauranteComponent {
 
   onOrdenPagada(): void {
     this.ordenParaPagar = null;
+    this.cargarMesasRapidas();
   }
 }

@@ -104,6 +104,14 @@ export const PERMISOS_SISTEMA = {
   'reportes.caja': 'Reportes de Caja',
   'reportes.clientes': 'Reportes de Clientes',
 
+  // Restaurante
+  'restaurante.mesas': 'Ver Mapa de Mesas',
+  'restaurante.ordenes': 'Gestionar Órdenes de Mesa',
+  'restaurante.cobrar': 'Cobrar y Procesar Pagos',
+  'restaurante.cocina': 'Pantalla de Cocina (KDS)',
+  'restaurante.admin': 'Administrar Restaurante (Zonas, Menú, Categorías)',
+  'restaurante.inventario': 'Inventario del Restaurante (Insumos, Recetas)',
+
   // Configuración
   'config.general': 'Configuración General',
   'config.backup': 'Backup y Restauración',
@@ -165,7 +173,7 @@ export const ROLES_PREDEFINIDOS = [
   {
     nombre: 'Solo Lectura',
     descripcion: 'Solo consultas, sin modificaciones',
-    color: '#6b7280', // gray-500
+    color: '#6b7280',
     permisos: [
       'dashboard.ver',
       'inventario.ver',
@@ -173,6 +181,53 @@ export const ROLES_PREDEFINIDOS = [
       'ventas.ver', 'ventas.historial',
       'caja.ver', 'caja.historial',
       'cuentas.ver'
+    ],
+    activo: true
+  },
+  // ── ROLES ESPECÍFICOS DEL MÓDULO RESTAURANTE ──────────────────────────────
+  {
+    nombre: 'Gerente Restaurante',
+    descripcion: 'Gestión completa del restaurante: mesas, menú, inventario, cobros y reportes',
+    color: '#7c3aed',
+    permisos: [
+      'dashboard.ver',
+      'restaurante.mesas', 'restaurante.ordenes', 'restaurante.cobrar',
+      'restaurante.cocina', 'restaurante.admin', 'restaurante.inventario',
+      'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimientos', 'caja.arqueo', 'caja.historial',
+      'reportes.ventas', 'reportes.caja',
+      'clientes.ver', 'clientes.crear'
+    ],
+    activo: true
+  },
+  {
+    nombre: 'Cajero Restaurante',
+    descripcion: 'Toma de órdenes, cobro en mesa y apertura/cierre de caja',
+    color: '#0891b2',
+    permisos: [
+      'dashboard.ver',
+      'restaurante.mesas', 'restaurante.ordenes', 'restaurante.cobrar',
+      'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimientos', 'caja.arqueo',
+      'clientes.ver', 'clientes.crear'
+    ],
+    activo: true
+  },
+  {
+    nombre: 'Mesero',
+    descripcion: 'Apertura y gestión de órdenes en mesa, sin acceso a cobros ni configuración',
+    color: '#059669',
+    permisos: [
+      'dashboard.ver',
+      'restaurante.mesas', 'restaurante.ordenes',
+      'clientes.ver'
+    ],
+    activo: true
+  },
+  {
+    nombre: 'Cocinero',
+    descripcion: 'Acceso exclusivo a la pantalla de cocina (KDS) para gestionar pedidos',
+    color: '#d97706',
+    permisos: [
+      'restaurante.cocina'
     ],
     activo: true
   }

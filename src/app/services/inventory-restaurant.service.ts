@@ -154,6 +154,23 @@ export class InventoryRestaurantService {
   // RECETAS
   // ============================================================
 
+  /** Devuelve un mapa de inventory_item_id → nombres de platos del menú que lo consumen */
+  async cargarUsosDeInsumos(): Promise<Record<string, string[]>> {
+    const { data, error } = await this.supabaseService.client
+      .from('menu_item_recipes')
+      .select('inventory_item_id, menu_item:menu_items(nombre)');
+
+    if (error) throw error;
+
+    const usos: Record<string, string[]> = {};
+    for (const r of data || []) {
+      const nombre = (r.menu_item as any)?.nombre || '';
+      if (!usos[r.inventory_item_id]) usos[r.inventory_item_id] = [];
+      if (nombre) usos[r.inventory_item_id].push(nombre);
+    }
+    return usos;
+  }
+
   async obtenerRecetaDeItem(menuItemId: string): Promise<MenuItemRecipe[]> {
     const { data, error } = await this.supabaseService.client
       .from('menu_item_recipes')

@@ -287,25 +287,25 @@ export const routes: Routes = [
         path: 'restaurante',
         component: RestauranteComponent,
         canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
-        data: { permissions: ['ventas.crear'], modulo: 'restaurante' }
+        data: { permissions: ['restaurante.mesas'], modulo: 'restaurante' }
     },
     {
         path: 'restaurante/cocina',
         component: KitchenDisplayComponent,
         canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
-        data: { permissions: ['ventas.crear'], modulo: 'cocina' }
+        data: { permissions: ['restaurante.cocina'], modulo: 'cocina' }
     },
     {
         path: 'restaurante/impresoras',
         component: PrintersAdminComponent,
         canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
-        data: { permissions: ['config.general'], modulo: 'restaurante' }
+        data: { permissions: ['restaurante.admin'], modulo: 'restaurante' }
     },
     {
         path: 'restaurante/admin',
         component: RestaurantAdminComponent,
         canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
-        data: { permissions: ['config.general'], modulo: 'restaurante' }
+        data: { permissions: ['restaurante.admin'], modulo: 'restaurante' }
     },
 
     // Redirecciones

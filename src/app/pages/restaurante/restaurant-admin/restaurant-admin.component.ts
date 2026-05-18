@@ -6,19 +6,19 @@ import { RestaurantTablesService } from '../../../services/restaurant-tables.ser
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
 import { InventoryRestaurantService } from '../../../services/inventory-restaurant.service';
 import { NegociosService } from '../../../services/negocios.service';
+import { PrintersAdminComponent } from '../printers-admin/printers-admin.component';
 import {
   RestaurantZone, RestaurantTable, MenuCategory, MenuItem,
-  RestaurantInventoryItem, RestaurantInventoryMovement, TipoMovimientoInventario,
-  MenuItemRecipe
+  RestaurantInventoryItem, RestaurantInventoryMovement, TipoMovimientoInventario
 } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
-type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos' | 'inventario' | 'ordenes';
+type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos' | 'inventario' | 'ordenes' | 'impresoras';
 
 @Component({
   selector: 'app-restaurant-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PrintersAdminComponent],
   templateUrl: './restaurant-admin.component.html',
   styleUrl: './restaurant-admin.component.css'
 })
@@ -75,6 +75,16 @@ export class RestaurantAdminComponent implements OnInit {
     { inventory_item_id: '', cantidad: 0, razon: '' };
   invSubTab: 'items' | 'movimientos' = 'items';
 
+  // Relación inventario ↔ menú: mapa de inventory_item_id → nombres de platos que lo usan
+  usosPorInsumo: Record<string, string[]> = {};
+
+  // Wizard "Crear Producto Vendible" (insumo + menu item + receta 1:1)
+  mostrarWizardProducto = false;
+  wizardInsumoOrigen: RestaurantInventoryItem | null = null;
+  wizardForm: { nombre: string; precio: number; categoria_id: string } =
+    { nombre: '', precio: 0, categoria_id: '' };
+  guardandoProducto = false;
+
   // ── Órdenes / Historial ──────────────────────────────────
   historialOrdenes: any[] = [];
   ordenSeleccionada: any = null;
@@ -84,7 +94,7 @@ export class RestaurantAdminComponent implements OnInit {
   readonly unidades = ['unidad', 'kg', 'g', 'litro', 'ml', 'botella', 'caja', 'docena', 'porción'];
 
   get usaInventario(): boolean {
-    return this.negociosService.tieneModulo('inventario');
+    return this.negociosService.tieneModulo('restaurante_inventario');
   }
 
   get hayStockBajo(): boolean {
@@ -123,7 +133,13 @@ export class RestaurantAdminComponent implements OnInit {
         }
       }
       if (tab === 'inventario') {
-        this.inventarioItems = await this.inventoryService.cargarInventario();
+        [this.inventarioItems, this.usosPorInsumo] = await Promise.all([
+          this.inventoryService.cargarInventario(),
+          this.inventoryService.cargarUsosDeInsumos()
+        ]);
+        if (!this.categorias.length) {
+          this.categorias = await this.ordersService.cargarCategorias();
+        }
         if (this.invSubTab === 'movimientos') {
           this.movimientos = await this.inventoryService.obtenerHistorialMovimientos(undefined, 80);
         }
@@ -509,6 +525,64 @@ export class RestaurantAdminComponent implements OnInit {
     if (tipo === 'produccion' || tipo === 'salida') return 'text-danger';
     if (tipo === 'merma') return 'text-warning';
     return 'text-muted';
+  }
+
+  // ── WIZARD: Crear Producto Vendible ──────────────────────
+
+  abrirWizardProducto(insumo: RestaurantInventoryItem): void {
+    this.wizardInsumoOrigen = insumo;
+    this.wizardForm = {
+      nombre: insumo.nombre,
+      precio: 0,
+      categoria_id: this.categorias[0]?.id || ''
+    };
+    this.mostrarWizardProducto = true;
+  }
+
+  async guardarProductoVendible(): Promise<void> {
+    if (!this.wizardForm.nombre.trim() || !this.wizardForm.categoria_id || this.wizardForm.precio <= 0) {
+      Swal.fire('Atención', 'Completa nombre, categoría y precio.', 'warning');
+      return;
+    }
+    if (!this.wizardInsumoOrigen) return;
+
+    this.guardandoProducto = true;
+    try {
+      const menuItem = await this.ordersService.crearMenuItem({
+        categoria_id: this.wizardForm.categoria_id,
+        nombre: this.wizardForm.nombre,
+        descripcion: '',
+        precio: this.wizardForm.precio,
+        tiempo_preparacion_minutos: 0,
+        notas_cocina: '',
+        requiere_inventario: true,
+        disponible: true
+      });
+
+      await this.inventoryService.guardarReceta(menuItem.id, [{
+        menu_item_id: menuItem.id,
+        inventory_item_id: this.wizardInsumoOrigen.id,
+        cantidad_requerida: 1,
+        unidad_medida: this.wizardInsumoOrigen.unidad_medida
+      }]);
+
+      this.mostrarWizardProducto = false;
+      this.usosPorInsumo = await this.inventoryService.cargarUsosDeInsumos();
+      this.cdr.detectChanges();
+      Swal.fire({ icon: 'success', title: '¡Producto creado!',
+        text: `"${menuItem.nombre}" ya está en el menú y descontará inventario al vender.`,
+        timer: 2500, showConfirmButton: false });
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.guardandoProducto = false;
+    }
+  }
+
+  usosLabel(insumoId: string): string {
+    const nombres = this.usosPorInsumo[insumoId];
+    if (!nombres?.length) return '';
+    return nombres.slice(0, 2).join(', ') + (nombres.length > 2 ? ` +${nombres.length - 2}` : '');
   }
 
   // ── HELPERS ───────────────────────────────────────────────

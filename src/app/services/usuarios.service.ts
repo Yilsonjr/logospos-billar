@@ -218,11 +218,15 @@ export class UsuariosService {
   // Cargar todos los roles
   async cargarRoles(): Promise<void> {
     try {
-      const { data, error } = await this.supabaseService.client
+      const negocioId = this.authService.getNegocioId();
+      let query = this.supabaseService.client
         .from('roles')
         .select('*')
         .order('nombre', { ascending: true });
 
+      if (negocioId) query = query.eq('negocio_id', negocioId);
+
+      const { data, error } = await query;
       if (error) throw error;
       this.rolesSubject.next(data || []);
     } catch (error) {
@@ -234,12 +238,15 @@ export class UsuariosService {
   // Crear rol
   async crearRol(rol: CrearRol): Promise<Rol> {
     try {
-      // Verificar que el nombre sea único
-      const { data: existeRol } = await this.supabaseService.client
+      // Verificar que el nombre sea único dentro del negocio
+      const negocioId = (rol as any).negocio_id || this.authService.getNegocioId();
+      let checkQuery = this.supabaseService.client
         .from('roles')
         .select('id')
-        .eq('nombre', rol.nombre)
-        .maybeSingle();
+        .eq('nombre', rol.nombre);
+      if (negocioId) checkQuery = checkQuery.eq('negocio_id', negocioId);
+
+      const { data: existeRol } = await checkQuery.limit(1).maybeSingle();
 
       if (existeRol) {
         throw new Error('Ya existe un rol con ese nombre');
@@ -346,22 +353,26 @@ export class UsuariosService {
 
   // ==================== INICIALIZACIÓN ====================
 
-  // Crear roles predefinidos (ejecutar una sola vez)
+  // Crear roles predefinidos (ejecutar una sola vez por negocio)
   async crearRolesPredefinidos(): Promise<void> {
     try {
-      for (const rolData of ROLES_PREDEFINIDOS) {
-        // Verificar si ya existe
-        const { data: existeRol } = await this.supabaseService.client
-          .from('roles')
-          .select('id')
-          .eq('nombre', rolData.nombre)
-          .maybeSingle();
+      const negocioId = this.authService.getNegocioId();
+      if (!negocioId) throw new Error('negocio_id requerido para crear roles');
 
-        if (!existeRol) {
+      for (const rolData of ROLES_PREDEFINIDOS) {
+        // Verificar si ya existe para ESTE negocio específico
+        const { count } = await this.supabaseService.client
+          .from('roles')
+          .select('id', { count: 'exact', head: true })
+          .eq('nombre', rolData.nombre)
+          .eq('negocio_id', negocioId);
+
+        if (!count || count === 0) {
           await this.crearRol({
             ...rolData,
-            permisos: [...rolData.permisos] // Convertir readonly array a mutable array
-          });
+            negocio_id: negocioId,
+            permisos: [...rolData.permisos]
+          } as any);
         }
       }
     } catch (error) {

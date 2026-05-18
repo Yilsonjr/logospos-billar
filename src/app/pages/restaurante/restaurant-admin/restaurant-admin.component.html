@@ -30,14 +30,19 @@
     <button class="ra-tab" [class.active]="tabActiva==='platos'" (click)="cargarTab('platos')">
       <i class="bi bi-egg-fried"></i> Platos
     </button>
-    <button class="ra-tab" [class.active]="tabActiva==='inventario'" (click)="cargarTab('inventario')">
-      <i class="bi bi-boxes"></i> Inventario
-      @if (hayStockBajo) {
-        <span class="badge bg-danger ms-1">!</span>
-      }
-    </button>
+    @if (usaInventario) {
+      <button class="ra-tab" [class.active]="tabActiva==='inventario'" (click)="cargarTab('inventario')">
+        <i class="bi bi-boxes"></i> Inventario
+        @if (hayStockBajo) {
+          <span class="badge bg-danger ms-1">!</span>
+        }
+      </button>
+    }
     <button class="ra-tab" [class.active]="tabActiva==='ordenes'" (click)="cargarTab('ordenes')">
       <i class="bi bi-clock-history"></i> Historial de Órdenes
+    </button>
+    <button class="ra-tab" [class.active]="tabActiva==='impresoras'" (click)="cargarTab('impresoras')">
+      <i class="bi bi-printer-fill"></i> Impresoras
     </button>
   </div>
 
@@ -535,7 +540,7 @@
                 <th class="text-end">Stock actual</th>
                 <th class="text-end">Stock mínimo</th>
                 <th class="text-end">Costo unit.</th>
-                <th>Proveedor</th>
+                <th>En el menú</th>
                 <th></th>
               </tr>
             </thead>
@@ -554,7 +559,20 @@
                   </td>
                   <td class="text-end text-muted">{{ item.cantidad_minima | number:'1.0-3' }}</td>
                   <td class="text-end">RD$ {{ item.costo_unitario | number:'1.2-2' }}</td>
-                  <td class="text-muted small">{{ item.proveedor || '—' }}</td>
+                  <td>
+                    @if (usosPorInsumo[item.id]?.length) {
+                      <span class="badge bg-success-subtle text-success border border-success-subtle"
+                        style="font-size:.7rem" [title]="usosPorInsumo[item.id].join(', ')">
+                        <i class="bi bi-egg-fried me-1"></i>{{ usosLabel(item.id) }}
+                      </span>
+                    } @else {
+                      <button class="btn btn-xs btn-outline-primary" style="font-size:.7rem;padding:2px 7px"
+                        (click)="abrirWizardProducto(item)"
+                        title="Crear como producto del menú">
+                        <i class="bi bi-plus-circle me-1"></i>Crear producto
+                      </button>
+                    }
+                  </td>
                   <td>
                     <div class="d-flex gap-1 justify-content-end">
                       <button class="ra-btn-icon" title="Registrar entrada"
@@ -718,6 +736,60 @@
           </div>
         </div>
       </div>
+      }
+
+      <!-- WIZARD: Crear Producto Vendible -->
+      @if (mostrarWizardProducto && wizardInsumoOrigen) {
+        <div class="ra-modal-backdrop" (click)="mostrarWizardProducto=false">
+          <div class="ra-modal" style="max-width:480px" (click)="$event.stopPropagation()">
+            <div class="ra-modal-header" style="background:#0d6efd">
+              <h6 class="mb-0">
+                <i class="bi bi-bag-plus me-2"></i>
+                Crear Producto del Menú — {{ wizardInsumoOrigen.nombre }}
+              </h6>
+              <button class="btn-close btn-close-white" (click)="mostrarWizardProducto=false"></button>
+            </div>
+            <div class="ra-modal-body">
+              <p class="text-muted small mb-3">
+                Se creará un <strong>item del menú</strong> con descuento automático de inventario
+                (1 {{ wizardInsumoOrigen.unidad_medida }} de "{{ wizardInsumoOrigen.nombre }}" por unidad vendida).
+              </p>
+              <div class="row g-2">
+                <div class="col-12">
+                  <label class="form-label small fw-semibold">Nombre en el menú *</label>
+                  <input class="form-control form-control-sm" [(ngModel)]="wizardForm.nombre"
+                    placeholder="Ej: Cerveza Presidente 355ml">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">Precio de venta (RD$) *</label>
+                  <input type="number" class="form-control form-control-sm"
+                    [(ngModel)]="wizardForm.precio" min="0" step="1" placeholder="150">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">Categoría del menú *</label>
+                  <select class="form-select form-select-sm" [(ngModel)]="wizardForm.categoria_id">
+                    <option value="">— Seleccionar —</option>
+                    @for (cat of categorias; track cat.id) {
+                      <option [value]="cat.id">{{ cat.nombre }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <div class="alert alert-info mt-3 mb-0 small py-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Stock actual: <strong>{{ wizardInsumoOrigen.cantidad_actual | number:'1.0-2' }}
+                {{ wizardInsumoOrigen.unidad_medida }}</strong>
+              </div>
+            </div>
+            <div class="ra-modal-footer">
+              <button class="btn btn-sm btn-outline-secondary" (click)="mostrarWizardProducto=false">Cancelar</button>
+              <button class="btn btn-sm btn-primary" (click)="guardarProductoVendible()" [disabled]="guardandoProducto">
+                @if (guardandoProducto) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                <i class="bi bi-bag-plus me-1"></i>Crear Producto
+              </button>
+            </div>
+          </div>
+        </div>
       }
   }
 
@@ -905,6 +977,11 @@
         </div>
       </div>
     }
+  }
+
+  <!-- ══════════ TAB: IMPRESORAS ══════════ -->
+  @if (!cargando && tabActiva === 'impresoras') {
+    <app-printers-admin></app-printers-admin>
   }
 
 </div>
