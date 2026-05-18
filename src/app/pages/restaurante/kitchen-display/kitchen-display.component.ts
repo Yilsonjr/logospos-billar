@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { KitchenService } from '../../../services/kitchen.service';
 import {
   KitchenTicket, EstadoTicketCocina,
@@ -43,11 +44,15 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
   readonly labelEstado = LABEL_ESTADO_TICKET;
   readonly colorPrioridad = COLOR_PRIORIDAD;
 
-  constructor(private kitchenService: KitchenService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private kitchenService: KitchenService,
+    private cdr: ChangeDetectorRef,
+    private router: Router
+  ) {}
 
   async ngOnInit(): Promise<void> {
-    await this.cargarTickets();
-    this.kitchenService.suscribirCambios(() => this.cargarTickets());
+    await this.cargarTickets(false); // Primer carga con spinner
+    this.kitchenService.suscribirCambios(() => this.cargarTickets(true)); // Actualización en tiempo real silenciosa (sin parpadeos)
     // Timer para actualizar tiempos cada 30s
     this.timerInterval = setInterval(() => {
       this.horaActual = new Date();
@@ -61,9 +66,11 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     clearInterval(this.timerInterval);
   }
 
-  async cargarTickets(): Promise<void> {
+  async cargarTickets(silent = false): Promise<void> {
     try {
-      this.cargando = true;
+      if (!silent) {
+        this.cargando = true;
+      }
       const todos = await this.kitchenService.cargarTickets(['nuevo', 'en_preparacion', 'listo', 'entregado']);
       this.columnas.forEach(col => {
         col.tickets = todos.filter(t => t.estado === col.estado);
@@ -74,6 +81,10 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
       this.cargando = false;
       this.cdr.detectChanges();
     }
+  }
+
+  regresar(): void {
+    this.router.navigate(['/restaurante']);
   }
 
   // ============================================================

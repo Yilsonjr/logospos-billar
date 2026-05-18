@@ -3,6 +3,9 @@
   <!-- HEADER -->
   <div class="ra-header mb-4">
     <div class="d-flex align-items-center gap-3">
+      <a routerLink="/restaurante" class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-1">
+        <i class="bi bi-arrow-left"></i> Volver
+      </a>
       <div class="ra-header-icon">
         <i class="bi bi-gear-fill text-white fs-5"></i>
       </div>
@@ -26,6 +29,12 @@
     </button>
     <button class="ra-tab" [class.active]="tabActiva==='platos'" (click)="cargarTab('platos')">
       <i class="bi bi-egg-fried"></i> Platos
+    </button>
+    <button class="ra-tab" [class.active]="tabActiva==='inventario'" (click)="cargarTab('inventario')">
+      <i class="bi bi-boxes"></i> Inventario
+      @if (hayStockBajo) {
+        <span class="badge bg-danger ms-1">!</span>
+      }
     </button>
   </div>
 
@@ -395,6 +404,241 @@
         </table>
       </div>
     </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB INVENTARIO
+  ══════════════════════════════════════════════════════════ -->
+  @if (tabActiva === 'inventario' && !cargando) {
+    <div class="ra-section">
+
+      <!-- Sub-tabs + acciones -->
+      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="btn-group btn-group-sm">
+          <button class="btn" [class.btn-dark]="invSubTab==='items'"
+            [class.btn-outline-secondary]="invSubTab!=='items'"
+            (click)="cambiarInvSubTab('items')">
+            <i class="bi bi-boxes me-1"></i>Insumos / Bebidas
+          </button>
+          <button class="btn" [class.btn-dark]="invSubTab==='movimientos'"
+            [class.btn-outline-secondary]="invSubTab!=='movimientos'"
+            (click)="cambiarInvSubTab('movimientos')">
+            <i class="bi bi-clock-history me-1"></i>Movimientos
+          </button>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="ra-btn-add secondary" (click)="abrirFormEntrada()">
+            <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Entrada
+          </button>
+          <button class="ra-btn-add" (click)="abrirFormInv()">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Insumo
+          </button>
+        </div>
+      </div>
+
+      <!-- Stock bajo alerta -->
+      @if (hayStockBajo) {
+        <div class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span>Hay insumos con stock bajo el mínimo. Revisa la columna <strong>Stock</strong>.</span>
+        </div>
+      }
+
+      <!-- SUB-TAB: Insumos -->
+      @if (invSubTab === 'items') {
+        <div class="ra-table-wrap">
+          <table class="ra-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Unidad</th>
+                <th class="text-end">Stock actual</th>
+                <th class="text-end">Stock mínimo</th>
+                <th class="text-end">Costo unit.</th>
+                <th>Proveedor</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of inventarioItems; track item.id) {
+                <tr [class.table-danger]="item.stock_bajo">
+                  <td class="fw-semibold">
+                    @if (item.stock_bajo) {
+                      <i class="bi bi-exclamation-circle-fill text-danger me-1" title="Stock bajo"></i>
+                    }
+                    {{ item.nombre }}
+                  </td>
+                  <td><span class="badge bg-secondary">{{ item.unidad_medida }}</span></td>
+                  <td class="text-end" [class.text-danger]="item.stock_bajo" [class.fw-bold]="item.stock_bajo">
+                    {{ item.cantidad_actual | number:'1.0-3' }}
+                  </td>
+                  <td class="text-end text-muted">{{ item.cantidad_minima | number:'1.0-3' }}</td>
+                  <td class="text-end">RD$ {{ item.costo_unitario | number:'1.2-2' }}</td>
+                  <td class="text-muted small">{{ item.proveedor || '—' }}</td>
+                  <td>
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="ra-btn-icon" title="Registrar entrada"
+                        (click)="abrirFormEntrada(item)">
+                        <i class="bi bi-box-arrow-in-down text-success"></i>
+                      </button>
+                      <button class="ra-btn-icon edit" (click)="abrirFormInv(item)" title="Editar">
+                        <i class="bi bi-pencil-fill"></i>
+                      </button>
+                      <button class="ra-btn-icon del" (click)="eliminarInv(item)" title="Eliminar">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+              @if (inventarioItems.length === 0) {
+                <tr><td colspan="7" class="ra-empty">Sin insumos registrados. Agrega bebidas e ingredientes.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- SUB-TAB: Movimientos -->
+      @if (invSubTab === 'movimientos') {
+        <div class="ra-table-wrap">
+          <table class="ra-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Insumo</th>
+                <th class="text-end">Cantidad</th>
+                <th class="text-end">Stock anterior</th>
+                <th class="text-end">Stock posterior</th>
+                <th>Razón</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (mov of movimientos; track mov.id) {
+                <tr>
+                  <td class="small text-muted">{{ mov.created_at | date:'dd/MM HH:mm' }}</td>
+                  <td>
+                    <span class="fw-semibold" [class]="tipoMovClass(mov.tipo_movimiento)">
+                      {{ tipoMovLabel(mov.tipo_movimiento) }}
+                    </span>
+                  </td>
+                  <td>{{ nombreInsumo(mov.inventory_item_id) }}</td>
+                  <td class="text-end fw-bold" [class]="tipoMovClass(mov.tipo_movimiento)">
+                    {{ mov.tipo_movimiento === 'entrada' || mov.tipo_movimiento === 'ajuste' ? '+' : '-' }}{{ mov.cantidad | number:'1.0-3' }}
+                  </td>
+                  <td class="text-end text-muted small">{{ mov.cantidad_anterior | number:'1.0-3' }}</td>
+                  <td class="text-end small">{{ mov.cantidad_posterior | number:'1.0-3' }}</td>
+                  <td class="small text-muted">{{ mov.razon || '—' }}</td>
+                </tr>
+              }
+              @if (movimientos.length === 0) {
+                <tr><td colspan="7" class="ra-empty">Sin movimientos registrados aún.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <!-- MODAL: Crear/Editar insumo -->
+    @if (mostrarFormInv) {
+      <div class="ra-modal-backdrop" (click)="mostrarFormInv=false">
+        <div class="ra-modal" (click)="$event.stopPropagation()">
+          <div class="ra-modal-header">
+            <h6 class="mb-0">{{ editandoInv ? 'Editar insumo' : 'Nuevo insumo' }}</h6>
+            <button class="btn-close btn-close-white" (click)="mostrarFormInv=false"></button>
+          </div>
+          <div class="ra-modal-body">
+            <div class="row g-2">
+              <div class="col-8">
+                <label class="form-label small">Nombre *</label>
+                <input class="form-control form-control-sm" [(ngModel)]="invForm.nombre" placeholder="Coca-Cola, Harina, Pollo…">
+              </div>
+              <div class="col-4">
+                <label class="form-label small">Unidad *</label>
+                <select class="form-select form-select-sm" [(ngModel)]="invForm.unidad_medida">
+                  @for (u of unidades; track u) {
+                    <option [value]="u">{{ u }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="form-label small">Stock actual</label>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="invForm.cantidad_actual" min="0" step="0.001">
+              </div>
+              <div class="col-4">
+                <label class="form-label small">Stock mínimo</label>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="invForm.cantidad_minima" min="0" step="0.001">
+              </div>
+              <div class="col-4">
+                <label class="form-label small">Costo unitario (RD$)</label>
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="invForm.costo_unitario" min="0" step="0.01">
+              </div>
+              <div class="col-6">
+                <label class="form-label small">Proveedor</label>
+                <input class="form-control form-control-sm" [(ngModel)]="invForm.proveedor" placeholder="Opcional">
+              </div>
+              <div class="col-6">
+                <label class="form-label small">Ubicación</label>
+                <input class="form-control form-control-sm" [(ngModel)]="invForm.ubicacion" placeholder="Bodega, Nevera…">
+              </div>
+            </div>
+          </div>
+          <div class="ra-modal-footer">
+            <button class="btn btn-sm btn-outline-secondary" (click)="mostrarFormInv=false">Cancelar</button>
+            <button class="btn btn-sm btn-primary" (click)="guardarInv()" [disabled]="cargando">
+              @if (cargando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- MODAL: Registrar entrada de stock -->
+    @if (mostrarFormEntrada) {
+      <div class="ra-modal-backdrop" (click)="mostrarFormEntrada=false">
+        <div class="ra-modal" (click)="$event.stopPropagation()">
+          <div class="ra-modal-header">
+            <h6 class="mb-0"><i class="bi bi-box-arrow-in-down me-2"></i>Registrar Entrada de Stock</h6>
+            <button class="btn-close btn-close-white" (click)="mostrarFormEntrada=false"></button>
+          </div>
+          <div class="ra-modal-body">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label small">Insumo / Bebida *</label>
+                <select class="form-select form-select-sm" [(ngModel)]="entradaForm.inventory_item_id">
+                  <option value="">— Seleccionar —</option>
+                  @for (item of inventarioItems; track item.id) {
+                    <option [value]="item.id">
+                      {{ item.nombre }} ({{ item.cantidad_actual | number:'1.0-2' }} {{ item.unidad_medida }})
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small">Cantidad a ingresar *</label>
+                <input type="number" class="form-control form-control-sm"
+                  [(ngModel)]="entradaForm.cantidad" min="0.001" step="0.001" placeholder="0">
+              </div>
+              <div class="col-6">
+                <label class="form-label small">Razón</label>
+                <input class="form-control form-control-sm" [(ngModel)]="entradaForm.razon"
+                  placeholder="Compra, donación…">
+              </div>
+            </div>
+          </div>
+          <div class="ra-modal-footer">
+            <button class="btn btn-sm btn-outline-secondary" (click)="mostrarFormEntrada=false">Cancelar</button>
+            <button class="btn btn-sm btn-success" (click)="guardarEntrada()" [disabled]="cargando">
+              @if (cargando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Entrada
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   }
 
 </div>

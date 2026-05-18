@@ -3,6 +3,10 @@
   <!-- TOPBAR -->
   <div class="kds-topbar">
     <div class="d-flex align-items-center gap-3">
+      <button class="kds-back-btn" (click)="regresar()" title="Regresar al Restaurante">
+        <i class="bi bi-arrow-left"></i>
+        <span>Volver</span>
+      </button>
       <div class="kds-brand">
         <i class="bi bi-fire kds-fire-icon"></i>
         <span class="kds-brand-text">COCINA</span>
@@ -128,7 +132,8 @@
                   <select class="ticket-prioridad-select"
                     [value]="ticket.prioridad"
                     (change)="cambiarPrioridad(ticket, $any($event.target).value)"
-                    (click)="$event.stopPropagation()">
+                    (click)="$event.stopPropagation()"
+                    (mousedown)="$event.stopPropagation()">
                     <option value="baja">↓ Baja</option>
                     <option value="normal">→ Normal</option>
                     <option value="alta">↑ Alta</option>
@@ -136,7 +141,9 @@
                   </select>
 
                   @if (ticket.estado !== 'entregado') {
-                    <button class="ticket-avanzar-btn" (click)="avanzarEstado(ticket)">
+                    <button class="ticket-avanzar-btn" 
+                      (click)="avanzarEstado(ticket); $event.stopPropagation()"
+                      (mousedown)="$event.stopPropagation()">
                       @switch (ticket.estado) {
                         @case ('nuevo') {
                           <i class="bi bi-play-circle-fill me-1"></i>Iniciar

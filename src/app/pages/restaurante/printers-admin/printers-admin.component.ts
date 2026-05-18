@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { PrintService } from '../../../services/print.service';
 import { NegociosService } from '../../../services/negocios.service';
 import { RestaurantPrinter, TipoImpresora } from '../../../models/restaurant.models';
@@ -24,7 +25,7 @@ const TIPOS: TipoInfo[] = [
 @Component({
     selector: 'app-printers-admin',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, RouterModule],
     templateUrl: './printers-admin.component.html',
     styleUrls: ['./printers-admin.component.css']
 })

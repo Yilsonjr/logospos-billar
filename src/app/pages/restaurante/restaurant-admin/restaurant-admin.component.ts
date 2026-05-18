@@ -1,18 +1,23 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { RestaurantTablesService } from '../../../services/restaurant-tables.service';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
+import { InventoryRestaurantService } from '../../../services/inventory-restaurant.service';
 import { NegociosService } from '../../../services/negocios.service';
-import { RestaurantZone, RestaurantTable, MenuCategory, MenuItem } from '../../../models/restaurant.models';
+import {
+  RestaurantZone, RestaurantTable, MenuCategory, MenuItem,
+  RestaurantInventoryItem, RestaurantInventoryMovement, TipoMovimientoInventario
+} from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
-type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos';
+type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos' | 'inventario';
 
 @Component({
   selector: 'app-restaurant-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './restaurant-admin.component.html',
   styleUrl: './restaurant-admin.component.css'
 })
@@ -52,13 +57,31 @@ export class RestaurantAdminComponent implements OnInit {
   mostrarFormPlato = false;
   categoriaFiltroPlatos = '';
 
+  // ── Inventario ────────────────────────────────────────────
+  inventarioItems: RestaurantInventoryItem[] = [];
+  movimientos: RestaurantInventoryMovement[] = [];
+  invForm: Partial<RestaurantInventoryItem> = {};
+  editandoInv: RestaurantInventoryItem | null = null;
+  mostrarFormInv = false;
+  mostrarFormEntrada = false;
+  entradaForm: { inventory_item_id: string; cantidad: number; razon: string } =
+    { inventory_item_id: '', cantidad: 0, razon: '' };
+  invSubTab: 'items' | 'movimientos' = 'items';
+
+  readonly unidades = ['unidad', 'kg', 'g', 'litro', 'ml', 'botella', 'caja', 'docena', 'porción'];
+
   get usaInventario(): boolean {
     return this.negociosService.tieneModulo('inventario');
+  }
+
+  get hayStockBajo(): boolean {
+    return this.inventarioItems.some(i => i.stock_bajo);
   }
 
   constructor(
     private tablesService: RestaurantTablesService,
     private ordersService: RestaurantOrdersService,
+    private inventoryService: InventoryRestaurantService,
     private negociosService: NegociosService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -82,6 +105,12 @@ export class RestaurantAdminComponent implements OnInit {
       }
       if (tab === 'platos') {
         this.platos = await this.ordersService.cargarItemsAdmin(this.categoriaFiltroPlatos || undefined);
+      }
+      if (tab === 'inventario') {
+        this.inventarioItems = await this.inventoryService.cargarInventario();
+        if (this.invSubTab === 'movimientos') {
+          this.movimientos = await this.inventoryService.obtenerHistorialMovimientos(undefined, 80);
+        }
       }
     } catch (e: any) {
       console.error('[RestaurantAdmin] Error cargando tab', tab, e);
@@ -289,6 +318,115 @@ export class RestaurantAdminComponent implements OnInit {
     this.platos = await this.ordersService.cargarItemsAdmin(this.categoriaFiltroPlatos || undefined);
     this.cdr.detectChanges();
   }
+
+  // ── INVENTARIO ────────────────────────────────────────────
+
+  abrirFormInv(item?: RestaurantInventoryItem): void {
+    this.editandoInv = item || null;
+    this.invForm = item
+      ? { ...item }
+      : { nombre: '', unidad_medida: 'unidad', cantidad_actual: 0, cantidad_minima: 0, costo_unitario: 0, activo: true };
+    this.mostrarFormInv = true;
+  }
+
+  async guardarInv(): Promise<void> {
+    if (!this.invForm.nombre?.trim()) return;
+    this.cargando = true;
+    try {
+      if (this.editandoInv) {
+        await this.inventoryService.actualizarItem(this.editandoInv.id, this.invForm);
+      } else {
+        await this.inventoryService.crearItem(this.invForm as any);
+      }
+      this.mostrarFormInv = false;
+      this.inventarioItems = await this.inventoryService.cargarInventario();
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.cargando = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async eliminarInv(item: RestaurantInventoryItem): Promise<void> {
+    const { isConfirmed } = await Swal.fire({
+      title: `¿Eliminar "${item.nombre}"?`,
+      text: 'Se desactivará el insumo. El historial se conserva.',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444'
+    });
+    if (!isConfirmed) return;
+    try {
+      await this.inventoryService.eliminarItem(item.id);
+      this.inventarioItems = await this.inventoryService.cargarInventario();
+      this.cdr.detectChanges();
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    }
+  }
+
+  abrirFormEntrada(item?: RestaurantInventoryItem): void {
+    this.entradaForm = {
+      inventory_item_id: item?.id || '',
+      cantidad: 0,
+      razon: 'Compra / recepción de mercancía'
+    };
+    this.mostrarFormEntrada = true;
+  }
+
+  async guardarEntrada(): Promise<void> {
+    if (!this.entradaForm.inventory_item_id || this.entradaForm.cantidad <= 0) {
+      Swal.fire('Atención', 'Selecciona un insumo y una cantidad mayor a 0.', 'warning');
+      return;
+    }
+    this.cargando = true;
+    try {
+      await this.inventoryService.registrarMovimiento(
+        this.entradaForm.inventory_item_id,
+        'entrada',
+        this.entradaForm.cantidad,
+        this.entradaForm.razon || 'Entrada manual'
+      );
+      this.mostrarFormEntrada = false;
+      this.inventarioItems = await this.inventoryService.cargarInventario();
+      Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1500, showConfirmButton: false });
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.cargando = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async cambiarInvSubTab(sub: 'items' | 'movimientos'): Promise<void> {
+    this.invSubTab = sub;
+    if (sub === 'movimientos' && !this.movimientos.length) {
+      this.movimientos = await this.inventoryService.obtenerHistorialMovimientos(undefined, 80);
+      this.cdr.detectChanges();
+    }
+  }
+
+  nombreInsumo(id: string): string {
+    return this.inventarioItems.find(i => i.id === id)?.nombre || id;
+  }
+
+  tipoMovLabel(tipo: TipoMovimientoInventario): string {
+    const map: Record<TipoMovimientoInventario, string> = {
+      entrada: 'Entrada', salida: 'Salida', ajuste: 'Ajuste',
+      merma: 'Merma', produccion: 'Producción'
+    };
+    return map[tipo] ?? tipo;
+  }
+
+  tipoMovClass(tipo: TipoMovimientoInventario): string {
+    if (tipo === 'entrada') return 'text-success';
+    if (tipo === 'produccion' || tipo === 'salida') return 'text-danger';
+    if (tipo === 'merma') return 'text-warning';
+    return 'text-muted';
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────
 
   nombreZona(zonaId: string): string {
     return this.zonas.find(z => z.id === zonaId)?.nombre || '—';

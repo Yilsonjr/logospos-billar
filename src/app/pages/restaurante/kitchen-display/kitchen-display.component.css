@@ -63,6 +63,29 @@
   letter-spacing: .05em;
 }
 
+.kds-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.kds-back-btn:hover {
+  background: rgba(255,255,255,.07);
+  color: #f1f5f9;
+  border-color: #475569;
+}
+.kds-back-btn i {
+  font-size: 1rem;
+}
+
 .kds-alert-btn {
   display: flex;
   align-items: center;

@@ -23,19 +23,50 @@ export class KitchenService {
   // ============================================================
 
   async cargarTickets(estados: EstadoTicketCocina[] = ['nuevo', 'en_preparacion', 'listo']): Promise<KitchenTicket[]> {
-    const { data, error } = await this.supabaseService.client
-      .from('kitchen_tickets')
-      .select('*')
-      .eq('negocio_id', this.negocioId)
-      .in('estado', estados)
-      .order('hora_creacion', { ascending: true });
+    const estadosActivos = estados.filter(e => e !== 'entregado');
+    const incluirEntregados = estados.includes('entregado');
 
-    if (error) {
-      console.error('[KitchenService] Error cargando tickets:', error.message);
-      throw error;
+    let tickets: KitchenTicket[] = [];
+
+    if (estadosActivos.length > 0) {
+      const { data, error } = await this.supabaseService.client
+        .from('kitchen_tickets')
+        .select('*')
+        .eq('negocio_id', this.negocioId)
+        .in('estado', estadosActivos)
+        .order('hora_creacion', { ascending: true });
+
+      if (error) {
+        console.error('[KitchenService] Error cargando tickets activos:', error.message);
+        throw error;
+      }
+      tickets = tickets.concat(data || []);
     }
-    this.ticketsSubject.next(data || []);
-    return data || [];
+
+    if (incluirEntregados) {
+      // Para evitar lentitud por acumulación histórica, solo cargamos los entregados de las últimas 12 horas
+      const doceHorasAtras = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await this.supabaseService.client
+        .from('kitchen_tickets')
+        .select('*')
+        .eq('negocio_id', this.negocioId)
+        .eq('estado', 'entregado')
+        .gte('created_at', doceHorasAtras)
+        .order('hora_creacion', { ascending: false })
+        .limit(30); // Límite de seguridad para evitar sobrecarga en UI
+
+      if (error) {
+        console.error('[KitchenService] Error cargando tickets entregados:', error.message);
+        throw error;
+      }
+      tickets = tickets.concat(data || []);
+    }
+
+    // Ordenar de forma cronológica por hora_creacion para KDS
+    tickets.sort((a, b) => new Date(a.hora_creacion).getTime() - new Date(b.hora_creacion).getTime());
+
+    this.ticketsSubject.next(tickets);
+    return tickets;
   }
 
   /** Obtener tickets agrupados por columna KDS */

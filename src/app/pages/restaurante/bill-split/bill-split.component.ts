@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
 import { NegociosService } from '../../../services/negocios.service';
+import { InventoryRestaurantService } from '../../../services/inventory-restaurant.service';
 import { SupabaseService } from '../../../services/supabase.service';
+import { CajaService } from '../../../services/caja.service';
+import { AuthService } from '../../../services/auth.service';
 import {
   OrderWithItems, OrderItemWithMenuItem, CuentaComensal,
   FormaPago, RestaurantOrderPayment
@@ -41,7 +44,10 @@ export class BillSplitComponent implements OnInit {
   constructor(
     private ordersService: RestaurantOrdersService,
     private negociosService: NegociosService,
+    private inventoryService: InventoryRestaurantService,
     private supabaseService: SupabaseService,
+    private cajaService: CajaService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -174,11 +180,66 @@ export class BillSplitComponent implements OnInit {
           pagado: true
         });
 
+      // --- REGISTRAR MOVIMIENTO EN CAJA ---
+      try {
+        const cajaAbierta = await this.cajaService.verificarCajaAbierta();
+        if (cajaAbierta && cajaAbierta.id) {
+          const usuarioId = this.authService.usuarioActual?.id || 1;
+          const mesaNumero = this.orden.mesa?.numero_mesa || '';
+          const ordenIdShort = this.orden.id.slice(-6).toUpperCase();
+
+          if (cuenta.forma_pago === 'mixto') {
+            // Dividir 50/50 si es mixto en caja
+            const mitadMonto = Math.round((cuenta.total / 2) * 100) / 100;
+            if (mitadMonto > 0) {
+              await this.cajaService.registrarMovimiento({
+                caja_id: cajaAbierta.id,
+                tipo: 'venta',
+                concepto: `Venta Mesa ${mesaNumero} - Orden #${ordenIdShort} (Efectivo)`,
+                monto: mitadMonto,
+                referencia: this.orden.id,
+                usuario_id: usuarioId
+              });
+              await this.cajaService.registrarMovimiento({
+                caja_id: cajaAbierta.id,
+                tipo: 'venta',
+                concepto: `Venta Mesa ${mesaNumero} - Orden #${ordenIdShort} (Tarjeta)`,
+                monto: mitadMonto,
+                referencia: this.orden.id,
+                usuario_id: usuarioId
+              });
+            }
+          } else {
+            // Método simple (efectivo, tarjeta, transferencia, etc.)
+            let metodoLabel = '(Efectivo)';
+            if (cuenta.forma_pago === 'tarjeta') metodoLabel = '(Tarjeta)';
+            else if (cuenta.forma_pago === 'transferencia') metodoLabel = '(Transferencia)';
+            else if (cuenta.forma_pago === 'cheque') metodoLabel = '(Cheque)';
+
+            await this.cajaService.registrarMovimiento({
+              caja_id: cajaAbierta.id,
+              tipo: 'venta',
+              concepto: `Venta Mesa ${mesaNumero} - Orden #${ordenIdShort} ${metodoLabel}`,
+              monto: cuenta.total,
+              referencia: this.orden.id,
+              usuario_id: usuarioId
+            });
+          }
+        }
+      } catch (cajaErr) {
+        console.error('Error registrando movimiento de caja desde restaurante:', cajaErr);
+      }
+
       cuenta.pagado = true;
       this.cdr.detectChanges();
 
-      // Si todas las cuentas están pagadas, cerrar la orden
+      // Si todas las cuentas están pagadas, descontar inventario y cerrar la orden
       if (this.cuentas.every(c => c.pagado)) {
+        try {
+          await this.inventoryService.descontarIngredientesPorOrden(this.orden.id);
+        } catch (invErr) {
+          console.error('[BillSplit] Error descontando inventario:', invErr);
+        }
         await this.ordersService.cerrarOrden(this.orden.id);
         Swal.fire({
           icon: 'success',
