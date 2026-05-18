@@ -172,7 +172,7 @@ export class PrintService {
     for (const grupo of grupos) {
       try {
         const bytes = this.generarTicketComanda(grupo, numeroMesa, meseroNombre);
-        await this.enviarAlAgente(url, grupo.printer_ip, grupo.printer_puerto, bytes, grupo.copies ?? 1);
+        await this.enviarAlAgente(url, grupo.printer_ip, grupo.printer_puerto, bytes, grupo.copies ?? 1, grupo.printer_tipo_conexion as any, grupo.printer_puerto_usb);
         impresos++;
       } catch (e: any) {
         errores.push(`${grupo.printer_nombre}: ${e.message}`);
@@ -194,7 +194,7 @@ export class PrintService {
     if (!url) throw new Error('Agente de impresión no configurado.');
 
     const bytes = this.generarRecibo(printer, nombreNegocio, subtotal, impuesto, total);
-    await this.enviarAlAgente(url, printer.ip, printer.puerto, bytes, printer.copies);
+    await this.enviarAlAgente(url, printer.ip, printer.puerto, bytes, printer.copies, printer.tipo_conexion, printer.puerto_usb);
   }
 
   /**
@@ -227,7 +227,7 @@ export class PrintService {
     if (!cajaP) return;
 
     const bytes = this.generarReciboRestaurant(cajaP, params);
-    await this.enviarAlAgente(url, cajaP.ip, cajaP.puerto, bytes, cajaP.copies);
+    await this.enviarAlAgente(url, cajaP.ip, cajaP.puerto, bytes, cajaP.copies, cajaP.tipo_conexion, cajaP.puerto_usb);
   }
 
   // ============================================================
@@ -453,16 +453,30 @@ export class PrintService {
   }
 
   private async enviarAlAgente(
-    agentUrl: string,
-    ip:       string,
-    puerto:   number,
-    bytes:    number[],
-    copies:   number
+    agentUrl:  string,
+    ip:        string,
+    puerto:    number,
+    bytes:     number[],
+    copies:    number,
+    tipoConexion: 'red' | 'usb' = 'red',
+    puertoUsb?: string | null
   ): Promise<void> {
-    const response = await fetch(`${agentUrl}/print`, {
+    let endpoint: string;
+    let body: object;
+
+    if (tipoConexion === 'usb') {
+      if (!puertoUsb) throw new Error('Puerto USB no configurado (ej: USB001)');
+      endpoint = `${agentUrl}/print-usb`;
+      body = { port_name: puertoUsb, data: bytes, copies };
+    } else {
+      endpoint = `${agentUrl}/print`;
+      body = { ip, puerto, data: bytes, copies };
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ip, puerto, data: bytes, copies }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000)
     });
 
@@ -470,5 +484,72 @@ export class PrintService {
       const msg = await response.text().catch(() => response.statusText);
       throw new Error(`Error del agente: ${msg}`);
     }
+  }
+
+  /** Lista las impresoras instaladas en Windows (vía agente local) */
+  async listarImpresoras(): Promise<{ Name: string; PortName: string; PrinterStatus: number }[]> {
+    const url = this.agentUrl;
+    if (!url) return [];
+    try {
+      const r = await fetch(`${url}/list-printers`, { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return [];
+      const { impresoras } = await r.json();
+      return impresoras || [];
+    } catch { return []; }
+  }
+
+  /** Verifica si el agente está corriendo haciendo ping a /health */
+  async verificarAgente(): Promise<boolean> {
+    const url = this.agentUrl;
+    if (!url) return false;
+    try {
+      const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(3000) });
+      return r.ok;
+    } catch { return false; }
+  }
+
+  /** Imprime una página de prueba ESC/POS en la impresora indicada */
+  async imprimirPrueba(printer: RestaurantPrinter, negocioNombre = 'LogosPOS'): Promise<void> {
+    const url = this.agentUrl;
+    if (!url) throw new Error('No hay agente de impresión configurado.');
+
+    const bytes = this.generarPaginaPrueba(printer, negocioNombre);
+    await this.enviarAlAgente(url, printer.ip, printer.puerto, bytes, 1, printer.tipo_conexion, printer.puerto_usb);
+  }
+
+  private generarPaginaPrueba(printer: RestaurantPrinter, negocioNombre: string): number[] {
+    const chars = printer.caracteres_por_linea || 42;
+    const buf: number[] = [];
+
+    const push  = (...bytes: number[]) => buf.push(...bytes);
+    const texto = (str: string)        => buf.push(...this.encodeText(str));
+    const linea = (str = '')           => { texto(str); push(LF); };
+    const sep   = (c = '-')            => linea(c.repeat(chars));
+
+    push(...INIT, ...ALIGN_CENTER, ...BOLD_ON, ...FONT_DOUBLE);
+    linea('PRUEBA DE IMPRESION');
+    push(...FONT_NORMAL, ...BOLD_OFF);
+    sep('=');
+
+    push(...ALIGN_LEFT);
+    linea(`Negocio : ${negocioNombre}`);
+    linea(`Printer : ${printer.nombre}`);
+    linea(`Tipo    : ${printer.tipo_conexion === 'usb' ? 'USB - ' + (printer.puerto_usb || '?') : 'RED - ' + printer.ip + ':' + printer.puerto}`);
+    linea(`Chars   : ${chars} por linea`);
+    linea(`Copias  : ${printer.copies}`);
+    linea(`Corte   : ${printer.corte_automatico ? 'Si' : 'No'}`);
+    sep();
+
+    push(...ALIGN_CENTER);
+    linea('123456789012345678901234567890123456789012');
+    linea('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmn');
+    sep('=');
+    linea(`${new Date().toLocaleString('es-DO')}`);
+    linea('*** IMPRESORA OK ***');
+    push(LF, LF);
+
+    if (printer.corte_automatico) push(...CUT_PARTIAL);
+
+    return buf;
   }
 }

@@ -52,9 +52,17 @@ export class LoginComponent implements OnInit {
   }
 
   private redirigirSegunRol() {
+    if (this.authService.isSuperAdmin()) {
+      this.router.navigate(['/admin/developer/negocios']);
+      return;
+    }
     const rol = this.authService.usuarioActual?.rol?.nombre;
-    if (rol === 'Cajero') {
+    if (rol === 'Cajero' || rol === 'Cajero Restaurante') {
       this.router.navigate(['/ventas/mesas']);
+    } else if (rol === 'Mesero') {
+      this.router.navigate(['/restaurante']);
+    } else if (rol === 'Cocinero') {
+      this.router.navigate(['/restaurante/cocina']);
     } else {
       this.router.navigate(['/dashboard']);
     }

@@ -64,6 +64,7 @@ export class Dashboard implements OnInit, OnDestroy {
   modoFiscalActivo = false;
 
   private subscriptions: Subscription[] = [];
+  private moduloSubscriptions: Subscription[] = [];
 
   constructor(
     private ventasService: VentasService,
@@ -78,46 +79,71 @@ export class Dashboard implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) { }
 
+  private limpiarSubscripcionesModulos() {
+    this.moduloSubscriptions.forEach(sub => sub.unsubscribe());
+    this.moduloSubscriptions = [];
+  }
+
   async ngOnInit() {
     console.log('🔄 Iniciando dashboard modular...');
     this.isLoading = true;
 
-    // 1. Suscribirse al estado fiscal
-    const fiscalSub = this.fiscalService.config$.subscribe(cfg => {
-      this.modoFiscalActivo = (cfg?.modo_fiscal ?? false) && this.negociosService.tieneModulo('fiscal');
-      this.cdr.detectChanges();
-    });
-    this.subscriptions.push(fiscalSub);
+    // Suscribirse de manera reactiva a los cambios o carga del negocio
+    const negocioSub = this.negociosService.negocio$.subscribe(async (negocio) => {
+      console.log('💼 Negocio cargado o actualizado en dashboard:', negocio?.nombre || 'Ninguno');
+      
+      this.limpiarSubscripcionesModulos();
 
-    // 2. Suscribirse a Ventas
-    if (this.negociosService.tieneModulo('ventas')) {
-      const ventasSub = this.ventasService.ventas$.subscribe(ventas => {
-        this.actualizarVentasStats(ventas);
-        this.actualizarTransacciones(ventas);
-        this.actualizarChartDesdeVentas(ventas);
+      if (!negocio) {
         this.isLoading = false;
         this.cdr.detectChanges();
-      });
-      this.subscriptions.push(ventasSub);
-    } else {
-      this.isLoading = false;
-    }
+        return;
+      }
 
-    // 3. Suscribirse a Productos
-    if (this.negociosService.tieneModulo('inventario')) {
-      const productosSub = this.productosService.productos$.subscribe(productos => {
-        this.actualizarProductosStats(productos);
-        this.actualizarTopProductos(productos);
+      this.isLoading = true;
+      this.cdr.detectChanges();
+
+      // 1. Suscribirse al estado fiscal
+      const fiscalSub = this.fiscalService.config$.subscribe(cfg => {
+        this.modoFiscalActivo = (cfg?.modo_fiscal ?? false) && this.negociosService.tieneModulo('fiscal');
         this.cdr.detectChanges();
       });
-      this.subscriptions.push(productosSub);
-    }
+      this.moduloSubscriptions.push(fiscalSub);
 
-    // 4. Datos de Caja y Cuentas
-    await this.cargarDatosManuales();
+      // 2. Suscribirse a Ventas
+      if (this.negociosService.tieneModulo('ventas')) {
+        const ventasSub = this.ventasService.ventas$.subscribe(async (ventas) => {
+          await this.actualizarVentasStats(ventas);
+          this.actualizarTransacciones(ventas);
+          this.actualizarChartDesdeVentas(ventas);
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
+        this.moduloSubscriptions.push(ventasSub);
+      } else {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
 
-    // 5. Verificar Onboarding (💡 NUEVO)
-    this.verificarOnboarding();
+      // 3. Suscribirse a Productos
+      if (this.negociosService.tieneModulo('inventario')) {
+        const productosSub = this.productosService.productos$.subscribe(productos => {
+          this.actualizarProductosStats(productos);
+          this.actualizarTopProductos(productos);
+          this.cdr.detectChanges();
+        });
+        this.moduloSubscriptions.push(productosSub);
+      }
+
+      // 4. Datos de Caja y Cuentas
+      await this.cargarDatosManuales();
+
+      // 5. Verificar Onboarding
+      this.verificarOnboarding();
+      
+      this.cdr.detectChanges();
+    });
+    this.subscriptions.push(negocioSub);
 
     // Recargar cuando se navega al dashboard
     const navSub = this.router.events
@@ -300,6 +326,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.limpiarSubscripcionesModulos();
   }
 
   async obtenerEfectivoCaja(): Promise<number> {

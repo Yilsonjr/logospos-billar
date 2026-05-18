@@ -8,8 +8,8 @@
             </a>
             <span class="printers-title-icon"><i class="fa-solid fa-print"></i></span>
             <div>
-                <h1 class="printers-title">Impresoras de Red</h1>
-                <p class="printers-subtitle">Gestiona las impresoras térmicas ESC/POS y el agente de impresión local.</p>
+                <h1 class="printers-title">Impresoras</h1>
+                <p class="printers-subtitle">Impresoras térmicas ESC/POS — Red TCP o USB local.</p>
             </div>
         </div>
         <button class="btn-nueva-impresora" (click)="abrirModalCrear()">
@@ -26,10 +26,9 @@
                     <i class="fa-solid fa-server"></i>
                 </div>
                 <div>
-                    <div class="agent-label">Agente de Impresión Local (LAN)</div>
+                    <div class="agent-label">Agente de Impresión Local</div>
                     <div class="agent-desc">
-                        Servidor HTTP en tu red local que recibe órdenes y las reenvía por TCP a las impresoras.
-                        Todos los dispositivos deben alcanzar esta IP.
+                        Servidor HTTP en tu PC que recibe órdenes y las reenvía a impresoras de red (TCP) o USB.
                     </div>
                 </div>
             </div>
@@ -38,17 +37,46 @@
                     <i class="fa-solid fa-link agent-url-icon"></i>
                     <input type="url" class="agent-url-input"
                         [(ngModel)]="agentUrl"
-                        placeholder="http://192.168.1.100:3000">
+                        placeholder="http://localhost:3000">
                 </div>
                 <button class="btn-guardar-agent" (click)="guardarAgentUrl()" [disabled]="savingAgent">
                     <span *ngIf="savingAgent" class="spinner-border spinner-border-sm me-1"></span>
                     <i *ngIf="!savingAgent" class="fa-solid fa-floppy-disk me-1"></i>
                     Guardar
                 </button>
+                <button class="btn-check-agent" (click)="verificarAgente()" [disabled]="checkingAgent" title="Verificar conexión con el agente">
+                    <span *ngIf="checkingAgent" class="spinner-border spinner-border-sm"></span>
+                    <i *ngIf="!checkingAgent" class="fa-solid fa-rotate-right"></i>
+                </button>
             </div>
+
+            <!-- Estado del agente -->
+            <div class="agent-status-row">
+                @if (agentStatus === 'desconocido') {
+                    <span class="agent-badge badge-unknown">
+                        <i class="fa-solid fa-circle-question me-1"></i>Estado desconocido
+                    </span>
+                }
+                @if (agentStatus === 'conectado') {
+                    <span class="agent-badge badge-online">
+                        <i class="fa-solid fa-circle-check me-1"></i>Agente conectado
+                    </span>
+                }
+                @if (agentStatus === 'desconectado') {
+                    <span class="agent-badge badge-offline">
+                        <i class="fa-solid fa-circle-xmark me-1"></i>Agente desconectado
+                    </span>
+                    <span class="ms-2 text-muted small">— Verifica que esté corriendo en tu PC</span>
+                }
+            </div>
+
             <div class="agent-hint">
                 <i class="fa-solid fa-circle-info me-1"></i>
-                Ejecuta el agente: <code>node print-agent/server.js</code> · Puerto por defecto: <code>3000</code>
+                Ejecución manual: <code>node print-agent/server.js</code>
+                &nbsp;·&nbsp;
+                Servicio Windows: <code>net start LogosPOS-PrintAgent</code>
+                &nbsp;·&nbsp;
+                Puerto por defecto: <code>3000</code>
             </div>
         </div>
     </div>
@@ -61,10 +89,39 @@
 
     <!-- Empty state -->
     <div *ngIf="!isLoading && impresoras.length === 0" class="printers-empty">
-        <div class="printers-empty-icon">🖨️</div>
+        <div class="printers-empty-icon">
+            <i class="fa-solid fa-print"></i>
+        </div>
         <h5 class="mt-3 mb-1 fw-bold">Sin impresoras configuradas</h5>
-        <p class="text-muted mb-4 small">Agrega una impresora térmica de red para imprimir comandas y recibos.</p>
-        <button class="btn-nueva-impresora" (click)="abrirModalCrear()">
+        <p class="text-muted mb-4 small">Sigue estos 3 pasos para empezar a imprimir comandas y recibos.</p>
+
+        <div class="empty-steps">
+            <div class="empty-step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                    <div class="step-title">Configura el agente</div>
+                    <div class="step-desc">Ingresa la URL del agente de impresión arriba y guarda. El agente debe estar corriendo en tu PC.</div>
+                </div>
+            </div>
+            <div class="empty-step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="empty-step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                    <div class="step-title">Agrega una impresora</div>
+                    <div class="step-desc">Red TCP/IP (9100) o USB directo desde Windows. Puedes detectar impresoras automáticamente.</div>
+                </div>
+            </div>
+            <div class="empty-step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="empty-step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                    <div class="step-title">Imprime una prueba</div>
+                    <div class="step-desc">Usa el botón "Prueba" en cada tarjeta para verificar que la impresora responde correctamente.</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-nueva-impresora mt-4" (click)="abrirModalCrear()">
             <span class="btn-plus-circle"><i class="fa-solid fa-plus"></i></span>
             Agregar primera impresora
         </button>
@@ -74,12 +131,10 @@
     <div *ngIf="!isLoading && impresoras.length > 0" class="printers-grid">
         <div *ngFor="let p of impresoras" class="printer-card" [class.printer-off]="!p.activa">
 
-            <!-- Top strip por tipo -->
             <div class="printer-strip" [ngClass]="'strip-' + p.tipo"></div>
 
             <div class="printer-card-body">
 
-                <!-- Header -->
                 <div class="printer-card-header">
                     <div class="printer-icon-wrap" [ngClass]="'icon-' + p.tipo">
                         <i [class]="'fa-solid ' + tipoInfo(p.tipo).icon"></i>
@@ -101,11 +156,18 @@
                     </div>
                 </div>
 
-                <!-- Network info -->
+                <!-- Conexión -->
                 <div class="printer-net-info">
                     <div class="printer-net-row">
-                        <i class="fa-solid fa-network-wired fa-fw text-muted"></i>
-                        <code class="printer-ip">{{ p.ip }}:{{ p.puerto }}</code>
+                        @if (p.tipo_conexion === 'usb') {
+                            <i class="fa-solid fa-plug fa-fw text-muted"></i>
+                            <code class="printer-ip">USB · {{ p.puerto_usb }}</code>
+                            <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">USB</span>
+                        } @else {
+                            <i class="fa-solid fa-network-wired fa-fw text-muted"></i>
+                            <code class="printer-ip">{{ p.ip }}:{{ p.puerto }}</code>
+                            <span class="badge bg-info text-dark ms-1" style="font-size:.6rem">TCP</span>
+                        }
                     </div>
                     <div class="printer-net-row">
                         <i class="fa-solid fa-ruler-horizontal fa-fw text-muted"></i>
@@ -130,22 +192,30 @@
                     <button class="printer-btn printer-btn-edit" (click)="abrirModalEditar(p)">
                         <i class="fa-solid fa-pen-to-square me-1"></i>Editar
                     </button>
-                    <button class="printer-btn printer-btn-ping" (click)="probarConexion(p)"
-                        [disabled]="testingId === p.id" title="Probar conexión">
-                        <span *ngIf="testingId === p.id" class="spinner-border spinner-border-sm"></span>
-                        <i *ngIf="testingId !== p.id" class="fa-solid fa-plug-circle-check"></i>
-                        <span *ngIf="testingId !== p.id" class="ms-1 d-none d-sm-inline">Ping</span>
+                    @if (p.tipo_conexion !== 'usb') {
+                        <button class="printer-btn printer-btn-ping" (click)="probarConexion(p)"
+                            [disabled]="testingId === p.id" title="Probar conexión TCP">
+                            <span *ngIf="testingId === p.id" class="spinner-border spinner-border-sm"></span>
+                            <i *ngIf="testingId !== p.id" class="fa-solid fa-plug-circle-check"></i>
+                            <span class="ms-1 d-none d-sm-inline">Ping</span>
+                        </button>
+                    }
+                    <button class="printer-btn printer-btn-test" (click)="imprimirPrueba(p)"
+                        [disabled]="testPrintingId === p.id" title="Imprimir página de prueba">
+                        <span *ngIf="testPrintingId === p.id" class="spinner-border spinner-border-sm"></span>
+                        <i *ngIf="testPrintingId !== p.id" class="fa-solid fa-file-invoice"></i>
+                        <span class="ms-1 d-none d-sm-inline">Prueba</span>
                     </button>
                     <button class="printer-btn printer-btn-del" (click)="eliminar(p)" title="Eliminar">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
 
-            </div><!-- /body -->
+            </div>
         </div>
-    </div><!-- /grid -->
+    </div>
 
-</div><!-- /page -->
+</div>
 
 <!-- Modal Crear/Editar -->
 <div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
@@ -162,12 +232,14 @@
                 <form (ngSubmit)="guardar()">
                     <div class="row g-3">
 
+                        <!-- Nombre -->
                         <div class="col-12">
                             <label class="form-label small fw-bold">Nombre de la impresora</label>
                             <input type="text" class="form-control" [(ngModel)]="formulario.nombre"
                                 name="nombre" required placeholder="Ej: Cocina Principal">
                         </div>
 
+                        <!-- Tipo de estación -->
                         <div class="col-12">
                             <label class="form-label small fw-bold">Estación / Tipo</label>
                             <div class="d-flex flex-wrap gap-2 mt-1">
@@ -181,19 +253,83 @@
                             </div>
                         </div>
 
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold">Dirección IP</label>
-                            <input type="text" class="form-control font-monospace" [(ngModel)]="formulario.ip"
-                                name="ip" required placeholder="192.168.1.10">
+                        <!-- Tipo de conexión -->
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Tipo de conexión</label>
+                            <div class="d-flex gap-2 mt-1">
+                                <div *ngFor="let tc of tiposConexion">
+                                    <input type="radio" class="btn-check" [id]="'tc_' + tc.value"
+                                        [value]="tc.value" [(ngModel)]="formulario.tipo_conexion" name="tipo_conexion">
+                                    <label class="btn btn-sm btn-outline-primary" [for]="'tc_' + tc.value">
+                                        <i [class]="'fa-solid ' + tc.icon + ' me-1'"></i>{{ tc.label }}
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Puerto TCP</label>
-                            <input type="number" class="form-control font-monospace" [(ngModel)]="formulario.puerto"
-                                name="puerto" min="1" max="65535">
-                            <small class="text-muted" style="font-size:.65rem">ESC/POS: 9100</small>
-                        </div>
+                        <!-- Campos RED -->
+                        @if (!esUsb) {
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold">Dirección IP</label>
+                                <input type="text" class="form-control font-monospace" [(ngModel)]="formulario.ip"
+                                    name="ip" placeholder="192.168.1.10">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Puerto TCP</label>
+                                <input type="number" class="form-control font-monospace" [(ngModel)]="formulario.puerto"
+                                    name="puerto" min="1" max="65535">
+                                <small class="text-muted" style="font-size:.65rem">ESC/POS: 9100</small>
+                            </div>
+                        }
 
+                        <!-- Campos USB -->
+                        @if (esUsb) {
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Puerto Windows</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control font-monospace"
+                                        [(ngModel)]="formulario.puerto_usb" name="puerto_usb"
+                                        placeholder="USB001  ó  USB002  ó  COM3">
+                                    <button type="button" class="btn btn-outline-secondary"
+                                        (click)="detectarImpresorasWindows()" [disabled]="cargandoWindows">
+                                        <span *ngIf="cargandoWindows" class="spinner-border spinner-border-sm"></span>
+                                        <i *ngIf="!cargandoWindows" class="fa-solid fa-magnifying-glass me-1"></i>
+                                        Detectar
+                                    </button>
+                                </div>
+                                <small class="text-muted" style="font-size:.65rem">
+                                    Puedes verlo en Windows: Administrador de dispositivos → Puertos (COM y LPT)
+                                </small>
+
+                                <!-- Lista de impresoras detectadas -->
+                                @if (impresorasWindows.length > 0) {
+                                    <div class="mt-2 border rounded-3 overflow-hidden">
+                                        <div class="px-3 py-2 bg-light border-bottom">
+                                            <small class="fw-bold text-muted">
+                                                <i class="fa-solid fa-list me-1"></i>
+                                                Impresoras detectadas — haz click para seleccionar
+                                            </small>
+                                        </div>
+                                        <div *ngFor="let imp of impresorasWindows"
+                                            class="d-flex align-items-center gap-2 px-3 py-2 border-bottom"
+                                            style="cursor:pointer"
+                                            [class.bg-primary-subtle]="formulario.puerto_usb === imp.PortName"
+                                            (click)="seleccionarImpresoraWindows(imp)">
+                                            <i class="fa-solid fa-print text-muted fa-fw"></i>
+                                            <div>
+                                                <div class="small fw-semibold">{{ imp.Name }}</div>
+                                                <code class="text-muted" style="font-size:.7rem">{{ imp.PortName }}</code>
+                                            </div>
+                                            @if (formulario.puerto_usb === imp.PortName) {
+                                                <i class="fa-solid fa-check text-primary ms-auto"></i>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <!-- Opciones comunes -->
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Caracteres / línea</label>
                             <select class="form-select" [(ngModel)]="formulario.caracteres_por_linea" name="chars">

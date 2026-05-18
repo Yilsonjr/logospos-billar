@@ -252,14 +252,19 @@ export interface RestaurantInventoryMovement {
 /** Tipo de estación destino de una impresora */
 export type TipoImpresora = 'cocina' | 'barra' | 'caja' | 'comanda' | 'otro';
 
-/** Impresora térmica de red configurada por negocio */
+/** Tipo de conexión física de la impresora */
+export type TipoConexionImpresora = 'red' | 'usb';
+
+/** Impresora térmica configurada por negocio (red TCP o USB local) */
 export interface RestaurantPrinter {
   id: string;
   negocio_id: string;
   nombre: string;
   descripcion?: string | null;
-  ip: string;
-  puerto: number;
+  tipo_conexion: TipoConexionImpresora; // 'red' = TCP/IP  |  'usb' = puerto Windows
+  ip: string;                           // IP si tipo_conexion='red'
+  puerto: number;                       // Puerto TCP si red (9100)
+  puerto_usb?: string | null;           // Ej: 'USB001', 'USB002', 'COM3' si tipo_conexion='usb'
   tipo: TipoImpresora;
   caracteres_por_linea: number;
   corte_automatico: boolean;
@@ -286,6 +291,8 @@ export interface RuteoImpresora {
   printer_ip: string;
   printer_puerto: number;
   printer_tipo: TipoImpresora;
+  printer_tipo_conexion?: TipoConexionImpresora;
+  printer_puerto_usb?: string | null;
   printer_chars: number;
   printer_corte: boolean;
   copies: number;

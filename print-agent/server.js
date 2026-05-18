@@ -1,6 +1,7 @@
 /**
  * LogosPOS — Print Agent
- * Agente de impresión local para impresoras térmicas de red (ESC/POS sobre TCP).
+ * Agente de impresión local para impresoras térmicas.
+ * Soporta: Red/TCP (impresoras de red) y USB/Windows (puerto USB001, USB002, etc.)
  *
  * Instalación como servicio Windows (recomendado):
  *   Ejecutar instalar-servicio.bat como Administrador
@@ -9,8 +10,10 @@
  *   node server.js
  */
 
-const http = require('http');
-const net  = require('net');
+const http         = require('http');
+const net          = require('net');
+const fs           = require('fs');
+const { execSync } = require('child_process');
 
 const PORT = process.env.PRINT_AGENT_PORT || 3000;
 
@@ -45,6 +48,46 @@ function readBody(req) {
     });
     req.on('error', reject);
   });
+}
+
+// ============================================================
+// Enviar bytes a impresora USB (puerto Windows: USB001, USB002, COM3...)
+// Escribe ESC/POS raw directo al puerto del sistema operativo
+// ============================================================
+
+function printUsb(portName, bytes, copies = 1) {
+  return new Promise((resolve, reject) => {
+    const portPath = `\\\\.\\${portName}`; // ej: \\.\USB001
+    const buffer   = Buffer.from(bytes);
+
+    const writeNext = (remaining) => {
+      if (remaining <= 0) { resolve(); return; }
+      fs.writeFile(portPath, buffer, (err) => {
+        if (err) { reject(new Error(`Error en puerto ${portName}: ${err.message}`)); return; }
+        writeNext(remaining - 1);
+      });
+    };
+
+    writeNext(copies);
+  });
+}
+
+// ============================================================
+// Listar impresoras disponibles en Windows (via PowerShell)
+// ============================================================
+
+function listarImpresoras() {
+  try {
+    const out = execSync(
+      'powershell -NoProfile -Command "Get-Printer | Select-Object Name,PortName,PrinterStatus | ConvertTo-Json -Compress"',
+      { timeout: 5000, encoding: 'utf8', windowsHide: true }
+    );
+    const raw = JSON.parse(out.trim());
+    // PowerShell puede devolver objeto único o array
+    return Array.isArray(raw) ? raw : [raw];
+  } catch (e) {
+    return [];
+  }
 }
 
 // ============================================================
@@ -147,13 +190,68 @@ const server = http.createServer(async (req, res) => {
     return json(res, ok ? 200 : 502, { ok, ip, puerto });
   }
 
+  // ── POST /print-usb ──────────────────────────────────────
+  // Body: { port_name: "USB001", data: number[], copies?: number }
+  if (req.method === 'POST' && req.url === '/print-usb') {
+    let body;
+    try { body = await readBody(req); }
+    catch (e) { return json(res, 400, { error: e.message }); }
+
+    const { port_name, data, copies = 1 } = body;
+    if (!port_name || !Array.isArray(data)) {
+      return json(res, 400, { error: 'Faltan campos: port_name, data (array de bytes)' });
+    }
+
+    console.log(`[USB] ${port_name} — ${data.length} bytes × ${copies} cop.`);
+    try {
+      await printUsb(port_name, data, parseInt(copies));
+      return json(res, 200, { ok: true, bytes: data.length });
+    } catch (e) {
+      console.error(`[USB ERROR] ${e.message}`);
+      return json(res, 502, { error: e.message });
+    }
+  }
+
+  // ── GET /list-printers ───────────────────────────────────
+  // Devuelve las impresoras instaladas en Windows (nombre + puerto)
+  if (req.method === 'GET' && req.url === '/list-printers') {
+    const impresoras = listarImpresoras();
+    console.log(`[LIST] ${impresoras.length} impresoras encontradas`);
+    return json(res, 200, { impresoras });
+  }
+
   json(res, 404, { error: 'Ruta no encontrada' });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🖨️  LogosPOS Print Agent corriendo en http://0.0.0.0:${PORT}`);
-  console.log(`   Rutas disponibles:`);
-  console.log(`   GET  /health   → Estado del agente`);
-  console.log(`   POST /print    → { ip, puerto, data: number[], copies? }`);
-  console.log(`   POST /ping     → { ip, puerto } → verifica si la impresora responde\n`);
+function startServer(port) {
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`\n🖨️  LogosPOS Print Agent corriendo en http://0.0.0.0:${port}`);
+    console.log(`   Rutas disponibles:`);
+    console.log(`   GET  /health        → Estado del agente`);
+    console.log(`   POST /print         → { ip, puerto, data: number[], copies? }`);
+    console.log(`   POST /ping          → { ip, puerto }`);
+    console.log(`   POST /print-usb     → { port_name, data: number[], copies? }`);
+    console.log(`   GET  /list-printers → Impresoras Windows instaladas\n`);
+    if (port !== Number(PORT)) {
+      console.log(`⚠️  Puerto ${PORT} estaba ocupado. Usando ${port} en su lugar.`);
+      console.log(`   Actualiza la URL del agente en la app a: http://localhost:${port}\n`);
+    }
+  });
+}
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const fallbackPort = Number(err.port || PORT) + 1;
+    if (fallbackPort > Number(PORT) + 5) {
+      console.error(`❌ No se pudo iniciar el agente: puertos ${PORT}–${fallbackPort - 1} ocupados.`);
+      process.exit(1);
+    }
+    console.warn(`⚠️  Puerto ${err.port || PORT} ocupado, intentando ${fallbackPort}…`);
+    startServer(fallbackPort);
+  } else {
+    console.error('Error del servidor:', err.message);
+    process.exit(1);
+  }
 });
+
+startServer(Number(PORT));

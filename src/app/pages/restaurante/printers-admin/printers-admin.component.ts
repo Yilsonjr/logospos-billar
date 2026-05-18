@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PrintService } from '../../../services/print.service';
 import { NegociosService } from '../../../services/negocios.service';
-import { RestaurantPrinter, TipoImpresora } from '../../../models/restaurant.models';
+import { RestaurantPrinter, TipoImpresora, TipoConexionImpresora } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
 interface TipoInfo {
@@ -35,6 +35,7 @@ export class PrintersAdminComponent implements OnInit {
     isLoading = false;
     isSaving = false;
     testingId: string | null = null;
+    testPrintingId: string | null = null;
 
     mostrarModal = false;
     modoModal: 'crear' | 'editar' = 'crear';
@@ -45,8 +46,18 @@ export class PrintersAdminComponent implements OnInit {
     // URL del agente de impresión local
     agentUrl = '';
     savingAgent = false;
+    agentStatus: 'desconocido' | 'conectado' | 'desconectado' = 'desconocido';
+    checkingAgent = false;
+
+    // Impresoras Windows detectadas por el agente
+    impresorasWindows: { Name: string; PortName: string }[] = [];
+    cargandoWindows = false;
 
     tipos = TIPOS;
+    readonly tiposConexion: { value: TipoConexionImpresora; label: string; icon: string }[] = [
+        { value: 'red', label: 'Red / TCP-IP',  icon: 'fa-network-wired' },
+        { value: 'usb', label: 'USB (local)',    icon: 'fa-plug' }
+    ];
 
     constructor(
         private printService: PrintService,
@@ -57,20 +68,57 @@ export class PrintersAdminComponent implements OnInit {
     async ngOnInit() {
         await this.cargarImpresoras();
         this.agentUrl = this.printService.agentUrl || '';
+        if (this.agentUrl) await this.verificarAgente();
+    }
+
+    async verificarAgente(): Promise<void> {
+        this.checkingAgent = true;
+        this.cdr.detectChanges();
+        try {
+            const ok = await this.printService.verificarAgente();
+            this.agentStatus = ok ? 'conectado' : 'desconectado';
+        } catch {
+            this.agentStatus = 'desconectado';
+        } finally {
+            this.checkingAgent = false;
+            this.cdr.detectChanges();
+        }
     }
 
     private formularioVacio(): Partial<RestaurantPrinter> {
         return {
             nombre: '',
             descripcion: '',
+            tipo_conexion: 'red',
             ip: '',
             puerto: 9100,
+            puerto_usb: '',
             tipo: 'cocina',
             caracteres_por_linea: 42,
             corte_automatico: true,
             copies: 1,
             activa: true
         };
+    }
+
+    get esUsb(): boolean { return this.formulario.tipo_conexion === 'usb'; }
+
+    async detectarImpresorasWindows(): Promise<void> {
+        if (!this.agentUrl) {
+            Swal.fire('Sin agente', 'Guarda primero la URL del agente de impresión.', 'info');
+            return;
+        }
+        this.cargandoWindows = true;
+        this.cdr.detectChanges();
+        try {
+            this.impresorasWindows = await this.printService.listarImpresoras();
+        } catch { this.impresorasWindows = []; }
+        finally { this.cargandoWindows = false; this.cdr.detectChanges(); }
+    }
+
+    seleccionarImpresoraWindows(imp: { Name: string; PortName: string }): void {
+        this.formulario.nombre     = this.formulario.nombre || imp.Name;
+        this.formulario.puerto_usb = imp.PortName;
     }
 
     async cargarImpresoras() {
@@ -104,9 +152,15 @@ export class PrintersAdminComponent implements OnInit {
     }
 
     async guardar() {
-        if (!this.formulario.nombre?.trim() || !this.formulario.ip?.trim()) {
-            Swal.fire('Atención', 'Nombre e IP son obligatorios', 'warning');
-            return;
+        const esUsb = this.formulario.tipo_conexion === 'usb';
+        if (!this.formulario.nombre?.trim()) {
+            Swal.fire('Atención', 'El nombre es obligatorio', 'warning'); return;
+        }
+        if (!esUsb && !this.formulario.ip?.trim()) {
+            Swal.fire('Atención', 'La IP es obligatoria para impresoras de red', 'warning'); return;
+        }
+        if (esUsb && !this.formulario.puerto_usb?.trim()) {
+            Swal.fire('Atención', 'Selecciona o escribe el puerto USB (ej: USB001)', 'warning'); return;
         }
 
         this.isSaving = true;
@@ -152,6 +206,15 @@ export class PrintersAdminComponent implements OnInit {
             Swal.fire('Sin agente', 'Configura primero la URL del agente de impresión.', 'info');
             return;
         }
+        // USB: no se puede hacer ping TCP, se prueba imprimiendo una línea de prueba
+        if (printer.tipo_conexion === 'usb') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Impresora USB',
+                text: `Las impresoras USB no soportan ping. Usa "Imprimir prueba" para verificar que funciona correctamente.`
+            });
+            return;
+        }
         this.testingId = printer.id;
         this.cdr.detectChanges();
         try {
@@ -161,7 +224,7 @@ export class PrintersAdminComponent implements OnInit {
                 title: ok ? '¡Impresora alcanzable!' : 'Sin respuesta',
                 text: ok
                     ? `${printer.ip}:${printer.puerto} respondió correctamente.`
-                    : `No se pudo conectar a ${printer.ip}:${printer.puerto}. Verifica que el agente esté corriendo y la impresora encendida.`,
+                    : `No se pudo conectar a ${printer.ip}:${printer.puerto}.`,
                 timer: ok ? 2000 : undefined,
                 showConfirmButton: !ok
             });
@@ -177,19 +240,37 @@ export class PrintersAdminComponent implements OnInit {
         this.savingAgent = true;
         try {
             const url = this.agentUrl.trim().replace(/\/$/, '');
-            // Persiste en localStorage como override rápido
             if (url) {
                 localStorage.setItem('logos_print_agent_url', url);
             } else {
                 localStorage.removeItem('logos_print_agent_url');
             }
-            // Persiste en el negocio (Supabase) como valor permanente
             await this.negociosService.actualizarNegocio({ print_agent_url: url || null });
             Swal.fire({ icon: 'success', title: 'URL del agente guardada', timer: 1500, showConfirmButton: false });
+            if (url) await this.verificarAgente();
         } catch (e: any) {
             Swal.fire('Error', e.message || 'No se pudo guardar la URL', 'error');
         } finally {
             this.savingAgent = false;
+            this.cdr.detectChanges();
+        }
+    }
+
+    async imprimirPrueba(printer: RestaurantPrinter): Promise<void> {
+        if (!this.agentUrl) {
+            Swal.fire('Sin agente', 'Configura primero la URL del agente de impresión.', 'info');
+            return;
+        }
+        this.testPrintingId = printer.id;
+        this.cdr.detectChanges();
+        try {
+            const negocio = (this.negociosService as any)['negocioSubject']?.value?.nombre || 'LogosPOS';
+            await this.printService.imprimirPrueba(printer, negocio);
+            Swal.fire({ icon: 'success', title: '¡Impresión enviada!', text: `Prueba enviada a "${printer.nombre}".`, timer: 2000, showConfirmButton: false });
+        } catch (e: any) {
+            Swal.fire('Error de impresión', e.message, 'error');
+        } finally {
+            this.testPrintingId = null;
             this.cdr.detectChanges();
         }
     }
