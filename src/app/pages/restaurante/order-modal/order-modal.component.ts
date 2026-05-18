@@ -237,8 +237,78 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   }
 
   async cancelarItem(itemId: string): Promise<void> {
-    await this.ordersService.cancelarItem(itemId);
-    await this.refrescarOrden();
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Eliminar Item?',
+      text: 'Se removerá este item de la orden.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+    if (!isConfirmed) return;
+
+    try {
+      this.cargando = true;
+      await this.ordersService.cancelarItem(itemId);
+      await this.refrescarOrden();
+      this.ordenActualizada.emit();
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.cargando = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async actualizarCantidad(itemId: string, nuevaCantidad: number): Promise<void> {
+    if (nuevaCantidad < 1) return;
+    try {
+      this.cargando = true;
+      await this.ordersService.actualizarCantidadItem(itemId, nuevaCantidad);
+      await this.refrescarOrden();
+      this.ordenActualizada.emit();
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.cargando = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async cancelarOrden(): Promise<void> {
+    if (!this.orden) return;
+
+    const { isConfirmed } = await Swal.fire({
+      title: '¿Cancelar Orden?',
+      text: 'Se cancelará toda la orden y se liberará la mesa. Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar orden',
+      cancelButtonText: 'No, mantener',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+      this.cargando = true;
+      await this.ordersService.cancelarOrden(this.orden.id);
+      this.orden = null;
+      this.ordenActualizada.emit();
+      Swal.fire({
+        icon: 'success',
+        title: 'Orden cancelada',
+        text: 'La mesa ha sido liberada.',
+        timer: 1500,
+        showConfirmButton: false
+      }).then(() => this.cerrar.emit());
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.cargando = false;
+      this.cdr.detectChanges();
+    }
   }
 
   private async refrescarOrden(): Promise<void> {

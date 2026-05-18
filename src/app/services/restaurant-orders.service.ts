@@ -309,6 +309,11 @@ export class RestaurantOrdersService {
     console.log('[RestaurantOrdersService] Orden cerrada:', orderId);
   }
 
+  async cancelarOrden(orderId: string): Promise<void> {
+    await this.actualizarEstadoOrden(orderId, 'cancelada');
+    console.log('[RestaurantOrdersService] Orden cancelada:', orderId);
+  }
+
   async obtenerHistorial(limite = 50): Promise<RestaurantOrder[]> {
     const { data, error } = await this.supabaseService.client
       .from('restaurant_orders')

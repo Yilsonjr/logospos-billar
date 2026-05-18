@@ -129,46 +129,73 @@
                             <!-- Configuración Fiscal -->
                             <div class="col-12">
                                 <div class="card border-0 bg-light rounded-3 p-3 mb-2">
-                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
                                         <i class="fa-solid fa-percent text-primary"></i>
-                                        <span class="fw-bold small">Configuración de Impuesto</span>
+                                        <span class="fw-bold small">Configuración de Impuesto (ITBIS / IVA)</span>
                                     </div>
-                                    <div class="row g-2 align-items-center">
-                                        <div class="col-sm-5">
-                                            <label class="small text-muted mb-1">Tasa de impuesto (ITBIS/IVA)</label>
-                                            <div class="input-group input-group-sm">
-                                                <input type="number" class="form-control bg-white border-0 shadow-none"
-                                                    formControlName="tasa_itbis_pct"
-                                                    min="0" max="100" step="1"
-                                                    placeholder="18">
-                                                <span class="input-group-text bg-white border-0 text-muted fw-bold">%</span>
-                                            </div>
-                                            @if (negocioForm.get('tasa_itbis_pct')?.invalid) {
-                                                <div class="text-danger small mt-1">Valor entre 0 y 100.</div>
-                                            }
-                                        </div>
-                                        <div class="col-sm-7">
-                                            <div class="d-flex gap-2 flex-wrap mt-2 mt-sm-0">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                                                    (click)="negocioForm.get('tasa_itbis_pct')?.setValue(0)">
+
+                                    <!-- Toggle ON/OFF -->
+                                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded-3"
+                                        [class.bg-success-subtle]="aplicaItbis"
+                                        [class.bg-secondary-subtle]="!aplicaItbis"
+                                        [style.border]="'1.5px solid ' + (aplicaItbis ? '#198754' : '#dee2e6')">
+                                        <div>
+                                            <div class="fw-semibold small">
+                                                @if (aplicaItbis) {
+                                                    <i class="fa-solid fa-check-circle text-success me-1"></i>
+                                                    Impuesto activado
+                                                } @else {
+                                                    <i class="fa-solid fa-ban text-secondary me-1"></i>
                                                     Sin impuesto
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                                                    (click)="negocioForm.get('tasa_itbis_pct')?.setValue(16)">
-                                                    16% (MX)
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                                                    (click)="negocioForm.get('tasa_itbis_pct')?.setValue(18)">
-                                                    18% (RD)
-                                                </button>
+                                                }
+                                            </div>
+                                            <div class="text-muted" style="font-size:0.75rem">
+                                                @if (aplicaItbis) {
+                                                    Se aplicará ITBIS/IVA en órdenes del restaurante.
+                                                } @else {
+                                                    No se cobrará impuesto en ninguna orden.
+                                                }
                                             </div>
                                         </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox"
+                                                role="switch"
+                                                style="width:3rem;height:1.5rem;cursor:pointer"
+                                                formControlName="aplica_itbis"
+                                                (change)="toggleItbis(aplicaItbis)">
+                                        </div>
                                     </div>
-                                    <p class="text-muted small mb-0 mt-2">
-                                        <i class="fa-solid fa-circle-info me-1"></i>
-                                        Se aplica automáticamente a todas las órdenes del restaurante.
-                                        Usa 0 si el negocio no aplica impuesto.
-                                    </p>
+
+                                    <!-- Tasa: solo visible si aplica ITBIS -->
+                                    @if (aplicaItbis) {
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-sm-5">
+                                                <label class="small text-muted mb-1">Tasa de impuesto</label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control bg-white border-0 shadow-none"
+                                                        formControlName="tasa_itbis_pct"
+                                                        min="0" max="100" step="1"
+                                                        placeholder="18">
+                                                    <span class="input-group-text bg-white border-0 text-muted fw-bold">%</span>
+                                                </div>
+                                                @if (negocioForm.get('tasa_itbis_pct')?.invalid) {
+                                                    <div class="text-danger small mt-1">Valor entre 0 y 100.</div>
+                                                }
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <div class="d-flex gap-2 flex-wrap mt-2 mt-sm-0">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                                        (click)="negocioForm.get('tasa_itbis_pct')?.setValue(16)">
+                                                        16% (MX)
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                                        (click)="negocioForm.get('tasa_itbis_pct')?.setValue(18)">
+                                                        18% (RD)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </div>

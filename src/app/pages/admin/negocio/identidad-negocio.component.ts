@@ -36,6 +36,7 @@ export class IdentidadNegocioComponent implements OnInit {
       lema: [''],
       email: ['', Validators.email],
       web: [''],
+      aplica_itbis: [true],
       tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]]
     });
   }
@@ -55,9 +56,11 @@ export class IdentidadNegocioComponent implements OnInit {
         
         if (data) {
           this.negocioActual = data;
+          const tasaPct = Math.round((data.tasa_itbis ?? 0.18) * 100);
           this.negocioForm.patchValue({
             ...data,
-            tasa_itbis_pct: Math.round((data.tasa_itbis ?? 0.18) * 100)
+            aplica_itbis: tasaPct > 0,
+            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18
           });
           if (data.logo_url && (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))) {
             this.logoPreview = data.logo_url;
@@ -119,11 +122,11 @@ export class IdentidadNegocioComponent implements OnInit {
         logoUrl = uploadResult.url;
       }
 
-      const { tasa_itbis_pct, ...formRest } = this.negocioForm.value;
+      const { tasa_itbis_pct, aplica_itbis, ...formRest } = this.negocioForm.value;
       const datosActualizar = {
         ...formRest,
         logo_url: logoUrl,
-        tasa_itbis: parseFloat(((tasa_itbis_pct ?? 0) / 100).toFixed(4))
+        tasa_itbis: aplica_itbis ? parseFloat(((tasa_itbis_pct ?? 18) / 100).toFixed(4)) : 0
       };
 
       await this.negociosService.actualizarNegocio(datosActualizar);
@@ -143,6 +146,16 @@ export class IdentidadNegocioComponent implements OnInit {
     } finally {
       this.saving = false;
       this.cdr.detectChanges();
+    }
+  }
+
+  get aplicaItbis(): boolean {
+    return !!this.negocioForm.get('aplica_itbis')?.value;
+  }
+
+  toggleItbis(valor: boolean): void {
+    if (valor && (this.negocioForm.get('tasa_itbis_pct')?.value ?? 0) === 0) {
+      this.negocioForm.get('tasa_itbis_pct')?.setValue(18);
     }
   }
 

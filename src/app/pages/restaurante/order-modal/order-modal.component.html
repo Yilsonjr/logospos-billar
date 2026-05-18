@@ -221,9 +221,20 @@
           <div class="orden-items">
             @for (item of itemsPersistidos; track item.id) {
               <div class="orden-item">
-                <div class="d-flex justify-content-between">
-                  <span>{{ item.cantidad }}× {{ item.menu_item?.nombre || 'Item' }}</span>
-                  <span>RD$ {{ item.subtotal | number:'1.2-2' }}</span>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  @if (item.estado === 'pendiente') {
+                    <div class="d-flex align-items-center gap-1">
+                      <div class="cantidad-control-mini">
+                        <button class="btn-mini" (click)="actualizarCantidad(item.id, item.cantidad - 1)" [disabled]="item.cantidad <= 1">−</button>
+                        <span class="cantidad-display-mini">{{ item.cantidad }}</span>
+                        <button class="btn-mini" (click)="actualizarCantidad(item.id, item.cantidad + 1)">+</button>
+                      </div>
+                      <span class="ms-1">{{ item.menu_item?.nombre || 'Item' }}</span>
+                    </div>
+                  } @else {
+                    <span>{{ item.cantidad }}× {{ item.menu_item?.nombre || 'Item' }}</span>
+                  }
+                  <span class="fw-bold">RD$ {{ item.subtotal | number:'1.2-2' }}</span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                   <small class="badge rounded-pill"
@@ -272,7 +283,14 @@
 
     <!-- FOOTER -->
     <div class="order-modal-footer">
-      <button class="btn btn-outline-secondary" (click)="cerrar.emit()">Cerrar</button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" (click)="cerrar.emit()">Cerrar</button>
+        @if (orden) {
+          <button class="btn btn-outline-danger" (click)="cancelarOrden()" [disabled]="cargando">
+            <i class="bi bi-trash"></i> Cancelar Orden
+          </button>
+        }
+      </div>
       <div class="d-flex gap-2 align-items-center">
         @if (hayItemsPendientes && orden) {
           <button class="btn btn-warning" (click)="enviarACocina()" [disabled]="enviandoCocina">

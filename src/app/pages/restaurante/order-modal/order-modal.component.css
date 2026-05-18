@@ -283,3 +283,41 @@
     border-top: 1px solid #dee2e6;
   }
 }
+
+/* Mini control de cantidad para items persistidos */
+.cantidad-control-mini {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+  line-height: 1;
+}
+.btn-mini {
+  background: #f8f9fa;
+  border: none;
+  color: #495057;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.btn-mini:hover {
+  background: #e9ecef;
+}
+.btn-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.cantidad-display-mini {
+  padding: 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 1.2rem;
+  text-align: center;
+  color: #212529;
+}

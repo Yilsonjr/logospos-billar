@@ -193,17 +193,38 @@ export class Dashboard implements OnInit, OnDestroy {
     }
   }
 
-  actualizarVentasStats(ventas: any[]) {
+  async actualizarVentasStats(ventas: any[]) {
     if (!this.negociosService.tieneModulo('ventas')) return;
     const ahora = new Date();
     const hoy = `${ahora.getFullYear()}-${(ahora.getMonth() + 1).toString().padStart(2, '0')}-${ahora.getDate().toString().padStart(2, '0')}`;
-    const totalVentasHoy = ventas
+    
+    // 1. Total de ventas POS hoy
+    const totalVentasHoyPOS = ventas
       .filter(v => {
         const fechaVenta = new Date(v.created_at);
         const fechaLocal = `${fechaVenta.getFullYear()}-${(fechaVenta.getMonth() + 1).toString().padStart(2, '0')}-${fechaVenta.getDate().toString().padStart(2, '0')}`;
         return fechaLocal === hoy && v.estado === 'completada';
       })
       .reduce((sum, v) => sum + v.total, 0);
+
+    // 2. Total de pagos del Restaurante hoy (desde restaurant_order_payments)
+    let totalVentasHoyRestaurante = 0;
+    try {
+      const inicioHoy = new Date();
+      inicioHoy.setHours(0, 0, 0, 0);
+
+      const { data: pagosRest } = await this.supabaseService.client
+        .from('restaurant_order_payments')
+        .select('monto')
+        .eq('pagado', true)
+        .gte('created_at', inicioHoy.toISOString());
+
+      totalVentasHoyRestaurante = pagosRest?.reduce((sum, p) => sum + p.monto, 0) || 0;
+    } catch (err) {
+      console.warn('Error fetching restaurant payments for dashboard:', err);
+    }
+
+    const totalVentasHoy = totalVentasHoyPOS + totalVentasHoyRestaurante;
 
     const sIndex = this.stats.findIndex(s => s.title === 'Ventas de Hoy');
     const newStat = {
@@ -216,6 +237,8 @@ export class Dashboard implements OnInit, OnDestroy {
 
     if (this.negociosService.tieneModulo('caja')) this.inicializarTarjetaSiFalta('Efectivo en Caja', 'fa-wallet', 'bg-success-subtle text-success');
     if (this.negociosService.tieneModulo('cuentas_cobrar')) this.inicializarTarjetaSiFalta('Cuentas por Cobrar', 'fa-file-invoice-dollar', 'bg-warning-subtle text-warning');
+
+    this.cdr.detectChanges();
   }
 
   actualizarProductosStats(productos: any[]) {
@@ -281,8 +304,32 @@ export class Dashboard implements OnInit, OnDestroy {
 
   async obtenerEfectivoCaja(): Promise<number> {
     try {
-      const { data, error } = await this.supabaseService.client.from('cajas').select('monto_inicial, total_ventas_efectivo, total_entradas, total_salidas').eq('estado', 'abierta').order('fecha_apertura', { ascending: false }).limit(1).maybeSingle();
+      // 1. Intentar obtener shift activo
+      let { data, error } = await this.supabaseService.client
+        .from('cajas')
+        .select('monto_inicial, total_ventas_efectivo, total_entradas, total_salidas, estado')
+        .eq('estado', 'abierta')
+        .order('fecha_apertura', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 2. Si no hay activa, obtener la última cerrada para mantener la información del día
+      if (!data) {
+        const { data: ultimoCerrado } = await this.supabaseService.client
+          .from('cajas')
+          .select('monto_inicial, total_ventas_efectivo, total_entradas, total_salidas, estado, monto_cierre')
+          .eq('estado', 'cerrada')
+          .order('fecha_cierre', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        data = ultimoCerrado;
+      }
+
       if (error || !data) return 0;
+
+      if (data.estado === 'cerrada') {
+        return (data as any).monto_cierre || (data.monto_inicial + data.total_ventas_efectivo + data.total_entradas - data.total_salidas);
+      }
       return data.monto_inicial + data.total_ventas_efectivo + data.total_entradas - data.total_salidas;
     } catch (error) { return 0; }
   }
