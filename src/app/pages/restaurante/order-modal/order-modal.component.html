@@ -38,9 +38,39 @@
 
       <!-- COL 2: Items del menú -->
       <div class="col-menu">
-        <h6 class="section-title">{{ categoriaActiva?.nombre || 'Selecciona categoría' }}</h6>
+        <!-- Buscador -->
+        <div class="menu-search-wrap mb-2">
+          <div class="menu-search-input-wrap">
+            <i class="bi bi-search menu-search-icon"></i>
+            <input type="search" class="menu-search-input"
+              [(ngModel)]="busqueda"
+              placeholder="Buscar producto…"
+              autocomplete="off">
+            @if (buscando) {
+              <button class="menu-search-clear" (click)="limpiarBusqueda()" title="Limpiar">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <h6 class="section-title">
+          @if (buscando) {
+            <i class="bi bi-search me-1 text-primary"></i>
+            Resultados para "{{ busqueda }}"
+            <span class="text-muted fw-normal ms-1">({{ itemsMostrados.length }})</span>
+          } @else {
+            {{ categoriaActiva?.nombre || 'Selecciona categoría' }}
+          }
+        </h6>
         <div class="menu-items-grid">
-          @for (item of itemsCategoria; track trackByMenuItem($index, item)) {
+          @if (buscando && itemsMostrados.length === 0) {
+            <div class="text-center text-muted py-4 col-span-all">
+              <i class="bi bi-search display-6 d-block mb-2 opacity-25"></i>
+              Sin resultados para "{{ busqueda }}"
+            </div>
+          }
+          @for (item of itemsMostrados; track trackByMenuItem($index, item)) {
             <div class="menu-item-card" (click)="abrirDetalleItem(item)">
               @if (item.imagen_url) {
                 <img [src]="item.imagen_url" [alt]="item.nombre" class="menu-item-img">
@@ -218,10 +248,12 @@
               <span class="text-muted">Subtotal:</span>
               <span>RD$ {{ subtotalOrden | number:'1.2-2' }}</span>
             </div>
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">ITBIS (18%):</span>
-              <span>RD$ {{ impuestoOrden | number:'1.2-2' }}</span>
-            </div>
+            @if (impuestoOrden > 0) {
+              <div class="d-flex justify-content-between">
+                <span class="text-muted">ITBIS:</span>
+                <span>RD$ {{ impuestoOrden | number:'1.2-2' }}</span>
+              </div>
+            }
             <div class="d-flex justify-content-between fw-bold border-top pt-1 mt-1">
               <span>TOTAL:</span>
               <span class="text-success fs-5">RD$ {{ totalOrden | number:'1.2-2' }}</span>
@@ -241,7 +273,7 @@
     <!-- FOOTER -->
     <div class="order-modal-footer">
       <button class="btn btn-outline-secondary" (click)="cerrar.emit()">Cerrar</button>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 align-items-center">
         @if (hayItemsPendientes && orden) {
           <button class="btn btn-warning" (click)="enviarACocina()" [disabled]="enviandoCocina">
             @if (enviandoCocina) { <span class="spinner-border spinner-border-sm me-1"></span> }
@@ -249,9 +281,10 @@
           </button>
         }
         @if (orden && totalOrden > 0) {
-          <span class="btn btn-outline-success fw-bold" style="pointer-events:none;">
-            Total: RD$ {{ totalOrden | number:'1.2-2' }}
-          </span>
+          <button class="btn btn-success fw-bold px-4" (click)="cobrar.emit(orden!.id)">
+            <i class="bi bi-cash-coin me-1"></i>
+            Cobrar · RD$ {{ totalOrden | number:'1.2-2' }}
+          </button>
         }
       </div>
     </div>

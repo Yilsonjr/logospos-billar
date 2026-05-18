@@ -2,6 +2,7 @@ import { Component, OnInit, Input, Output, EventEmitter, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
+import { NegociosService } from '../../../services/negocios.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import {
   OrderWithItems, OrderItemWithMenuItem, CuentaComensal,
@@ -33,11 +34,13 @@ export class BillSplitComponent implements OnInit {
 
   cargando = true;
   procesando = false;
+  tasaItbis = 0.18;
 
   readonly formasPago: FormaPago[] = ['efectivo', 'tarjeta', 'transferencia', 'cheque', 'mixto'];
 
   constructor(
     private ordersService: RestaurantOrdersService,
+    private negociosService: NegociosService,
     private supabaseService: SupabaseService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -45,6 +48,8 @@ export class BillSplitComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     try {
       this.cargando = true;
+      const negocio = await this.negociosService.cargarNegocio();
+      this.tasaItbis = negocio?.tasa_itbis ?? 0.18;
       this.orden = await this.ordersService.obtenerOrdenPorId(this.orderId);
       if (this.orden) this.inicializarCuentaSimple();
     } catch (e: any) {
@@ -111,7 +116,7 @@ export class BillSplitComponent implements OnInit {
     this.cuentas = Array.from({ length: comensales }, (_, i) => {
       const items = itemsPorComensal[i + 1] || [];
       const subtotal = items.reduce((acc, it) => acc + it.subtotal, 0);
-      const impuesto = Math.round(subtotal * 0.18 * 100) / 100;
+      const impuesto = Math.round(subtotal * this.tasaItbis * 100) / 100;
       const propina = Math.round(propinaParte * 100) / 100;
       return {
         numero: i + 1,

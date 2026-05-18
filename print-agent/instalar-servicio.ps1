@@ -108,8 +108,27 @@ if (-not (Test-Path $LogsDir)) { New-Item -ItemType Directory -Path $LogsDir | O
 Write-Host "  OK -- Servicio registrado." -ForegroundColor Green
 Write-Host ""
 
-# ── 4. Iniciar servicio ──────────────────────────────────────
-Write-Host "  [4/4] Iniciando servicio..." -ForegroundColor White
+# ── 4. Regla de Firewall ─────────────────────────────────────
+Write-Host "  [4/5] Abriendo puerto 3000 en Firewall de Windows..." -ForegroundColor White
+
+$fwRule = Get-NetFirewallRule -DisplayName "LogosPOS Print Agent" -ErrorAction SilentlyContinue
+if ($fwRule) {
+    Write-Host "  OK -- Regla ya existente." -ForegroundColor Green
+} else {
+    try {
+        New-NetFirewallRule -DisplayName "LogosPOS Print Agent" `
+            -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow | Out-Null
+        Write-Host "  OK -- Puerto 3000 habilitado." -ForegroundColor Green
+    } catch {
+        Write-Host "  ADVERTENCIA: No se pudo crear la regla de firewall: $_" -ForegroundColor Yellow
+        Write-Host "  Ejecuta manualmente:" -ForegroundColor Yellow
+        Write-Host "  New-NetFirewallRule -DisplayName 'LogosPOS Print Agent' -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow" -ForegroundColor Gray
+    }
+}
+Write-Host ""
+
+# ── 5. Iniciar servicio ──────────────────────────────────────
+Write-Host "  [5/5] Iniciando servicio..." -ForegroundColor White
 
 & $NssmExe start $ServiceName
 Start-Sleep -Seconds 3
@@ -118,7 +137,8 @@ $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($svc -and $svc.Status -eq "Running") {
     Write-Host "  OK -- Servicio corriendo." -ForegroundColor Green
 } else {
-    Write-Host "  ADVERTENCIA: puede tardar unos segundos." -ForegroundColor Yellow
+    Write-Host "  ADVERTENCIA: el servicio puede tardar unos segundos en iniciar." -ForegroundColor Yellow
+    Write-Host "  Revisa logs en: $LogsDir\agent-error.log" -ForegroundColor Yellow
 }
 
 Write-Host ""

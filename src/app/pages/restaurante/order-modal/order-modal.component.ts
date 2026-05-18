@@ -21,13 +21,16 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   @Input() mesa!: TableWithOrder;
   @Output() cerrar = new EventEmitter<void>();
   @Output() ordenActualizada = new EventEmitter<void>();
+  @Output() cobrar = new EventEmitter<string>();
 
   // Estado
   orden: OrderWithItems | null = null;
   categorias: MenuCategory[] = [];
   categoriaActiva: MenuCategory | null = null;
   itemsCategoria: MenuItem[] = [];
+  todosLosItems: MenuItem[] = [];
   carrito: CartItem[] = [];
+  busqueda = '';
 
   // Modal interno: detalle de item
   itemSeleccionado: MenuItem | null = null;
@@ -45,13 +48,17 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.cargando = true;
     try {
-      const [orden, categorias] = await Promise.all([
+      const [orden, categorias, todasLasCategorias] = await Promise.all([
         this.ordersService.obtenerOrdenActivaDeMesa(this.mesa.id),
-        this.ordersService.cargarCategorias()
+        this.ordersService.cargarCategorias(),
+        this.ordersService.cargarTodoElMenu()
       ]);
       this.orden = orden;
       this.categorias = categorias;
       this.cantidadComensales = orden?.cantidad_comensales || 1;
+      this.todosLosItems = todasLasCategorias
+        .flatMap(c => (c as any).items || [])
+        .filter((i: MenuItem) => i.disponible && i.activo);
       if (categorias.length) await this.seleccionarCategoria(categorias[0]);
 
       if (this.orden) {
@@ -70,9 +77,27 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   }
 
   async seleccionarCategoria(cat: MenuCategory): Promise<void> {
+    this.busqueda = '';
     this.categoriaActiva = cat;
     this.itemsCategoria = await this.ordersService.cargarItemsPorCategoria(cat.id);
     this.cdr.detectChanges();
+  }
+
+  limpiarBusqueda(): void {
+    this.busqueda = '';
+  }
+
+  get itemsMostrados(): MenuItem[] {
+    const q = this.busqueda.trim().toLowerCase();
+    if (!q) return this.itemsCategoria;
+    return this.todosLosItems.filter(i =>
+      i.nombre.toLowerCase().includes(q) ||
+      i.descripcion?.toLowerCase().includes(q)
+    );
+  }
+
+  get buscando(): boolean {
+    return this.busqueda.trim().length > 0;
   }
 
   // Abre panel de detalle/selección de un item del menú

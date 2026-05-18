@@ -78,7 +78,8 @@ import { TableWithOrder } from '../../models/restaurant.models';
         <app-order-modal
           [mesa]="mesaActiva"
           (cerrar)="cerrarOrden()"
-          (ordenActualizada)="onOrdenActualizada()">
+          (ordenActualizada)="onOrdenActualizada()"
+          (cobrar)="abrirPago($event)">
         </app-order-modal>
       }
 

@@ -302,8 +302,8 @@ export class PrintService {
     sep('=');
 
     push(...ALIGN_LEFT);
-    col2('Subtotal:',  fmt(subtotal));
-    col2('ITBIS 18%:', fmt(impuesto));
+    col2('Subtotal:', fmt(subtotal));
+    if (impuesto > 0) col2('ITBIS:', fmt(impuesto));
     sep();
     push(...BOLD_ON);
     col2('TOTAL:', fmt(total));
