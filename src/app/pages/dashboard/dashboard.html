@@ -1,4 +1,4 @@
-<div class="container-fluid p-2 bg-light d-flex flex-column h-100" style="height: 100%;">
+<div class="container-fluid p-2 bg-light d-flex flex-column" style="min-height: calc(100vh - 120px);">
 
   <!-- Header (Fijo altura aprox) -->
   <header class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mb-2">
@@ -59,12 +59,12 @@
     }
   </section>
 
-  <!-- Sección Principal (Flexible para ocupar el resto de altura) -->
-  <section class="row g-2 flex-grow-1" style="min-height: 0;">
-    
+  <!-- Sección Principal -->
+  <section class="row g-2 flex-grow-1" style="min-height: 450px;">
+
     <!-- Columna Izquierda: Tendencias de Ventas -->
     @if (negociosService.tieneModulo('ventas')) {
-    <div class="col-lg-8 h-100 d-flex flex-column">
+    <div class="col-lg-8 d-flex flex-column">
       <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 300px;">
         <div
           class="card-header bg-white border-0 pt-3 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -119,8 +119,8 @@
     }
 
     <!-- Columna Derecha: Panel de Pestañas (Filtra contenido según módulos) -->
-    <div [class]="negociosService.tieneModulo('ventas') ? 'col-lg-4' : 'col-lg-12'" class="h-100 d-flex flex-column">
-      <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 0;">
+    <div [class]="negociosService.tieneModulo('ventas') ? 'col-lg-4' : 'col-lg-12'" class="d-flex flex-column">
+      <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 300px;">
 
         <!-- Header de Pestañas -->
         <div class="card-header bg-white border-0 pt-2 px-2 pb-0 flex-shrink-0">

@@ -11,11 +11,20 @@
  */
 
 const http         = require('http');
+const https        = require('https');
 const net          = require('net');
 const fs           = require('fs');
+const path         = require('path');
 const { execSync } = require('child_process');
 
-const PORT = process.env.PRINT_AGENT_PORT || 3000;
+const PORT      = process.env.PRINT_AGENT_PORT || 3000;
+const HTTPS_PORT = process.env.PRINT_AGENT_HTTPS_PORT || 3443;
+
+// Certificado TLS para HTTPS (evita Mixed Content desde páginas HTTPS)
+// Genera el cert con: node gen-cert.js
+const CERT_DIR  = path.join(__dirname, 'certs');
+const CERT_FILE = path.join(CERT_DIR, 'cert.pem');
+const KEY_FILE  = path.join(CERT_DIR, 'key.pem');
 
 // Orígenes permitidos (la app Angular en producción y desarrollo)
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '*').split(',');
@@ -31,6 +40,8 @@ function setCors(res, origin) {
   res.setHeader('Access-Control-Allow-Origin', allow);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Permite que páginas HTTPS accedan a este agente en red local (Chrome Private Network Access)
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
 function json(res, status, body) {
@@ -223,19 +234,23 @@ const server = http.createServer(async (req, res) => {
   json(res, 404, { error: 'Ruta no encontrada' });
 });
 
+function printBanner(protocol, port, isAlt) {
+  console.log(`\n🖨️  LogosPOS Print Agent — ${protocol.toUpperCase()} en ${protocol}://0.0.0.0:${port}`);
+  if (isAlt) {
+    console.log(`⚠️  Puerto principal ocupado. Usando ${port} en su lugar.`);
+    console.log(`   Actualiza la URL del agente en la app a: ${protocol}://localhost:${port}\n`);
+  }
+}
+
+// ── Servidor HTTP (fallback con puerto alternativo si está ocupado) ──
 function startServer(port) {
   server.listen(port, '0.0.0.0', () => {
-    console.log(`\n🖨️  LogosPOS Print Agent corriendo en http://0.0.0.0:${port}`);
-    console.log(`   Rutas disponibles:`);
+    printBanner('http', port, port !== Number(PORT));
     console.log(`   GET  /health        → Estado del agente`);
     console.log(`   POST /print         → { ip, puerto, data: number[], copies? }`);
     console.log(`   POST /ping          → { ip, puerto }`);
     console.log(`   POST /print-usb     → { port_name, data: number[], copies? }`);
     console.log(`   GET  /list-printers → Impresoras Windows instaladas\n`);
-    if (port !== Number(PORT)) {
-      console.log(`⚠️  Puerto ${PORT} estaba ocupado. Usando ${port} en su lugar.`);
-      console.log(`   Actualiza la URL del agente en la app a: http://localhost:${port}\n`);
-    }
   });
 }
 
@@ -255,3 +270,31 @@ server.on('error', (err) => {
 });
 
 startServer(Number(PORT));
+
+// ── Servidor HTTPS (para acceso desde apps en HTTPS sin Mixed Content) ──
+// Requiere certificado: ejecuta  node gen-cert.js  para generarlo
+if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
+  try {
+    const tlsOptions = {
+      cert: fs.readFileSync(CERT_FILE),
+      key:  fs.readFileSync(KEY_FILE)
+    };
+    const httpsServer = https.createServer(tlsOptions, server._events.request);
+    httpsServer.listen(Number(HTTPS_PORT), '0.0.0.0', () => {
+      printBanner('https', Number(HTTPS_PORT), false);
+      console.log(`   ✅ Usa https://localhost:${HTTPS_PORT} en la app para evitar Mixed Content\n`);
+    });
+    httpsServer.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`⚠️  Puerto HTTPS ${HTTPS_PORT} ocupado — solo HTTP disponible.`);
+      } else {
+        console.error('Error HTTPS:', err.message);
+      }
+    });
+  } catch (e) {
+    console.warn('⚠️  No se pudo iniciar HTTPS:', e.message);
+  }
+} else {
+  console.log(`ℹ️  HTTPS no configurado. Ejecuta  node gen-cert.js  para habilitarlo.`);
+  console.log(`   Sin HTTPS, usa http://localhost:${PORT} (solo funciona desde el mismo PC).\n`);
+}
