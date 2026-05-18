@@ -229,6 +229,11 @@ export class NegociosService {
      * Cargar el negocio actual en el estado
      */
     async cargarNegocioActual(id: string): Promise<void> {
+        // El usuario dev de plataforma no pertenece a ningún negocio
+        if (!id || id === '00000000-0000-0000-0000-000000000000') {
+            this.negocioSubject.next(null);
+            return;
+        }
         const negocio = await this.obtenerPorId(id);
         if (!negocio) {
             console.warn(`🛑 El negocio ID ${id} no existe. Limpiando ID huérfano.`);
