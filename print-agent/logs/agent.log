@@ -26,3 +26,15 @@
 🖨️  LogosPOS Print Agent — HTTPS en https://0.0.0.0:3443
    ✅ Usa https://localhost:3443 en la app para evitar Mixed Content
 
+
+🖨️  LogosPOS Print Agent — HTTP en http://0.0.0.0:3000
+   GET  /health        → Estado del agente
+   POST /print         → { ip, puerto, data: number[], copies? }
+   POST /ping          → { ip, puerto }
+   POST /print-usb     → { port_name, data: number[], copies? }
+   GET  /list-printers → Impresoras Windows instaladas
+
+
+🖨️  LogosPOS Print Agent — HTTPS en https://0.0.0.0:3443
+   ✅ Usa https://localhost:3443 en la app para evitar Mixed Content
+
