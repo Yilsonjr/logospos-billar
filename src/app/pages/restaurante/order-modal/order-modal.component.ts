@@ -347,4 +347,38 @@ export class OrderModalComponent implements OnInit, OnDestroy {
     if (!modificadores || !modificadores.length) return '';
     return modificadores.map(m => m.nombre).join(', ');
   }
+
+  imprimirPrecuenta(): void {
+    if (!this.orden || !this.itemsPersistidos.length) return;
+    const itemsHTML = this.itemsPersistidos
+      .map(i => `<tr><td>${i.cantidad}× ${i.menu_item?.nombre || 'Item'}</td><td style="text-align:right">RD$ ${(i.subtotal || 0).toFixed(2)}</td></tr>`)
+      .join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pre-Cuenta</title>
+<style>
+  body{font-family:monospace;width:300px;margin:0 auto;font-size:12px}
+  h2,p{text-align:center;margin:4px 0}
+  table{width:100%;border-collapse:collapse}
+  td{padding:2px 0}
+  .divider{border-top:1px dashed #000;margin:6px 0}
+  .total td{font-weight:bold;font-size:14px}
+  .nofiscal{font-size:10px;text-align:center;margin-top:8px;color:#666}
+</style></head><body>
+<h2>PRE-CUENTA</h2>
+<p>─────────────────────────</p>
+<p>Mesa ${this.orden.mesa?.numero_mesa || '-'} &nbsp;|&nbsp; Orden #${this.orden.id.slice(-6).toUpperCase()}</p>
+<div class="divider"></div>
+<table>${itemsHTML}</table>
+<div class="divider"></div>
+<table>
+  <tr><td>Subtotal</td><td style="text-align:right">RD$ ${this.subtotalOrden.toFixed(2)}</td></tr>
+  <tr><td>ITBIS</td><td style="text-align:right">RD$ ${this.impuestoOrden.toFixed(2)}</td></tr>
+  <tr class="total"><td>TOTAL ESTIMADO</td><td style="text-align:right">RD$ ${this.totalOrden.toFixed(2)}</td></tr>
+</table>
+<p class="nofiscal">─── DOCUMENTO NO FISCAL ───</p>
+<p class="nofiscal">Este documento no es un comprobante fiscal.</p>
+<p class="nofiscal">${new Date().toLocaleString('es-DO')}</p>
+</body></html>`;
+    const w = window.open('', '_blank', 'width=380,height=620');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); }
+  }
 }

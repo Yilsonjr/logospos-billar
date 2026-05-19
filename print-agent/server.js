@@ -10,19 +10,31 @@
  *   node server.js
  */
 
-const http         = require('http');
-const https        = require('https');
-const net          = require('net');
-const fs           = require('fs');
-const path         = require('path');
-const { execSync } = require('child_process');
+const http                   = require('http');
+const https                  = require('https');
+const net                    = require('net');
+const fs                     = require('fs');
+const path                   = require('path');
+const { execSync, spawnSync } = require('child_process');
 
-const PORT      = process.env.PRINT_AGENT_PORT || 3000;
+// Detectar si corre como ejecutable SEA (.exe) o como script node
+let _base;
+try { const { isSea } = require('node:sea'); _base = isSea() ? path.dirname(process.execPath) : __dirname; }
+catch { _base = __dirname; }
+const BASE_DIR = _base;
+
+// ── Comando --gen-cert: genera certificado TLS y sale ─────────
+if (process.argv.includes('--gen-cert')) {
+  runGenCert();
+  process.exit(0);
+}
+
+const PORT       = process.env.PRINT_AGENT_PORT       || 3000;
 const HTTPS_PORT = process.env.PRINT_AGENT_HTTPS_PORT || 3443;
 
 // Certificado TLS para HTTPS (evita Mixed Content desde páginas HTTPS)
-// Genera el cert con: node gen-cert.js
-const CERT_DIR  = path.join(__dirname, 'certs');
+// Genera el cert con: print-agent.exe --gen-cert
+const CERT_DIR  = path.join(BASE_DIR, 'certs');
 const CERT_FILE = path.join(CERT_DIR, 'cert.pem');
 const KEY_FILE  = path.join(CERT_DIR, 'key.pem');
 
@@ -303,6 +315,87 @@ if (fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE)) {
     console.warn('⚠️  No se pudo iniciar HTTPS:', e.message);
   }
 } else {
-  console.log(`ℹ️  HTTPS no configurado. Ejecuta  node gen-cert.js  para habilitarlo.`);
-  console.log(`   Sin HTTPS, usa http://localhost:${PORT} (solo funciona desde el mismo PC).\n`);
+  console.log(`ℹ️  HTTPS no configurado. Ejecuta:`);
+  console.log(`   Como script:     node gen-cert.js`);
+  console.log(`   Como ejecutable: print-agent.exe --gen-cert\n`);
+}
+
+// ============================================================
+// --gen-cert: genera certificado TLS autofirmado
+// Funciona tanto en modo script como en .exe SEA
+// ============================================================
+function runGenCert() {
+  const certDir  = path.join(BASE_DIR, 'certs');
+  const certFile = path.join(certDir, 'cert.pem');
+  const keyFile  = path.join(certDir, 'key.pem');
+
+  if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
+
+  console.log('\n🔐 Generando certificado TLS autofirmado...\n');
+
+  const OPENSSL_PATHS = [
+    'openssl',
+    'C:\\Program Files\\Git\\usr\\bin\\openssl.exe',
+    'C:\\Program Files\\Git\\mingw64\\bin\\openssl.exe',
+    'C:\\Program Files (x86)\\Git\\usr\\bin\\openssl.exe',
+    'C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe',
+  ];
+
+  let opensslBin = null;
+  for (const p of OPENSSL_PATHS) {
+    try {
+      const r = spawnSync(p, ['version'], { encoding: 'utf8', windowsHide: true });
+      if (r.status === 0 && r.stdout.includes('OpenSSL')) { opensslBin = p; break; }
+    } catch {}
+  }
+
+  if (opensslBin) {
+    console.log(`   Usando: ${opensslBin}`);
+    execSync(
+      `"${opensslBin}" req -x509 -newkey rsa:2048 -keyout "${keyFile}" -out "${certFile}" ` +
+      `-days 825 -nodes -subj "/CN=localhost/O=LogosPOS/C=DO" ` +
+      `-addext "subjectAltName=IP:127.0.0.1,DNS:localhost"`,
+      { stdio: 'inherit', windowsHide: true }
+    );
+  } else {
+    console.log('   OpenSSL no encontrado. Usando PowerShell...');
+    const tmpPfx = path.join(certDir, '_tmp.pfx');
+    const tmpPwd = 'logos_' + Date.now();
+
+    const psCreate = `
+      $cert = New-SelfSignedCertificate -Subject "CN=localhost" -DnsName "localhost" \`
+        -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation "Cert:\\CurrentUser\\My" \`
+        -NotAfter (Get-Date).AddDays(825)
+      $pwd = ConvertTo-SecureString "${tmpPwd}" -Force -AsPlainText
+      Export-PfxCertificate -Cert $cert -FilePath "${tmpPfx.replace(/\\/g,'\\\\')}" -Password $pwd | Out-Null
+      Remove-Item "Cert:\\CurrentUser\\My\\$($cert.Thumbprint)" -Force
+      Write-Output "OK"`.trim();
+
+    const r1 = spawnSync('powershell', ['-NoProfile', '-Command', psCreate], { encoding: 'utf8', windowsHide: true });
+    if (!r1.stdout.includes('OK')) throw new Error(r1.stderr || 'PowerShell falló');
+
+    const psExport = `
+      $pwd = ConvertTo-SecureString "${tmpPwd}" -Force -AsPlainText
+      $pfx = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(
+        "${tmpPfx.replace(/\\/g,'\\\\')}", $pwd,
+        [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+      $certB64 = [Convert]::ToBase64String($pfx.RawData, "InsertLineBreaks")
+      Set-Content "${certFile.replace(/\\/g,'\\\\')}" "-----BEGIN CERTIFICATE-----\`n$certB64\`n-----END CERTIFICATE-----"
+      $rsa = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($pfx)
+      $keyB64 = [Convert]::ToBase64String($rsa.ExportRSAPrivateKey(), "InsertLineBreaks")
+      Set-Content "${keyFile.replace(/\\/g,'\\\\')}" "-----BEGIN RSA PRIVATE KEY-----\`n$keyB64\`n-----END RSA PRIVATE KEY-----"
+      Write-Output "DONE"`.trim();
+
+    const r2 = spawnSync('powershell', ['-NoProfile', '-Command', psExport], { encoding: 'utf8', windowsHide: true });
+    if (!r2.stdout.includes('DONE')) throw new Error(r2.stderr || 'Error exportando PEM');
+    try { fs.unlinkSync(tmpPfx); } catch {}
+  }
+
+  console.log('\n✅ Certificado generado:');
+  console.log(`   ${certFile}`);
+  console.log(`   ${keyFile}`);
+  console.log('\n📋 Próximos pasos:');
+  console.log('   1. Reinicia el agente');
+  console.log('   2. Abre https://localhost:3443 en Chrome → Avanzado → Continuar');
+  console.log('   3. Configura https://localhost:3443 como URL del agente en la app\n');
 }

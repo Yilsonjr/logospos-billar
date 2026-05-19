@@ -56,7 +56,13 @@ schema.sql
 # Claude Code memory (local only)
 .claude/
 scratch/check_db_health.sql
-scratch/check_db_health.sql
 database/fix_rls_main_tables.sql
 database/migration_add_negocio_id.sql
 database/seed_restaurant_data.sql
+
+# Print agent — generados localmente, no van al repo
+print-agent/certs/
+print-agent/logs/
+print-agent/node_modules/
+print-agent/dist/
+print-agent/sea-prep.blob

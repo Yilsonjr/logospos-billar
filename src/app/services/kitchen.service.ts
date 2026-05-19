@@ -206,6 +206,7 @@ export class KitchenService {
         filter: `negocio_id=eq.${this.negocioId}`
       }, async () => {
         await this.cargarTickets();
+        if (onNuevoTicket) onNuevoTicket();
       })
       .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {

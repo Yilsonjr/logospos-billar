@@ -299,6 +299,9 @@
           </button>
         }
         @if (orden && totalOrden > 0) {
+          <button class="btn btn-outline-secondary" (click)="imprimirPrecuenta()" title="Imprimir pre-cuenta">
+            <i class="bi bi-printer me-1"></i>Pre-cuenta
+          </button>
           <button class="btn btn-success fw-bold px-4" (click)="cobrar.emit(orden!.id)">
             <i class="bi bi-cash-coin me-1"></i>
             Cobrar · RD$ {{ totalOrden | number:'1.2-2' }}

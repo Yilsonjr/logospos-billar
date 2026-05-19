@@ -245,7 +245,7 @@ export class BillSplitComponent implements OnInit {
         }
         await this.ordersService.cerrarOrden(this.orden.id);
 
-        // Imprimir recibo — silencioso si no hay impresora/agente configurado
+        // Imprimir recibo — agente térmico si está configurado, siempre abre ventana del navegador
         try {
           await this.printService.imprimirReciboRestaurant({
             orden: this.orden,
@@ -253,9 +253,10 @@ export class BillSplitComponent implements OnInit {
             formaPago: cuenta.forma_pago,
             negocioNombre: this.negocioNombre
           });
-        } catch (printErr) {
-          console.warn('[BillSplit] Ticket no impreso:', printErr);
+        } catch {
+          console.warn('[BillSplit] Impresora térmica no disponible');
         }
+        this.abrirTicketEnNavegador(cuenta.forma_pago);
 
         Swal.fire({
           icon: 'success',
@@ -325,5 +326,43 @@ export class BillSplitComponent implements OnInit {
   formatModificadores(modificadores: any[]): string {
     if (!modificadores || !modificadores.length) return '';
     return modificadores.map(m => m.nombre).join(', ');
+  }
+
+  private abrirTicketEnNavegador(formaPago: string): void {
+    if (!this.orden) return;
+    const itemsHTML = (this.orden.items || [])
+      .filter(i => i.estado !== 'cancelado')
+      .map(i => `<tr><td>${i.cantidad}× ${i.menu_item?.nombre || 'Item'}</td><td style="text-align:right">RD$ ${(i.subtotal || 0).toFixed(2)}</td></tr>`)
+      .join('');
+    const propina = this.propinaGlobal;
+    const total = (this.totalOrden + propina).toFixed(2);
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ticket</title>
+<style>
+  body{font-family:monospace;width:300px;margin:0 auto;font-size:12px}
+  h2,p{text-align:center;margin:4px 0}
+  table{width:100%;border-collapse:collapse}
+  td{padding:2px 0}
+  .divider{border-top:1px dashed #000;margin:6px 0}
+  .total td{font-weight:bold;font-size:14px}
+  .nofiscal{font-size:10px;text-align:center;margin-top:8px;color:#666}
+</style></head><body>
+<h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
+<p>─────────────────────────</p>
+<p>Mesa ${this.orden.mesa?.numero_mesa || '-'} &nbsp;|&nbsp; Orden #${this.orden.id.slice(-6).toUpperCase()}</p>
+<div class="divider"></div>
+<table>${itemsHTML}</table>
+<div class="divider"></div>
+<table>
+  <tr><td>Subtotal</td><td style="text-align:right">RD$ ${this.subtotalOrden.toFixed(2)}</td></tr>
+  <tr><td>ITBIS (${Math.round(this.tasaItbis * 100)}%)</td><td style="text-align:right">RD$ ${this.impuestoOrden.toFixed(2)}</td></tr>
+  ${propina > 0 ? `<tr><td>Propina</td><td style="text-align:right">RD$ ${propina.toFixed(2)}</td></tr>` : ''}
+  <tr class="total"><td>TOTAL (${formaPago})</td><td style="text-align:right">RD$ ${total}</td></tr>
+</table>
+<p class="nofiscal">─── DOCUMENTO NO FISCAL ───</p>
+<p class="nofiscal">¡Gracias por su visita!</p>
+<p class="nofiscal">${new Date().toLocaleString('es-DO')}</p>
+</body></html>`;
+    const w = window.open('', '_blank', 'width=380,height=620');
+    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); }
   }
 }

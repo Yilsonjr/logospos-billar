@@ -27,30 +27,51 @@ Write-Host ""
 Write-Host "  Directorio: $AgentDir"
 Write-Host ""
 
-# ── 1. Localizar Node.js ─────────────────────────────────────
-Write-Host "  [1/4] Buscando Node.js..." -ForegroundColor White
+# ── 1. Detectar modo: .exe (SEA) o script Node.js ───────────
+Write-Host "  [1/4] Detectando modo de instalacion..." -ForegroundColor White
 
-$NodeExe = $null
-$candidates = @(
-    "C:\Program Files\nodejs\node.exe",
-    "C:\Program Files (x86)\nodejs\node.exe"
-)
-foreach ($c in $candidates) {
-    if (Test-Path $c) { $NodeExe = $c; break }
-}
-if (-not $NodeExe) {
-    $cmd = Get-Command node -ErrorAction SilentlyContinue
-    if ($cmd) { $NodeExe = $cmd.Source }
-}
-if (-not $NodeExe) {
-    Write-Host "  [ERROR] Node.js no encontrado." -ForegroundColor Red
-    Write-Host "  Descargalo desde: https://nodejs.org  (v18 o superior)"
+$ExeFile    = "$AgentDir\print-agent.exe"
+$ServerFile = "$AgentDir\server.js"
+$AppExe     = $null
+$AppArgs    = $null
+
+if (Test-Path $ExeFile) {
+    # Opcion A — ejecutable independiente (no requiere Node.js)
+    $AppExe  = $ExeFile
+    $AppArgs = ""
+    Write-Host "  OK -- Modo EXE: $ExeFile" -ForegroundColor Green
+} elseif (Test-Path $ServerFile) {
+    # Opcion B — script Node.js
+    $NodeExe = $null
+    $candidates = @(
+        "C:\Program Files\nodejs\node.exe",
+        "C:\Program Files (x86)\nodejs\node.exe"
+    )
+    foreach ($c in $candidates) {
+        if (Test-Path $c) { $NodeExe = $c; break }
+    }
+    if (-not $NodeExe) {
+        $cmd = Get-Command node -ErrorAction SilentlyContinue
+        if ($cmd) { $NodeExe = $cmd.Source }
+    }
+    if (-not $NodeExe) {
+        Write-Host "  [ERROR] Node.js no encontrado y print-agent.exe tampoco." -ForegroundColor Red
+        Write-Host "  Opciones:"
+        Write-Host "    A) Coloca print-agent.exe en: $AgentDir"
+        Write-Host "    B) Instala Node.js desde: https://nodejs.org  (v20+)"
+        Read-Host "`n  Presiona Enter para salir"
+        exit 1
+    }
+    $nodeVersion = & "$NodeExe" --version
+    $AppExe  = $NodeExe
+    $AppArgs = "server.js"
+    Write-Host "  OK -- Modo Node.js $nodeVersion: $NodeExe" -ForegroundColor Green
+} else {
+    Write-Host "  [ERROR] No se encontro print-agent.exe ni server.js en:" -ForegroundColor Red
+    Write-Host "  $AgentDir"
     Read-Host "`n  Presiona Enter para salir"
     exit 1
 }
-
-$nodeVersion = & "$NodeExe" --version
-Write-Host "  OK -- Node.js $nodeVersion en: $NodeExe" -ForegroundColor Green
 Write-Host ""
 
 # ── 2. Obtener NSSM ──────────────────────────────────────────
@@ -94,7 +115,7 @@ if ($existing) {
 
 if (-not (Test-Path $LogsDir)) { New-Item -ItemType Directory -Path $LogsDir | Out-Null }
 
-& $NssmExe install   $ServiceName $NodeExe "server.js"
+& $NssmExe install   $ServiceName $AppExe $AppArgs
 & $NssmExe set       $ServiceName AppDirectory    $AgentDir
 & $NssmExe set       $ServiceName DisplayName     "LogosPOS Print Agent"
 & $NssmExe set       $ServiceName Description     "Agente de impresion termica LogosPOS"

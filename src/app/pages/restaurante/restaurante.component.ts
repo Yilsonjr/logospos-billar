@@ -187,6 +187,7 @@ export class RestauranteComponent implements OnInit {
   abrirPago(orderId: string): void {
     this.mesaActiva = null;
     this.ordenParaPagar = orderId;
+    this.cdr.detectChanges();
   }
 
   cerrarPago(): void {

@@ -101,9 +101,14 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     const siguiente = flujo[ticket.estado];
     if (!siguiente) return;
 
+    // Mover optimistamente en memoria antes de esperar la BD
+    this.moverTicketEnMemoria(ticket, siguiente);
+
     try {
       await this.kitchenService.cambiarEstado(ticket.id, siguiente);
+      await this.cargarTickets(true); // Confirmar con datos reales
     } catch (e: any) {
+      await this.cargarTickets(true); // Revertir si falla
       Swal.fire('Error', e.message, 'error');
     }
   }
@@ -128,6 +133,15 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     event.preventDefault();
   }
 
+  private moverTicketEnMemoria(ticket: KitchenTicket, nuevoEstado: EstadoTicketCocina): void {
+    const colOrigen = this.columnas.find(c => c.estado === ticket.estado);
+    const colDestino = this.columnas.find(c => c.estado === nuevoEstado);
+    if (!colOrigen || !colDestino) return;
+    colOrigen.tickets = colOrigen.tickets.filter(t => t.id !== ticket.id);
+    colDestino.tickets = [...colDestino.tickets, { ...ticket, estado: nuevoEstado }];
+    this.cdr.detectChanges();
+  }
+
   async onDrop(event: DragEvent, estadoDestino: EstadoTicketCocina): Promise<void> {
     event.preventDefault();
     if (!this.ticketArrastrado) return;
@@ -135,12 +149,18 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
       this.ticketArrastrado = null;
       return;
     }
+    const ticket = this.ticketArrastrado;
+    this.ticketArrastrado = null;
+
+    // Mover optimistamente antes de esperar la BD
+    this.moverTicketEnMemoria(ticket, estadoDestino);
+
     try {
-      await this.kitchenService.cambiarEstado(this.ticketArrastrado.id, estadoDestino);
+      await this.kitchenService.cambiarEstado(ticket.id, estadoDestino);
+      await this.cargarTickets(true); // Confirmar con datos reales
     } catch (e: any) {
+      await this.cargarTickets(true); // Revertir si falla
       Swal.fire('Error', e.message, 'error');
-    } finally {
-      this.ticketArrastrado = null;
     }
   }
 
@@ -160,6 +180,11 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
 
   esTiempoExcedido(ticket: KitchenTicket): boolean {
     return this.kitchenService.estaEnTiempoExcedido(ticket);
+  }
+
+  limpiarEntregadas(): void {
+    const col = this.columnas.find(c => c.estado === 'entregado');
+    if (col) { col.tickets = []; this.cdr.detectChanges(); }
   }
 
   toggleAlerta(): void {

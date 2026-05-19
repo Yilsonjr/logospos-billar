@@ -57,7 +57,14 @@
               <i class="bi {{ col.icono }}"></i>
               <span>{{ col.titulo }}</span>
             </div>
-            <span class="kds-col-count">{{ col.tickets.length }}</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="kds-col-count">{{ col.tickets.length }}</span>
+              @if (col.estado === 'entregado' && col.tickets.length > 0) {
+                <button class="kds-clear-btn" (click)="limpiarEntregadas()" title="Limpiar lista">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              }
+            </div>
           </div>
 
           <!-- Cuerpo scrollable -->
