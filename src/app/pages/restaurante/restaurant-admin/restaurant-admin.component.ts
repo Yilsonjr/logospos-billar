@@ -7,9 +7,11 @@ import { RestaurantOrdersService } from '../../../services/restaurant-orders.ser
 import { InventoryRestaurantService, CompraAgrupada } from '../../../services/inventory-restaurant.service';
 import { NegociosService } from '../../../services/negocios.service';
 import { PrintersAdminComponent } from '../printers-admin/printers-admin.component';
+import { PrintService } from '../../../services/print.service';
 import {
   RestaurantZone, RestaurantTable, MenuCategory, MenuItem,
-  RestaurantInventoryItem, RestaurantInventoryMovement, TipoMovimientoInventario
+  RestaurantInventoryItem, RestaurantInventoryMovement, TipoMovimientoInventario,
+  RestaurantPrinter
 } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
@@ -42,8 +44,9 @@ export class RestaurantAdminComponent implements OnInit {
 
   // ── Categorías ────────────────────────────────────────────
   categorias: MenuCategory[] = [];
-  catForm: { nombre: string; descripcion: string; icono: string; orden: number } =
-    { nombre: '', descripcion: '', icono: '🍽️', orden: 1 };
+  impresoras: RestaurantPrinter[] = [];
+  catForm: { nombre: string; descripcion: string; icono: string; orden: number; printer_id: string | null } =
+    { nombre: '', descripcion: '', icono: '🍽️', orden: 1, printer_id: null };
   editandoCat: MenuCategory | null = null;
   mostrarFormCat = false;
 
@@ -121,6 +124,7 @@ export class RestaurantAdminComponent implements OnInit {
     private ordersService: RestaurantOrdersService,
     private inventoryService: InventoryRestaurantService,
     private negociosService: NegociosService,
+    private printService: PrintService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -139,7 +143,10 @@ export class RestaurantAdminComponent implements OnInit {
         this.mesas = await this.tablesService.cargarMesas();
       }
       if (tab === 'categorias' || tab === 'platos') {
-        this.categorias = await this.ordersService.cargarCategorias();
+        [this.categorias, this.impresoras] = await Promise.all([
+          this.ordersService.cargarCategorias(),
+          this.printService.cargarImpresoras()
+        ]);
       }
       if (tab === 'platos') {
         this.platos = await this.ordersService.cargarItemsAdmin(this.categoriaFiltroPlatos || undefined);
@@ -282,8 +289,8 @@ export class RestaurantAdminComponent implements OnInit {
   abrirFormCat(cat?: MenuCategory): void {
     this.editandoCat = cat || null;
     this.catForm = cat
-      ? { nombre: cat.nombre, descripcion: cat.descripcion || '', icono: cat.icono || '🍽️', orden: cat.orden }
-      : { nombre: '', descripcion: '', icono: '🍽️', orden: this.categorias.length + 1 };
+      ? { nombre: cat.nombre, descripcion: cat.descripcion || '', icono: cat.icono || '🍽️', orden: cat.orden, printer_id: (cat as any).printer_id || null }
+      : { nombre: '', descripcion: '', icono: '🍽️', orden: this.categorias.length + 1, printer_id: null };
     this.mostrarFormCat = true;
   }
 

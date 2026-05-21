@@ -110,20 +110,21 @@ Copia estos archivos a un USB o carpeta compartida:
 
 ```
 LogosPOS-Instalador\
-  print-agent.exe            ← el agente de impresión
+  print-agent.exe            ← de print-agent\dist\print-agent.exe (en la RAÍZ, no en dist\)
   instalar-servicio.bat      ← instala el agente como servicio Windows
   instalar-servicio.ps1      ← script del instalador del agente
   instalar-tunnel.bat        ← instala el tunnel cloudflare
   instalar-tunnel.ps1        ← script del instalador del tunnel
   cloudflared.exe            ← el cliente de Cloudflare
-  1732e4de-...json           ← credenciales del tunnel (el UUID.json de tu PC)
-  config.yml                 ← el que creaste en el paso 1.3
+  <UUID>.json                ← credenciales del tunnel del negocio (C:\Users\USUARIO\.cloudflared\)
+  config.yml                 ← el que creaste en el paso 1.3 con el UUID correcto
   nssm\
-    nssm.exe                 ← gestor de servicios Windows
+    nssm.exe                 ← gestor de servicios Windows (print-agent\nssm\nssm.exe)
 ```
 
-> `cloudflared.exe` lo encuentras en `C:\Windows\System32\cloudflared.exe`
-> en tu PC (si lo instalaste con winget) o en los releases de GitHub.
+> **IMPORTANTE:** `print-agent.exe` debe estar en la raíz de la carpeta, NO dentro de `dist\`.
+> `cloudflared.exe` lo encuentras en `C:\Windows\System32\cloudflared.exe` en tu PC.
+> El `nssm.exe` ya está en `print-agent\nssm\nssm.exe` — inclúyelo siempre para evitar descargas.
 
 ---
 
@@ -265,17 +266,18 @@ Para cada nuevo negocio: repite la Fase 1 con un nombre diferente.
 ```powershell
 # Ver estado de los servicios
 sc query LogosPOS-PrintAgent
-sc query Cloudflared
+sc query CloudflaredTunnel
 
 # Reiniciar el agente
 net stop LogosPOS-PrintAgent && net start LogosPOS-PrintAgent
 
 # Reiniciar el tunnel
-net stop Cloudflared && net start Cloudflared
+net stop CloudflaredTunnel && net start CloudflaredTunnel
 
 # Desinstalar todo
-C:\LogosPOS\desinstalar-servicio.bat
-cloudflared service uninstall
+C:\LogosPOS-Instalador\desinstalar-servicio.bat
+C:\LogosPOS-Instalador\nssm\nssm.exe stop CloudflaredTunnel
+C:\LogosPOS-Instalador\nssm\nssm.exe remove CloudflaredTunnel confirm
 ```
 
 ---

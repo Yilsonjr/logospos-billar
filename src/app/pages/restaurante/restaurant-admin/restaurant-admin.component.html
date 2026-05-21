@@ -223,11 +223,11 @@
         <div class="ra-form mb-3">
           <h6 class="ra-form-title">{{ editandoCat ? 'Editar' : 'Nueva' }} Categoría</h6>
           <div class="row g-2">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="ra-label">Nombre *</label>
               <input class="form-control form-control-sm" [(ngModel)]="catForm.nombre" placeholder="Ej: Entradas">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="ra-label">Descripción</label>
               <input class="form-control form-control-sm" [(ngModel)]="catForm.descripcion" placeholder="Opcional">
             </div>
@@ -238,6 +238,15 @@
             <div class="col-md-2">
               <label class="ra-label">Orden</label>
               <input type="number" class="form-control form-control-sm" [(ngModel)]="catForm.orden" min="1">
+            </div>
+            <div class="col-md-2">
+              <label class="ra-label">Impresora destino</label>
+              <select class="form-select form-select-sm" [(ngModel)]="catForm.printer_id">
+                <option [ngValue]="null">— Sin impresora —</option>
+                @for (p of impresoras; track p.id) {
+                  <option [value]="p.id">{{ p.nombre }} ({{ p.tipo }})</option>
+                }
+              </select>
             </div>
           </div>
           <div class="d-flex gap-2 mt-2">
