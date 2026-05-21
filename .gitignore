@@ -68,3 +68,7 @@ print-agent/dist/
 print-agent/sea-prep.blob
 print-agent/instalar-tunnel.bat
 print-agent/instalar-tunnel.ps1
+database/rpc_ventas_fiscal.sql
+.gitignore
+print-agent/instalar-servicio.ps1
+.gitignore

@@ -281,26 +281,34 @@
               </thead>
               <tbody>
                 @for (m of margenes; track trackByMargen($index, m)) {
-                  <tr [class.sin-receta]="m.sin_receta">
-                    <td class="fw-semibold">{{ m.nombre }}</td>
+                  <tr [class.sin-receta]="m.fuente_costo === 'sin_datos'">
+                    <td class="fw-semibold">
+                      {{ m.nombre }}
+                      @if (m.fuente_costo === 'estimado') {
+                        <span class="badge bg-info-subtle text-info ms-1" style="font-size:.65rem" title="Costo ingresado manualmente">est.</span>
+                      }
+                    </td>
                     <td class="text-end font-monospace">{{ formatMoneda(m.precio_venta) }}</td>
                     <td class="text-end font-monospace text-muted">
-                      @if (m.sin_receta) { <span class="badge bg-secondary-subtle text-secondary">Sin receta</span> }
-                      @else { {{ formatMoneda(m.costo_receta) }} }
+                      @if (m.fuente_costo === 'sin_datos') {
+                        <span class="badge bg-secondary-subtle text-secondary">Sin datos</span>
+                      } @else {
+                        {{ formatMoneda(m.costo_receta) }}
+                      }
                     </td>
-                    <td class="text-end font-monospace fw-bold" [class]="m.sin_receta ? 'text-muted' : colorMargen(m.margen_pct)">
-                      @if (!m.sin_receta) { {{ formatMoneda(m.margen) }} }
+                    <td class="text-end font-monospace fw-bold" [class]="m.fuente_costo === 'sin_datos' ? 'text-muted' : colorMargen(m.margen_pct)">
+                      @if (m.fuente_costo !== 'sin_datos') { {{ formatMoneda(m.margen) }} }
                       @else { — }
                     </td>
                     <td class="text-center">
-                      @if (m.sin_receta) {
-                        <span class="rr-badge-neutral">—</span>
+                      @if (m.fuente_costo === 'sin_datos') {
+                        <span class="rr-badge-neutral" title="Agrega un costo estimado al plato para ver el margen">—</span>
                       } @else {
                         <span class="rr-margen-badge {{ badgeMargen(m.margen_pct) }}">{{ m.margen_pct }}%</span>
                       }
                     </td>
                     <td>
-                      @if (!m.sin_receta) {
+                      @if (m.fuente_costo !== 'sin_datos') {
                         <div class="rr-bar-track sm">
                           <div class="rr-bar-fill margen"
                             [style.width]="m.margen_pct + '%'"
@@ -319,6 +327,8 @@
             <span class="rr-margen-badge badge-margen-alto">≥ 60% Bueno</span>
             <span class="rr-margen-badge badge-margen-medio">35–59% Aceptable</span>
             <span class="rr-margen-badge badge-margen-bajo">< 35% Revisar</span>
+            <span class="badge bg-info-subtle text-info">est. = costo estimado</span>
+            <span class="text-muted small">· — = sin datos de costo (configura costo estimado en el plato)</span>
           </div>
         }
       </div>

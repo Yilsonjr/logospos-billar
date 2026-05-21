@@ -51,9 +51,11 @@ export class RestaurantAdminComponent implements OnInit {
   platos: MenuItem[] = [];
   platoForm: {
     categoria_id: string; nombre: string; descripcion: string;
-    precio: number; tiempo_preparacion_minutos: number; notas_cocina: string;
-    requiere_inventario: boolean; disponible: boolean;
-  } = { categoria_id: '', nombre: '', descripcion: '', precio: 0, tiempo_preparacion_minutos: 15, notas_cocina: '', requiere_inventario: false, disponible: true };
+    precio: number; costo_estimado: number | null; tiempo_preparacion_minutos: number;
+    notas_cocina: string; requiere_inventario: boolean; enviar_a_cocina: boolean; disponible: boolean;
+  } = { categoria_id: '', nombre: '', descripcion: '', precio: 0, costo_estimado: null,
+        tiempo_preparacion_minutos: 15, notas_cocina: '', requiere_inventario: false,
+        enviar_a_cocina: true, disponible: true };
   editandoPlato: MenuItem | null = null;
   mostrarFormPlato = false;
   categoriaFiltroPlatos = '';
@@ -327,13 +329,15 @@ export class RestaurantAdminComponent implements OnInit {
     this.recetaItemForm = { inventory_item_id: '', cantidad_requerida: 1, unidad_medida: 'unidad' };
     this.platoForm = plato
       ? { categoria_id: plato.categoria_id, nombre: plato.nombre, descripcion: plato.descripcion || '',
-          precio: plato.precio, tiempo_preparacion_minutos: plato.tiempo_preparacion_minutos,
+          precio: plato.precio, costo_estimado: plato.costo_estimado ?? null,
+          tiempo_preparacion_minutos: plato.tiempo_preparacion_minutos,
           notas_cocina: plato.notas_cocina || '',
           requiere_inventario: plato.requiere_inventario ?? false,
+          enviar_a_cocina: plato.enviar_a_cocina ?? true,
           disponible: plato.disponible ?? true }
       : { categoria_id: this.categorias[0]?.id || '', nombre: '', descripcion: '',
-          precio: 0, tiempo_preparacion_minutos: 15, notas_cocina: '',
-          requiere_inventario: false, disponible: true };
+          precio: 0, costo_estimado: null, tiempo_preparacion_minutos: 15, notas_cocina: '',
+          requiere_inventario: false, enviar_a_cocina: true, disponible: true };
     this.mostrarFormPlato = true;
     if (plato?.requiere_inventario && this.usaInventario) {
       this.cargarReceta(plato.id);

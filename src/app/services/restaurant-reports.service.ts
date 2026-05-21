@@ -46,6 +46,8 @@ export interface MargenPlato {
   margen: number;
   margen_pct: number;
   sin_receta: boolean;
+  /** Origen del costo: receta de inventario, costo_estimado, o sin datos */
+  fuente_costo: 'receta' | 'estimado' | 'sin_datos';
 }
 
 export interface ResumenInventario {
@@ -236,10 +238,10 @@ export class RestaurantReportsService {
   // ============================================================
 
   async cargarMargenesPorPlato(): Promise<MargenPlato[]> {
-    // Traer todos los items de menú activos
+    // Traer todos los items de menú activos (incluye costo_estimado)
     const { data: items } = await this.supabase.client
       .from('menu_items')
-      .select('id, nombre, precio')
+      .select('id, nombre, precio, costo_estimado')
       .eq('negocio_id', this.negocioId)
       .eq('activo', true)
       .eq('disponible', true);
@@ -256,26 +258,42 @@ export class RestaurantReportsService {
       `)
       .in('menu_item_id', items.map(i => i.id));
 
-    // Calcular costo por plato
-    const costosPorItem: Record<string, number> = {};
+    // Calcular costo por receta
+    const costosPorReceta: Record<string, number> = {};
     for (const r of recetas || []) {
       const costo = ((r.inventario as any)?.costo_unitario || 0) * (r.cantidad_requerida || 0);
-      costosPorItem[r.menu_item_id] = (costosPorItem[r.menu_item_id] || 0) + costo;
+      costosPorReceta[r.menu_item_id] = (costosPorReceta[r.menu_item_id] || 0) + costo;
     }
 
     return items.map(item => {
       const precio = item.precio || 0;
-      const costo  = costosPorItem[item.id] ?? -1;
-      const sinReceta = costo < 0;
-      const costoReal = sinReceta ? 0 : costo;
+      const tieneReceta    = item.id in costosPorReceta;
+      const tieneCostoEst  = item.costo_estimado != null && item.costo_estimado > 0;
+
+      let costoReal: number;
+      let fuente: 'receta' | 'estimado' | 'sin_datos';
+
+      if (tieneReceta) {
+        costoReal = costosPorReceta[item.id];
+        fuente = 'receta';
+      } else if (tieneCostoEst) {
+        costoReal = item.costo_estimado!;
+        fuente = 'estimado';
+      } else {
+        costoReal = 0;
+        fuente = 'sin_datos';
+      }
+
+      const sinDatos = fuente === 'sin_datos';
       return {
-        menu_item_id: item.id,
-        nombre:       item.nombre,
-        precio_venta: precio,
-        costo_receta: costoReal,
-        margen:       precio - costoReal,
-        margen_pct:   precio > 0 && !sinReceta ? Math.round(((precio - costoReal) / precio) * 100) : 0,
-        sin_receta:   sinReceta
+        menu_item_id:         item.id,
+        nombre:               item.nombre,
+        precio_venta:         precio,
+        costo_receta:         costoReal,
+        margen:               precio - costoReal,
+        margen_pct:           precio > 0 && !sinDatos ? Math.round(((precio - costoReal) / precio) * 100) : 0,
+        sin_receta:           !tieneReceta,
+        fuente_costo:         fuente
       };
     }).sort((a, b) => b.margen_pct - a.margen_pct);
   }

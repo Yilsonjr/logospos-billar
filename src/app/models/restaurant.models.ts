@@ -96,6 +96,10 @@ export interface MenuItem {
   imagen_url?: string | null;
   tiempo_preparacion_minutos: number;
   requiere_inventario: boolean;
+  /** Costo estimado por unidad (cuando no se usa inventario con recetas) */
+  costo_estimado?: number | null;
+  /** Si es false, el item NO se envía al KDS (bebidas, snacks, postres fríos) */
+  enviar_a_cocina: boolean;
   notas_cocina?: string | null;
   disponible: boolean;
   activo: boolean;

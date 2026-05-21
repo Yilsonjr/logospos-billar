@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ChangeDetect
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
+import { PrintService } from '../../../services/print.service';
 import {
   TableWithOrder, MenuCategory, MenuItem, MenuItemModifier,
   CartItem, ModificadorSeleccionado, RestaurantOrder,
@@ -43,7 +44,11 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   cargando = false;
   enviandoCocina = false;
 
-  constructor(private ordersService: RestaurantOrdersService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private ordersService: RestaurantOrdersService,
+    private printService: PrintService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   async ngOnInit(): Promise<void> {
     this.cargando = true;
@@ -224,6 +229,20 @@ export class OrderModalComponent implements OnInit, OnDestroy {
 
     try {
       this.enviandoCocina = true;
+
+      // Imprimir ANTES de cambiar estados (get_ruteo_orden filtra por estado='pendiente')
+      try {
+        const usuarioData = JSON.parse(localStorage.getItem('logos_usuario') || '{}');
+        const mesero = usuarioData.nombre || usuarioData.email || 'Mesero';
+        const numeroMesa = this.mesa?.numero_mesa || (this.orden as any).numero_mesa || 0;
+        const resultado = await this.printService.imprimirOrden(this.orden.id, numeroMesa, mesero);
+        if (resultado.errores.length > 0) {
+          console.warn('[OrderModal] Errores de impresión:', resultado.errores);
+        }
+      } catch (printError: any) {
+        console.warn('[OrderModal] No se pudo imprimir comanda:', printError.message);
+      }
+
       await this.ordersService.enviarACocina(this.orden.id);
       await this.refrescarOrden();
       this.ordenActualizada.emit();

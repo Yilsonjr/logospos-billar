@@ -317,9 +317,17 @@
               <label class="ra-label">Precio (RD$)</label>
               <input type="number" class="form-control form-control-sm" [(ngModel)]="platoForm.precio" min="0">
             </div>
-            <div class="col-md-3">
-              <label class="ra-label">Tiempo preparación (min)</label>
-              <input type="number" class="form-control form-control-sm" [(ngModel)]="platoForm.tiempo_preparacion_minutos" min="1">
+            <div class="col-md-2">
+              <label class="ra-label">
+                Costo estimado
+                <span class="text-muted" style="font-size:.7rem" title="Costo por unidad para calcular margen. Opcional si usas recetas.">(?)</span>
+              </label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="platoForm.costo_estimado"
+                min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-md-2">
+              <label class="ra-label">Tiempo prep. (min)</label>
+              <input type="number" class="form-control form-control-sm" [(ngModel)]="platoForm.tiempo_preparacion_minutos" min="0">
             </div>
             <div class="col-md-6">
               <label class="ra-label">Descripción</label>
@@ -329,23 +337,29 @@
               <label class="ra-label">Notas para cocina</label>
               <input class="form-control form-control-sm" [(ngModel)]="platoForm.notas_cocina" placeholder="Instrucciones de preparación…">
             </div>
-            <div class="col-md-3 d-flex align-items-end gap-3 pb-1">
+            <div class="col-12 d-flex gap-4 align-items-center pt-1 flex-wrap">
               <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" id="chkDisponible"
                   [(ngModel)]="platoForm.disponible">
                 <label class="form-check-label ra-label mb-0" for="chkDisponible">Disponible</label>
               </div>
-            </div>
-            @if (usaInventario) {
-              <div class="col-md-3 d-flex align-items-end pb-1">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="chkEnviarCocina"
+                  [(ngModel)]="platoForm.enviar_a_cocina">
+                <label class="form-check-label ra-label mb-0" for="chkEnviarCocina">
+                  Enviar a cocina (KDS)
+                  <span class="text-muted" style="font-size:.7rem">· desactivar para bebidas/snacks</span>
+                </label>
+              </div>
+              @if (usaInventario) {
                 <div class="form-check form-switch mb-0">
                   <input class="form-check-input" type="checkbox" id="chkInventario"
                     [(ngModel)]="platoForm.requiere_inventario"
                     (ngModelChange)="onToggleRequiereInventario()">
                   <label class="form-check-label ra-label mb-0" for="chkInventario">Rebaja inventario</label>
                 </div>
-              </div>
-            }
+              }
+            </div>
           </div>
 
           <!-- Panel de receta / ingredientes -->

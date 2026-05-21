@@ -255,8 +255,9 @@ export class InventoryRestaurantService {
 
   async crearMenuItem(item: {
     categoria_id: string; nombre: string; descripcion?: string;
-    precio: number; tiempo_preparacion_minutos?: number;
-    requiere_inventario?: boolean; notas_cocina?: string;
+    precio: number; costo_estimado?: number | null;
+    tiempo_preparacion_minutos?: number;
+    requiere_inventario?: boolean; enviar_a_cocina?: boolean; notas_cocina?: string;
   }): Promise<any> {
     const { data, error } = await this.supabaseService.client
       .from('menu_items')

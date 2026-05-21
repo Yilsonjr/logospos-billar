@@ -65,7 +65,7 @@ if (Test-Path $ExeFile) {
     $nodeVersion = & "$NodeExe" --version
     $AppExe  = $NodeExe
     $AppArgs = "server.js"
-    Write-Host "  OK -- Modo Node.js $nodeVersion: $NodeExe" -ForegroundColor Green
+    Write-Host "  OK -- Modo Node.js ${nodeVersion}: $NodeExe" -ForegroundColor Green
 } else {
     Write-Host "  [ERROR] No se encontro print-agent.exe ni server.js en:" -ForegroundColor Red
     Write-Host "  $AgentDir"

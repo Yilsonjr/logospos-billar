@@ -186,59 +186,70 @@ export class RestaurantOrdersService {
 
   /** Envía la orden a cocina: crea ticket KDS y actualiza estados */
   async enviarACocina(orderId: string): Promise<void> {
-    // Obtener items pendientes
+    // Obtener items pendientes con flag enviar_a_cocina del plato
     const { data: items, error: errItems } = await this.supabaseService.client
       .from('restaurant_order_items')
-      .select('id, cantidad, notas_especiales, modificadores, comensal_asignado, menu_item:menu_items(nombre)')
+      .select('id, cantidad, notas_especiales, modificadores, comensal_asignado, menu_item:menu_items(nombre, enviar_a_cocina)')
       .eq('order_id', orderId)
       .eq('estado', 'pendiente');
 
     if (errItems) throw errItems;
     if (!items || items.length === 0) throw new Error('No hay items pendientes para enviar a cocina');
 
-    // Obtener datos de la orden y mesa
-    const { data: orden } = await this.supabaseService.client
-      .from('restaurant_orders')
-      .select('table_id, negocio_id, mesa:restaurant_tables(numero_mesa)')
-      .eq('id', orderId)
-      .single();
+    // Separar: items que van al KDS vs los que se entregan directo (bebidas, snacks)
+    const itemsCocina   = items.filter((i: any) => (i.menu_item as any)?.enviar_a_cocina !== false);
+    const itemsDirectos = items.filter((i: any) => (i.menu_item as any)?.enviar_a_cocina === false);
 
-    if (!orden) throw new Error('Orden no encontrada');
+    // Los items directos pasan a "entregado" sin pasar por cocina
+    if (itemsDirectos.length > 0) {
+      await this.supabaseService.client
+        .from('restaurant_order_items')
+        .update({ estado: 'entregado' })
+        .in('id', itemsDirectos.map((i: any) => i.id));
+    }
 
-    const numeroMesa = (orden.mesa as any)?.numero_mesa || 0;
+    // Si hay items para cocina, crear ticket KDS
+    if (itemsCocina.length > 0) {
+      const { data: orden } = await this.supabaseService.client
+        .from('restaurant_orders')
+        .select('table_id, negocio_id, mesa:restaurant_tables(numero_mesa)')
+        .eq('id', orderId)
+        .single();
 
-    // Construir snapshot de items para el ticket
-    const kitchenItems: KitchenTicketItem[] = items.map((item: any) => ({
-      order_item_id: item.id,
-      nombre: (item.menu_item as any)?.nombre || 'Sin nombre',
-      cantidad: item.cantidad,
-      modificadores: item.modificadores || [],
-      notas_especiales: item.notas_especiales || null,
-      comensal_asignado: item.comensal_asignado || null
-    }));
+      if (!orden) throw new Error('Orden no encontrada');
 
-    // Crear ticket de cocina
-    const { error: errTicket } = await this.supabaseService.client
-      .from('kitchen_tickets')
-      .insert({
-        negocio_id: this.negocioId,
-        order_id: orderId,
-        table_id: orden.table_id,
-        numero_mesa: numeroMesa,
-        items: kitchenItems,
-        estado: 'nuevo',
-        prioridad: 'normal',
-        hora_creacion: new Date().toISOString()
-      });
+      const numeroMesa = (orden.mesa as any)?.numero_mesa || 0;
 
-    if (errTicket) throw errTicket;
+      const kitchenItems: KitchenTicketItem[] = itemsCocina.map((item: any) => ({
+        order_item_id: item.id,
+        nombre: (item.menu_item as any)?.nombre || 'Sin nombre',
+        cantidad: item.cantidad,
+        modificadores: item.modificadores || [],
+        notas_especiales: item.notas_especiales || null,
+        comensal_asignado: item.comensal_asignado || null
+      }));
 
-    // Marcar items como en_preparacion
-    await this.supabaseService.client
-      .from('restaurant_order_items')
-      .update({ estado: 'en_preparacion' })
-      .eq('order_id', orderId)
-      .eq('estado', 'pendiente');
+      const { error: errTicket } = await this.supabaseService.client
+        .from('kitchen_tickets')
+        .insert({
+          negocio_id: this.negocioId,
+          order_id: orderId,
+          table_id: orden.table_id,
+          numero_mesa: numeroMesa,
+          items: kitchenItems,
+          estado: 'nuevo',
+          prioridad: 'normal',
+          hora_creacion: new Date().toISOString()
+        });
+
+      if (errTicket) throw errTicket;
+
+      // Marcar items de cocina como en_preparacion
+      await this.supabaseService.client
+        .from('restaurant_order_items')
+        .update({ estado: 'en_preparacion' })
+        .in('id', itemsCocina.map((i: any) => i.id));
+    }
 
     // Actualizar estado de la orden
     await this.supabaseService.client
@@ -249,7 +260,8 @@ export class RestaurantOrdersService {
       })
       .eq('id', orderId);
 
-    console.log('[RestaurantOrdersService] Orden enviada a cocina:', orderId);
+    console.log('[RestaurantOrdersService] Orden enviada a cocina:', orderId,
+      `| KDS: ${itemsCocina.length} | Directo: ${itemsDirectos.length}`);
   }
 
   async aplicarDescuento(orderId: string, descuento: number): Promise<void> {
@@ -414,8 +426,9 @@ export class RestaurantOrdersService {
 
   async crearMenuItem(item: {
     categoria_id: string; nombre: string; descripcion?: string;
-    precio: number; tiempo_preparacion_minutos: number; notas_cocina?: string;
-    requiere_inventario?: boolean; disponible?: boolean;
+    precio: number; costo_estimado?: number | null;
+    tiempo_preparacion_minutos: number; notas_cocina?: string;
+    requiere_inventario?: boolean; enviar_a_cocina?: boolean; disponible?: boolean;
   }): Promise<MenuItem> {
     const { data, error } = await this.supabaseService.client
       .from('menu_items')
@@ -424,7 +437,8 @@ export class RestaurantOrdersService {
         negocio_id: this.negocioId,
         activo: true,
         disponible: item.disponible ?? true,
-        requiere_inventario: item.requiere_inventario ?? false
+        requiere_inventario: item.requiere_inventario ?? false,
+        enviar_a_cocina: item.enviar_a_cocina ?? true
       })
       .select().single();
     if (error) throw error;
