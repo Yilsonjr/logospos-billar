@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { UsuariosService } from '../../../services/usuarios.service';
 import { AuthService } from '../../../services/auth.service';
-import { Rol, CrearRol, PERMISOS_SISTEMA } from '../../../models/usuario.model';
+import { Rol, CrearRol, PERMISOS_SISTEMA, ROLES_PREDEFINIDOS } from '../../../models/usuario.model';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -51,6 +51,7 @@ export class RolesComponent implements OnInit, OnDestroy {
   // Estados
   isLoading = false;
   isSaving = false;
+  isSyncing = false;
   subscriptions: Subscription[] = [];
 
   // Colores predefinidos
@@ -428,6 +429,69 @@ export class RolesComponent implements OnInit, OnDestroy {
   contarUsuariosConRol(rolId: number): number {
     // Esta función se implementaría con datos reales de usuarios
     return 0; // Placeholder
+  }
+
+  async sincronizarRolesPredefinidos(): Promise<void> {
+    const result = await Swal.fire({
+      title: 'Sincronizar Roles Predefinidos',
+      text: 'Esto actualizará los permisos de los roles predefinidos en la base de datos. Los roles personalizados no se modificarán.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sincronizar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#4f46e5'
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.isSyncing = true;
+    this.cdr.detectChanges();
+
+    let actualizados = 0;
+    let creados = 0;
+    const errores: string[] = [];
+
+    for (const predefinido of ROLES_PREDEFINIDOS) {
+      try {
+        const rolExistente = this.roles.find(r => r.nombre === predefinido.nombre);
+        const datos: CrearRol = {
+          nombre: predefinido.nombre,
+          descripcion: predefinido.descripcion,
+          permisos: [...predefinido.permisos] as string[],
+          color: predefinido.color,
+          activo: predefinido.activo
+        };
+
+        if (rolExistente?.id) {
+          await this.usuariosService.actualizarRol(rolExistente.id, datos);
+          actualizados++;
+        } else {
+          await this.usuariosService.crearRol(datos);
+          creados++;
+        }
+      } catch (e: any) {
+        errores.push(`${predefinido.nombre}: ${e.message}`);
+      }
+    }
+
+    this.isSyncing = false;
+    await this.cargarDatos();
+
+    if (errores.length === 0) {
+      Swal.fire({
+        title: 'Sincronización Completada',
+        html: `<b>${actualizados}</b> rol(es) actualizado(s)<br><b>${creados}</b> rol(es) creado(s)`,
+        icon: 'success',
+        timer: 3000,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire({
+        title: 'Sincronización con Errores',
+        html: `${actualizados} actualizado(s), ${creados} creado(s)<br><small class="text-danger">${errores.join('<br>')}</small>`,
+        icon: 'warning'
+      });
+    }
   }
 
   // Comprobar si un color es claro para ajustar el contraste del texto (YIQ standard)

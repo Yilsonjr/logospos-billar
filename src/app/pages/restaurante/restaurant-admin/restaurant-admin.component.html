@@ -37,6 +37,9 @@
           <span class="badge bg-danger ms-1">!</span>
         }
       </button>
+      <button class="ra-tab" [class.active]="tabActiva==='compras'" (click)="cargarTab('compras')">
+        <i class="bi bi-cart-plus-fill"></i> Compras
+      </button>
     }
     <button class="ra-tab" [class.active]="tabActiva==='ordenes'" (click)="cargarTab('ordenes')">
       <i class="bi bi-clock-history"></i> Historial de Órdenes
@@ -791,6 +794,166 @@
           </div>
         </div>
       }
+  }
+
+  <!-- ══════════ TAB: COMPRAS DE INSUMOS ══════════ -->
+  @if (!cargando && tabActiva === 'compras') {
+    <div class="ra-card">
+      <div class="ra-card-header">
+        <h6 class="ra-section-title"><i class="bi bi-cart-plus-fill text-success"></i> Compras de Insumos</h6>
+        <button class="ra-btn-add" (click)="abrirModalCompra()">
+          <i class="bi bi-plus-lg"></i> Nueva Compra
+        </button>
+      </div>
+
+      @if (!historialCompras.length) {
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-cart-x" style="font-size:2.5rem;opacity:.35"></i>
+          <p class="mt-2 small">No hay compras registradas todavía.</p>
+          <button class="btn btn-sm btn-primary mt-1" (click)="abrirModalCompra()">Registrar primera compra</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:36px"></th>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Comprobante</th>
+                <th>Insumos</th>
+                <th class="text-end">Total invertido</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (compra of historialCompras; track compra.id) {
+                <tr class="compra-row" (click)="toggleDetalleCompra(compra.id)" style="cursor:pointer">
+                  <td>
+                    <i class="bi" [class.bi-chevron-down]="compraDetalleAbierta === compra.id" [class.bi-chevron-right]="compraDetalleAbierta !== compra.id" style="font-size:.75rem;color:#6b7280"></i>
+                  </td>
+                  <td class="small">{{ formatearFecha(compra.fecha) }}</td>
+                  <td class="fw-semibold small">{{ compra.proveedor }}</td>
+                  <td class="small text-muted">{{ compra.numero_comprobante || '—' }}</td>
+                  <td><span class="badge bg-secondary-subtle text-secondary">{{ compra.lineas.length }}</span></td>
+                  <td class="text-end fw-bold text-success small">{{ formatearMoneda(compra.total_invertido) }}</td>
+                </tr>
+                @if (compraDetalleAbierta === compra.id) {
+                  <tr>
+                    <td colspan="6" class="p-0">
+                      <div class="compra-detalle-panel">
+                        <table class="table table-sm mb-0">
+                          <thead>
+                            <tr>
+                              <th>Insumo</th>
+                              <th class="text-end">Cantidad</th>
+                              <th class="text-end">Precio unit.</th>
+                              <th class="text-end">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (linea of compra.lineas; track $index) {
+                              <tr>
+                                <td class="small">{{ linea.nombre }}</td>
+                                <td class="text-end small">{{ linea.cantidad }} {{ linea.unidad }}</td>
+                                <td class="text-end small">{{ formatearMoneda(linea.precio_unitario) }}</td>
+                                <td class="text-end small fw-semibold">{{ formatearMoneda(linea.subtotal) }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                        @if (compra.notas) {
+                          <div class="px-3 py-2 small text-muted border-top"><i class="bi bi-chat-left-text me-1"></i>{{ compra.notas }}</div>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <!-- Modal Nueva Compra -->
+    @if (mostrarModalCompra) {
+      <div class="ra-modal-overlay" (click)="cerrarModalCompra()">
+        <div class="ra-modal" style="max-width:680px" (click)="$event.stopPropagation()">
+          <div class="ra-modal-header">
+            <h6 class="ra-modal-title"><i class="bi bi-cart-plus-fill text-success me-2"></i>Registrar Compra de Insumos</h6>
+            <button class="btn btn-sm btn-light rounded-circle" (click)="cerrarModalCompra()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="ra-modal-body">
+            <!-- Datos generales -->
+            <div class="row g-2 mb-3">
+              <div class="col-md-5">
+                <label class="ra-label">Proveedor *</label>
+                <input class="form-control form-control-sm" [(ngModel)]="compraForm.proveedor" placeholder="Nombre del proveedor">
+              </div>
+              <div class="col-md-4">
+                <label class="ra-label">N° Comprobante / NCF</label>
+                <input class="form-control form-control-sm" [(ngModel)]="compraForm.numero_comprobante" placeholder="B01-00000001">
+              </div>
+              <div class="col-md-3">
+                <label class="ra-label">Notas</label>
+                <input class="form-control form-control-sm" [(ngModel)]="compraForm.notas" placeholder="Opcional">
+              </div>
+            </div>
+
+            <!-- Líneas de compra -->
+            <div class="mb-2 d-flex align-items-center justify-content-between">
+              <span class="fw-semibold small text-muted">Insumos a ingresar</span>
+              <button class="btn btn-xs btn-outline-success" (click)="agregarLineaCompra()">
+                <i class="bi bi-plus-lg"></i> Agregar línea
+              </button>
+            </div>
+
+            <div class="compra-lineas-container">
+              @for (item of compraForm.items; track $index; let i = $index) {
+                <div class="compra-linea-row">
+                  <div class="compra-linea-insumo">
+                    <label class="ra-label">Insumo</label>
+                    <select class="form-select form-select-sm" [(ngModel)]="item.inventory_item_id" (ngModelChange)="onInsumoCompraChange(i)">
+                      <option value="">-- Seleccionar --</option>
+                      @for (inv of inventarioItems; track inv.id) {
+                        <option [value]="inv.id">{{ inv.nombre }} ({{ inv.unidad_medida }})</option>
+                      }
+                    </select>
+                  </div>
+                  <div style="width:90px">
+                    <label class="ra-label">Cantidad</label>
+                    <input type="number" class="form-control form-control-sm" [(ngModel)]="item.cantidad" min="0.01" step="0.01">
+                  </div>
+                  <div style="width:110px">
+                    <label class="ra-label">Precio unit.</label>
+                    <input type="number" class="form-control form-control-sm" [(ngModel)]="item.precio_unitario" min="0" step="0.01" placeholder="0.00">
+                  </div>
+                  <div style="width:90px;padding-top:1.4rem" class="text-end">
+                    <span class="small fw-bold text-success">{{ formatearMoneda(item.cantidad * item.precio_unitario) }}</span>
+                  </div>
+                  <button class="btn btn-xs btn-outline-danger" style="margin-top:1.4rem" (click)="quitarLineaCompra(i)" [disabled]="compraForm.items.length === 1">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <!-- Total -->
+            <div class="compra-total-row">
+              <span class="text-muted small">Total a registrar:</span>
+              <span class="fw-bold fs-5 text-success">{{ formatearMoneda(totalCompra) }}</span>
+            </div>
+          </div>
+          <div class="ra-modal-footer">
+            <button class="btn btn-light btn-sm" (click)="cerrarModalCompra()">Cancelar</button>
+            <button class="btn btn-success btn-sm fw-bold px-4" (click)="guardarCompra()" [disabled]="guardandoCompra">
+              @if (guardandoCompra) { <span class="spinner-border spinner-border-sm me-1"></span> }
+              <i class="bi bi-check-lg me-1"></i> Registrar Compra
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   }
 
   <!-- ══════════ TAB: HISTORIAL DE ÓRDENES ══════════ -->

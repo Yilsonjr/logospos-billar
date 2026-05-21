@@ -1,0 +1,7 @@
+node_modules/
+dist/
+certs/
+logs/*.log
+sea-prep.blob
+*.pem
+*.pfx

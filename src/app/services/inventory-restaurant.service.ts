@@ -277,4 +277,96 @@ export class InventoryRestaurantService {
 
     if (error) throw error;
   }
+
+  // ============================================================
+  // COMPRAS DE INSUMOS
+  // ============================================================
+
+  async registrarCompra(compra: {
+    proveedor: string;
+    numero_comprobante?: string;
+    notas?: string;
+    items: Array<{ inventory_item_id: string; cantidad: number; precio_unitario: number }>;
+  }): Promise<string> {
+    const compraId = crypto.randomUUID();
+    const razonBase = [
+      `COMPRA`,
+      compra.proveedor || 'Sin proveedor',
+      compra.numero_comprobante || '',
+      compra.notas || ''
+    ].join('|');
+
+    for (const item of compra.items) {
+      await this.registrarMovimiento(
+        item.inventory_item_id,
+        'entrada',
+        item.cantidad,
+        razonBase,
+        compraId,
+        'compra'
+      );
+      if (item.precio_unitario > 0) {
+        await this.supabaseService.client
+          .from('restaurant_inventory')
+          .update({ costo_unitario: item.precio_unitario })
+          .eq('id', item.inventory_item_id)
+          .eq('negocio_id', this.negocioId);
+      }
+    }
+
+    return compraId;
+  }
+
+  async obtenerHistorialCompras(limite = 50): Promise<CompraAgrupada[]> {
+    const { data, error } = await this.supabaseService.client
+      .from('restaurant_inventory_movements')
+      .select('*, item:restaurant_inventory(nombre, unidad_medida, costo_unitario)')
+      .eq('negocio_id', this.negocioId)
+      .eq('referencia_tipo', 'compra')
+      .order('created_at', { ascending: false })
+      .limit(limite * 10);
+
+    if (error) throw error;
+
+    const grupos: Record<string, CompraAgrupada> = {};
+    for (const mov of data || []) {
+      const ref = mov.referencia_id || mov.id;
+      if (!grupos[ref]) {
+        const partes = (mov.razon || '').split('|');
+        grupos[ref] = {
+          id: ref,
+          fecha: mov.created_at,
+          proveedor: partes[1] || 'Sin proveedor',
+          numero_comprobante: partes[2] || '',
+          notas: partes[3] || '',
+          lineas: [],
+          total_invertido: 0
+        };
+      }
+      const item = mov.item as any;
+      const costo = item?.costo_unitario ?? 0;
+      grupos[ref].lineas.push({
+        nombre: item?.nombre || 'Insumo',
+        unidad: item?.unidad_medida || '',
+        cantidad: mov.cantidad,
+        precio_unitario: costo,
+        subtotal: mov.cantidad * costo
+      });
+      grupos[ref].total_invertido += mov.cantidad * costo;
+    }
+
+    return Object.values(grupos)
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+      .slice(0, limite);
+  }
+}
+
+export interface CompraAgrupada {
+  id: string;
+  fecha: string;
+  proveedor: string;
+  numero_comprobante: string;
+  notas: string;
+  lineas: Array<{ nombre: string; unidad: string; cantidad: number; precio_unitario: number; subtotal: number }>;
+  total_invertido: number;
 }

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { RestaurantTablesService } from '../../../services/restaurant-tables.service';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
-import { InventoryRestaurantService } from '../../../services/inventory-restaurant.service';
+import { InventoryRestaurantService, CompraAgrupada } from '../../../services/inventory-restaurant.service';
 import { NegociosService } from '../../../services/negocios.service';
 import { PrintersAdminComponent } from '../printers-admin/printers-admin.component';
 import {
@@ -13,7 +13,7 @@ import {
 } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
-type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos' | 'inventario' | 'ordenes' | 'impresoras';
+type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos' | 'inventario' | 'compras' | 'ordenes' | 'impresoras';
 
 @Component({
   selector: 'app-restaurant-admin',
@@ -77,6 +77,18 @@ export class RestaurantAdminComponent implements OnInit {
 
   // Relación inventario ↔ menú: mapa de inventory_item_id → nombres de platos que lo usan
   usosPorInsumo: Record<string, string[]> = {};
+
+  // ── Compras de insumos ────────────────────────────────────
+  historialCompras: CompraAgrupada[] = [];
+  mostrarModalCompra = false;
+  guardandoCompra = false;
+  compraDetalleAbierta: string | null = null;
+  compraForm: {
+    proveedor: string;
+    numero_comprobante: string;
+    notas: string;
+    items: Array<{ inventory_item_id: string; cantidad: number; precio_unitario: number; _nombre?: string; _unidad?: string }>;
+  } = { proveedor: '', numero_comprobante: '', notas: '', items: [] };
 
   // Wizard "Crear Producto Vendible" (insumo + menu item + receta 1:1)
   mostrarWizardProducto = false;
@@ -144,6 +156,12 @@ export class RestaurantAdminComponent implements OnInit {
         if (this.invSubTab === 'movimientos') {
           this.movimientos = await this.inventoryService.obtenerHistorialMovimientos(undefined, 80);
         }
+      }
+      if (tab === 'compras') {
+        [this.inventarioItems, this.historialCompras] = await Promise.all([
+          this.inventoryService.cargarInventario(),
+          this.inventoryService.obtenerHistorialCompras(50)
+        ]);
       }
       if (tab === 'ordenes') {
         this.historialOrdenes = await this.ordersService.obtenerHistorial(100);
@@ -651,4 +669,79 @@ export class RestaurantAdminComponent implements OnInit {
   }
 
   trackById(_: number, item: any): string { return item.id; }
+
+  // ── COMPRAS ───────────────────────────────────────────────
+
+  abrirModalCompra(): void {
+    this.compraForm = { proveedor: '', numero_comprobante: '', notas: '', items: [] };
+    this.agregarLineaCompra();
+    this.mostrarModalCompra = true;
+  }
+
+  cerrarModalCompra(): void {
+    this.mostrarModalCompra = false;
+  }
+
+  agregarLineaCompra(): void {
+    this.compraForm.items.push({ inventory_item_id: '', cantidad: 1, precio_unitario: 0 });
+  }
+
+  quitarLineaCompra(i: number): void {
+    this.compraForm.items.splice(i, 1);
+  }
+
+  onInsumoCompraChange(i: number): void {
+    const itemId = this.compraForm.items[i].inventory_item_id;
+    const inv = this.inventarioItems.find(x => x.id === itemId);
+    if (inv) {
+      this.compraForm.items[i]._nombre = inv.nombre;
+      this.compraForm.items[i]._unidad = inv.unidad_medida;
+      this.compraForm.items[i].precio_unitario = inv.costo_unitario || 0;
+    }
+  }
+
+  get totalCompra(): number {
+    return this.compraForm.items.reduce((sum, i) => sum + (i.cantidad * i.precio_unitario), 0);
+  }
+
+  async guardarCompra(): Promise<void> {
+    if (!this.compraForm.proveedor.trim()) {
+      Swal.fire('Atención', 'Ingresa el nombre del proveedor.', 'warning');
+      return;
+    }
+    const itemsValidos = this.compraForm.items.filter(i => i.inventory_item_id && i.cantidad > 0);
+    if (!itemsValidos.length) {
+      Swal.fire('Atención', 'Agrega al menos un insumo con cantidad mayor a 0.', 'warning');
+      return;
+    }
+
+    this.guardandoCompra = true;
+    try {
+      await this.inventoryService.registrarCompra({
+        proveedor: this.compraForm.proveedor,
+        numero_comprobante: this.compraForm.numero_comprobante || undefined,
+        notas: this.compraForm.notas || undefined,
+        items: itemsValidos.map(i => ({
+          inventory_item_id: i.inventory_item_id,
+          cantidad: i.cantidad,
+          precio_unitario: i.precio_unitario
+        }))
+      });
+
+      this.cerrarModalCompra();
+      await this.cargarTab('compras');
+      Swal.fire({ icon: 'success', title: 'Compra registrada',
+        text: `${itemsValidos.length} insumo(s) ingresado(s) al inventario.`,
+        timer: 2500, showConfirmButton: false });
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.guardandoCompra = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  toggleDetalleCompra(id: string): void {
+    this.compraDetalleAbierta = this.compraDetalleAbierta === id ? null : id;
+  }
 }

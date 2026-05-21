@@ -111,6 +111,8 @@ export const PERMISOS_SISTEMA = {
   'restaurante.cocina': 'Pantalla de Cocina (KDS)',
   'restaurante.admin': 'Administrar Restaurante (Zonas, Menú, Categorías)',
   'restaurante.inventario': 'Inventario del Restaurante (Insumos, Recetas)',
+  'restaurante.compras': 'Registrar Compras de Insumos',
+  'restaurante.reportes': 'Reportes del Restaurante',
 
   // Configuración
   'config.general': 'Configuración General',
@@ -187,25 +189,28 @@ export const ROLES_PREDEFINIDOS = [
   // ── ROLES ESPECÍFICOS DEL MÓDULO RESTAURANTE ──────────────────────────────
   {
     nombre: 'Gerente Restaurante',
-    descripcion: 'Gestión completa del restaurante: mesas, menú, inventario, cobros y reportes',
+    descripcion: 'Gestión completa del restaurante: mesas, menú, inventario, cobros, compras y reportes',
     color: '#7c3aed',
     permisos: [
       'dashboard.ver',
       'restaurante.mesas', 'restaurante.ordenes', 'restaurante.cobrar',
       'restaurante.cocina', 'restaurante.admin', 'restaurante.inventario',
+      'restaurante.compras', 'restaurante.reportes',
       'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimientos', 'caja.arqueo', 'caja.historial',
       'reportes.ventas', 'reportes.caja',
-      'clientes.ver', 'clientes.crear'
+      'clientes.ver', 'clientes.crear',
+      'usuarios.ver', 'roles.ver'
     ],
     activo: true
   },
   {
     nombre: 'Cajero Restaurante',
-    descripcion: 'Toma de órdenes, cobro en mesa y apertura/cierre de caja',
+    descripcion: 'Toma de órdenes, cobro en mesa, apertura/cierre de caja y reportes básicos',
     color: '#0891b2',
     permisos: [
       'dashboard.ver',
       'restaurante.mesas', 'restaurante.ordenes', 'restaurante.cobrar',
+      'restaurante.reportes',
       'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimientos', 'caja.arqueo',
       'clientes.ver', 'clientes.crear'
     ],
@@ -227,6 +232,7 @@ export const ROLES_PREDEFINIDOS = [
     descripcion: 'Acceso exclusivo a la pantalla de cocina (KDS) para gestionar pedidos',
     color: '#d97706',
     permisos: [
+      'dashboard.ver',
       'restaurante.cocina'
     ],
     activo: true

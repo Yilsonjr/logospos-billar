@@ -312,7 +312,7 @@ export const routes: Routes = [
         path: 'restaurante/reportes',
         component: ReportesRestauranteComponent,
         canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
-        data: { permissions: ['restaurante.admin'], modulo: 'restaurante' }
+        data: { permissions: ['restaurante.admin', 'restaurante.reportes'], modulo: 'restaurante' }
     },
 
     // Redirecciones

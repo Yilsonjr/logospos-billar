@@ -319,3 +319,47 @@
   flex-shrink: 0;
 }
 .ra-cat-info { flex: 1; }
+
+/* ── Compras ───────────────────────────────────────── */
+.compra-row:hover td { background: #f8fafc; }
+
+.compra-detalle-panel {
+  background: #f8fafc;
+  border-top: 2px solid #e5e7eb;
+  animation: ra-fade-in .12s ease;
+}
+
+.compra-lineas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.compra-linea-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.compra-linea-insumo { flex: 1; }
+
+.compra-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2px solid #e5e7eb;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.btn-xs {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}

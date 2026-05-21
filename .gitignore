@@ -66,3 +66,5 @@ print-agent/logs/
 print-agent/node_modules/
 print-agent/dist/
 print-agent/sea-prep.blob
+print-agent/instalar-tunnel.bat
+print-agent/instalar-tunnel.ps1

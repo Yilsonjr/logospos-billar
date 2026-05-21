@@ -6,9 +6,18 @@
       <h2 class="fw-bold text-dark mb-0">Gestión de Roles</h2>
       <p class="text-muted small mb-0">Define los niveles de acceso y permisos del sistema</p>
     </div>
-    <button (click)="abrirModalCrear()" class="btn btn-primary shadow-sm fw-bold">
-      <i class="fa-solid fa-shield-halved me-2"></i> Nuevo Rol
-    </button>
+    <div class="d-flex gap-2">
+      <button (click)="sincronizarRolesPredefinidos()" class="btn btn-outline-secondary shadow-sm fw-semibold" [disabled]="isSyncing">
+        @if (isSyncing) {
+          <span class="spinner-border spinner-border-sm me-1"></span> Sincronizando...
+        } @else {
+          <i class="bi bi-arrow-repeat me-1"></i> Sincronizar Predefinidos
+        }
+      </button>
+      <button (click)="abrirModalCrear()" class="btn btn-primary shadow-sm fw-bold">
+        <i class="fa-solid fa-shield-halved me-2"></i> Nuevo Rol
+      </button>
+    </div>
   </div>
 
   <!-- Filters -->
