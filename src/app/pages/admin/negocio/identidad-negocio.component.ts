@@ -37,7 +37,8 @@ export class IdentidadNegocioComponent implements OnInit {
       email: ['', Validators.email],
       web: [''],
       aplica_itbis: [true],
-      tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]]
+      tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]],
+      precios_incluyen_impuesto: [false]
     });
   }
 
@@ -60,7 +61,8 @@ export class IdentidadNegocioComponent implements OnInit {
           this.negocioForm.patchValue({
             ...data,
             aplica_itbis: tasaPct > 0,
-            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18
+            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18,
+            precios_incluyen_impuesto: data.precios_incluyen_impuesto ?? false
           });
           if (data.logo_url && (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))) {
             this.logoPreview = data.logo_url;
@@ -122,11 +124,12 @@ export class IdentidadNegocioComponent implements OnInit {
         logoUrl = uploadResult.url;
       }
 
-      const { tasa_itbis_pct, aplica_itbis, ...formRest } = this.negocioForm.value;
+      const { tasa_itbis_pct, aplica_itbis, precios_incluyen_impuesto, ...formRest } = this.negocioForm.value;
       const datosActualizar = {
         ...formRest,
         logo_url: logoUrl,
-        tasa_itbis: aplica_itbis ? parseFloat(((tasa_itbis_pct ?? 18) / 100).toFixed(4)) : 0
+        tasa_itbis: aplica_itbis ? parseFloat(((tasa_itbis_pct ?? 18) / 100).toFixed(4)) : 0,
+        precios_incluyen_impuesto: aplica_itbis ? (precios_incluyen_impuesto ?? false) : false
       };
 
       await this.negociosService.actualizarNegocio(datosActualizar);

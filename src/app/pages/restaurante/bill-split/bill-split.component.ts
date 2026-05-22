@@ -40,6 +40,7 @@ export class BillSplitComponent implements OnInit {
   cargando = true;
   procesando = false;
   tasaItbis = 0.18;
+  preciosIncluyenImpuesto = false;
   negocioNombre = '';
 
   // Fiscal
@@ -68,6 +69,7 @@ export class BillSplitComponent implements OnInit {
         this.fiscalService.cargarConfiguracion()
       ]);
       this.tasaItbis = negocio?.tasa_itbis ?? 0.18;
+      this.preciosIncluyenImpuesto = negocio?.precios_incluyen_impuesto ?? false;
       this.negocioNombre = negocio?.nombre || '';
       this.fiscalService.config$.subscribe(c => this.configFiscal = c);
       this.orden = await this.ordersService.obtenerOrdenPorId(this.orderId);
@@ -135,8 +137,16 @@ export class BillSplitComponent implements OnInit {
 
     this.cuentas = Array.from({ length: comensales }, (_, i) => {
       const items = itemsPorComensal[i + 1] || [];
-      const subtotal = items.reduce((acc, it) => acc + it.subtotal, 0);
-      const impuesto = Math.round(subtotal * this.tasaItbis * 100) / 100;
+      const sumaItems = items.reduce((acc, it) => acc + it.subtotal, 0);
+      let subtotal: number;
+      let impuesto: number;
+      if (this.preciosIncluyenImpuesto && this.tasaItbis > 0) {
+        subtotal = Math.round((sumaItems / (1 + this.tasaItbis)) * 100) / 100;
+        impuesto = Math.round((sumaItems - subtotal) * 100) / 100;
+      } else {
+        subtotal = sumaItems;
+        impuesto = Math.round(subtotal * this.tasaItbis * 100) / 100;
+      }
       const propina = Math.round(propinaParte * 100) / 100;
       return {
         numero: i + 1,
