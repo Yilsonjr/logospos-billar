@@ -483,13 +483,13 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       const negocioId = localStorage.getItem('logos_negocio_id') || 'sin-negocio';
       const nombre = `platos/${negocioId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error } = await this.supabaseService.client.storage
-        .from('menu-images')
+        .from('productos-imagenes')
         .upload(nombre, file, { upsert: true, contentType: file.type });
       if (error) throw error;
       this.platoForm.imagen_url =
-        `${environment.SUPABASE_URL}/storage/v1/object/public/menu-images/${nombre}`;
+        `${environment.SUPABASE_URL}/storage/v1/object/public/productos-imagenes/${nombre}`;
     } catch (e: any) {
-      Swal.fire('Error al subir imagen', e.message ?? 'Verifica que el bucket "menu-images" exista en Supabase Storage.', 'error');
+      Swal.fire('Error al subir imagen', e.message ?? 'Verifica que el bucket "productos-imagenes" exista en Supabase Storage.', 'error');
     } finally {
       this.subiendoImagen = false;
       input.value = '';
