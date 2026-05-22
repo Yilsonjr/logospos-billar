@@ -77,3 +77,4 @@ database/restaurant/08_fiscal_order_payments.sql
 .gitignore
 database/restaurant/08_tipo_orden.sql
 database/restaurant/09_precios_incluyen_impuesto.sql
+database/restaurant/10_modo_impuesto.sql

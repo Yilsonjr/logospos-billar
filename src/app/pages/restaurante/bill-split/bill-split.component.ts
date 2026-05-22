@@ -40,7 +40,7 @@ export class BillSplitComponent implements OnInit {
   cargando = true;
   procesando = false;
   tasaItbis = 0.18;
-  preciosIncluyenImpuesto = false;
+  modoImpuesto: 'sin_impuesto' | 'encima' | 'incluido' = 'sin_impuesto';
   negocioNombre = '';
 
   // Fiscal
@@ -68,8 +68,8 @@ export class BillSplitComponent implements OnInit {
         this.negociosService.cargarNegocio(),
         this.fiscalService.cargarConfiguracion()
       ]);
-      this.tasaItbis = negocio?.tasa_itbis ?? 0.18;
-      this.preciosIncluyenImpuesto = negocio?.precios_incluyen_impuesto ?? false;
+      this.tasaItbis = negocio?.tasa_itbis ?? 0;
+      this.modoImpuesto = negocio?.modo_impuesto ?? 'sin_impuesto';
       this.negocioNombre = negocio?.nombre || '';
       this.fiscalService.config$.subscribe(c => this.configFiscal = c);
       this.orden = await this.ordersService.obtenerOrdenPorId(this.orderId);
@@ -140,12 +140,15 @@ export class BillSplitComponent implements OnInit {
       const sumaItems = items.reduce((acc, it) => acc + it.subtotal, 0);
       let subtotal: number;
       let impuesto: number;
-      if (this.preciosIncluyenImpuesto && this.tasaItbis > 0) {
+      if (this.modoImpuesto === 'incluido' && this.tasaItbis > 0) {
         subtotal = Math.round((sumaItems / (1 + this.tasaItbis)) * 100) / 100;
         impuesto = Math.round((sumaItems - subtotal) * 100) / 100;
-      } else {
+      } else if (this.modoImpuesto === 'encima') {
         subtotal = sumaItems;
         impuesto = Math.round(subtotal * this.tasaItbis * 100) / 100;
+      } else {
+        subtotal = sumaItems;
+        impuesto = 0;
       }
       const propina = Math.round(propinaParte * 100) / 100;
       return {

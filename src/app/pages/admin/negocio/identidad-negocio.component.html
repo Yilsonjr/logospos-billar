@@ -134,41 +134,70 @@
                                         <span class="fw-bold small">Configuración de Impuesto (ITBIS / IVA)</span>
                                     </div>
 
-                                    <!-- Toggle ON/OFF -->
-                                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded-3"
-                                        [class.bg-success-subtle]="aplicaItbis"
-                                        [class.bg-secondary-subtle]="!aplicaItbis"
-                                        [style.border]="'1.5px solid ' + (aplicaItbis ? '#198754' : '#dee2e6')">
-                                        <div>
-                                            <div class="fw-semibold small">
-                                                @if (aplicaItbis) {
-                                                    <i class="fa-solid fa-check-circle text-success me-1"></i>
-                                                    Impuesto activado
-                                                } @else {
+                                    <!-- Selector de modo: 3 opciones -->
+                                    <div class="d-flex flex-column gap-2 mb-3">
+
+                                        <!-- Sin impuesto -->
+                                        <label class="d-flex align-items-center gap-3 p-2 rounded-3 cursor-pointer border"
+                                            [class.bg-secondary-subtle]="modoImpuesto === 'sin_impuesto'"
+                                            [class.border-secondary]="modoImpuesto === 'sin_impuesto'"
+                                            [class.bg-white]="modoImpuesto !== 'sin_impuesto'"
+                                            style="cursor:pointer">
+                                            <input type="radio" class="form-check-input mt-0 flex-shrink-0"
+                                                formControlName="modo_impuesto" value="sin_impuesto">
+                                            <div>
+                                                <div class="fw-semibold small">
                                                     <i class="fa-solid fa-ban text-secondary me-1"></i>
                                                     Sin impuesto
-                                                }
+                                                </div>
+                                                <div class="text-muted" style="font-size:0.72rem">
+                                                    RD$500 → cliente paga RD$500. No se muestra línea de ITBIS.
+                                                </div>
                                             </div>
-                                            <div class="text-muted" style="font-size:0.75rem">
-                                                @if (aplicaItbis) {
-                                                    Se aplicará ITBIS/IVA en órdenes del restaurante.
-                                                } @else {
-                                                    No se cobrará impuesto en ninguna orden.
-                                                }
+                                        </label>
+
+                                        <!-- ITBIS encima -->
+                                        <label class="d-flex align-items-center gap-3 p-2 rounded-3 border"
+                                            [class.bg-warning-subtle]="modoImpuesto === 'encima'"
+                                            [class.border-warning]="modoImpuesto === 'encima'"
+                                            [class.bg-white]="modoImpuesto !== 'encima'"
+                                            style="cursor:pointer">
+                                            <input type="radio" class="form-check-input mt-0 flex-shrink-0"
+                                                formControlName="modo_impuesto" value="encima">
+                                            <div>
+                                                <div class="fw-semibold small">
+                                                    <i class="fa-solid fa-arrow-up text-warning me-1"></i>
+                                                    ITBIS encima del precio
+                                                </div>
+                                                <div class="text-muted" style="font-size:0.72rem">
+                                                    RD$500 base → cliente paga RD${{ (500 * (1 + (negocioForm.get('tasa_itbis_pct')?.value || 18) / 100)) | number:'1.2-2' }} (precio + {{ negocioForm.get('tasa_itbis_pct')?.value || 18 }}% ITBIS encima)
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox"
-                                                role="switch"
-                                                style="width:3rem;height:1.5rem;cursor:pointer"
-                                                formControlName="aplica_itbis"
-                                                (change)="toggleItbis(aplicaItbis)">
-                                        </div>
+                                        </label>
+
+                                        <!-- ITBIS incluido -->
+                                        <label class="d-flex align-items-center gap-3 p-2 rounded-3 border"
+                                            [class.bg-success-subtle]="modoImpuesto === 'incluido'"
+                                            [class.border-success]="modoImpuesto === 'incluido'"
+                                            [class.bg-white]="modoImpuesto !== 'incluido'"
+                                            style="cursor:pointer">
+                                            <input type="radio" class="form-check-input mt-0 flex-shrink-0"
+                                                formControlName="modo_impuesto" value="incluido">
+                                            <div>
+                                                <div class="fw-semibold small">
+                                                    <i class="fa-solid fa-tags me-1" style="color:#198754"></i>
+                                                    ITBIS incluido en el precio
+                                                </div>
+                                                <div class="text-muted" style="font-size:0.72rem">
+                                                    RD$500 en menú = base RD${{ (500 / (1 + (negocioForm.get('tasa_itbis_pct')?.value || 18) / 100)) | number:'1.2-2' }} + ITBIS RD${{ (500 - 500 / (1 + (negocioForm.get('tasa_itbis_pct')?.value || 18) / 100)) | number:'1.2-2' }}. Cliente paga RD$500.
+                                                </div>
+                                            </div>
+                                        </label>
                                     </div>
 
-                                    <!-- Tasa: solo visible si aplica ITBIS -->
+                                    <!-- Tasa: visible si no es sin_impuesto -->
                                     @if (aplicaItbis) {
-                                        <div class="row g-2 align-items-center">
+                                        <div class="row g-2 align-items-center pt-2 border-top">
                                             <div class="col-sm-5">
                                                 <label class="small text-muted mb-1">Tasa de impuesto</label>
                                                 <div class="input-group input-group-sm">
@@ -193,32 +222,6 @@
                                                         18% (RD)
                                                     </button>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    }
-
-                                    <!-- Modo: precio incluye impuesto -->
-                                    @if (aplicaItbis) {
-                                        <div class="d-flex align-items-center justify-content-between mt-3 p-2 rounded-3 bg-white border"
-                                             style="border-color:#e0e7ff !important">
-                                            <div>
-                                                <div class="fw-semibold small">
-                                                    <i class="fa-solid fa-tags text-indigo me-1" style="color:#6366f1"></i>
-                                                    Precios del menú incluyen ITBIS
-                                                </div>
-                                                <div class="text-muted" style="font-size:0.72rem">
-                                                    @if (negocioForm.get('precios_incluyen_impuesto')?.value) {
-                                                        RD$500 en el menú = base RD${{ (500 / (1 + (negocioForm.get('tasa_itbis_pct')?.value || 18) / 100)) | number:'1.2-2' }} + ITBIS RD${{ (500 - 500 / (1 + (negocioForm.get('tasa_itbis_pct')?.value || 18) / 100)) | number:'1.2-2' }}
-                                                    } @else {
-                                                        RD$500 en el menú → cliente paga RD${{ (500 * (1 + (negocioForm.get('tasa_itbis_pct')?.value || 18) / 100)) | number:'1.2-2' }} (con ITBIS encima)
-                                                    }
-                                                </div>
-                                            </div>
-                                            <div class="form-check form-switch mb-0">
-                                                <input class="form-check-input" type="checkbox"
-                                                    role="switch"
-                                                    style="width:3rem;height:1.5rem;cursor:pointer"
-                                                    formControlName="precios_incluyen_impuesto">
                                             </div>
                                         </div>
                                     }

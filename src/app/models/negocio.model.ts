@@ -21,7 +21,7 @@ export interface Negocio {
 
     // Configuración fiscal
     tasa_itbis?: number | null;                    // Ej: 0.18 = 18%. NULL o 0 = sin impuesto
-    precios_incluyen_impuesto?: boolean;           // TRUE = precio del menú ya incluye ITBIS
+    modo_impuesto?: 'sin_impuesto' | 'encima' | 'incluido'; // Modo de aplicación del ITBIS
 
     // Notas internas del desarrollador (no visibles para el cliente)
     notas_internas?: string | null;

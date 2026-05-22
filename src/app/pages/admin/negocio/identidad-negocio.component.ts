@@ -36,9 +36,8 @@ export class IdentidadNegocioComponent implements OnInit {
       lema: [''],
       email: ['', Validators.email],
       web: [''],
-      aplica_itbis: [true],
-      tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]],
-      precios_incluyen_impuesto: [false]
+      modo_impuesto: ['sin_impuesto'],
+      tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]]
     });
   }
 
@@ -57,12 +56,11 @@ export class IdentidadNegocioComponent implements OnInit {
         
         if (data) {
           this.negocioActual = data;
-          const tasaPct = Math.round((data.tasa_itbis ?? 0.18) * 100);
+          const tasaPct = Math.round((data.tasa_itbis ?? 0) * 100);
           this.negocioForm.patchValue({
             ...data,
-            aplica_itbis: tasaPct > 0,
-            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18,
-            precios_incluyen_impuesto: data.precios_incluyen_impuesto ?? false
+            modo_impuesto: data.modo_impuesto ?? 'sin_impuesto',
+            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18
           });
           if (data.logo_url && (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))) {
             this.logoPreview = data.logo_url;
@@ -124,12 +122,13 @@ export class IdentidadNegocioComponent implements OnInit {
         logoUrl = uploadResult.url;
       }
 
-      const { tasa_itbis_pct, aplica_itbis, precios_incluyen_impuesto, ...formRest } = this.negocioForm.value;
+      const { tasa_itbis_pct, modo_impuesto, ...formRest } = this.negocioForm.value;
+      const conImpuesto = modo_impuesto !== 'sin_impuesto';
       const datosActualizar = {
         ...formRest,
         logo_url: logoUrl,
-        tasa_itbis: aplica_itbis ? parseFloat(((tasa_itbis_pct ?? 18) / 100).toFixed(4)) : 0,
-        precios_incluyen_impuesto: aplica_itbis ? (precios_incluyen_impuesto ?? false) : false
+        modo_impuesto: modo_impuesto ?? 'sin_impuesto',
+        tasa_itbis: conImpuesto ? parseFloat(((tasa_itbis_pct ?? 18) / 100).toFixed(4)) : 0
       };
 
       await this.negociosService.actualizarNegocio(datosActualizar);
@@ -152,14 +151,12 @@ export class IdentidadNegocioComponent implements OnInit {
     }
   }
 
-  get aplicaItbis(): boolean {
-    return !!this.negocioForm.get('aplica_itbis')?.value;
+  get modoImpuesto(): string {
+    return this.negocioForm.get('modo_impuesto')?.value ?? 'sin_impuesto';
   }
 
-  toggleItbis(valor: boolean): void {
-    if (valor && (this.negocioForm.get('tasa_itbis_pct')?.value ?? 0) === 0) {
-      this.negocioForm.get('tasa_itbis_pct')?.setValue(18);
-    }
+  get aplicaItbis(): boolean {
+    return this.modoImpuesto !== 'sin_impuesto';
   }
 
   eliminarLogo() {
