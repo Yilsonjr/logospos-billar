@@ -77,23 +77,13 @@
                     <i class="fa-solid fa-percent text-muted opacity-50"></i>
                 </div>
                 <div class="card-body px-4 pt-0">
-                    <div class="row g-3 align-items-center">
-                        <div class="col-8">
-                            <div class="form-floating">
-                                <input type="number" class="form-control bg-light border-0" id="floatITBIS"
-                                    [(ngModel)]="config.itbis_defecto" placeholder="18">
-                                <label for="floatITBIS" class="small fw-bold">ITBIS Predeterminado %</label>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <button class="btn btn-primary w-100 fw-bold py-3 shadow-sm rounded-4"
-                                (click)="guardarConfiguracion()">
-                                ACTIVAR
-                            </button>
+                    <div class="alert alert-info d-flex align-items-center gap-3 rounded-3 border-0 bg-primary bg-opacity-10 mb-0">
+                        <i class="fa-solid fa-circle-info fs-5 text-primary flex-shrink-0"></i>
+                        <div class="small">
+                            La tasa de ITBIS y el modo de inclusión en precios se configuran en
+                            <strong>Admin → Identidad del Negocio</strong>.
                         </div>
                     </div>
-                    <p class="text-muted small mt-3 mb-0"><i class="fa-solid fa-circle-info me-1"></i> Este valor se
-                        aplicará por defecto en el catálogo.</p>
                 </div>
             </div>
         </div>

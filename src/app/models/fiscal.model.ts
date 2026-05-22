@@ -1,9 +1,9 @@
 export interface ConfiguracionFiscal {
     id: number;
+    negocio_id?: string;
     modo_fiscal: boolean;
     rnc_empresa?: string;
     nombre_empresa?: string;
-    itbis_defecto: number;
     created_at?: string;
     updated_at?: string;
 }

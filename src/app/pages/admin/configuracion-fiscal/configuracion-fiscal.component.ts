@@ -15,8 +15,7 @@ import Swal from 'sweetalert2';
 export class ConfiguracionFiscalComponent implements OnInit {
     config: ConfiguracionFiscal = {
         id: 1,
-        modo_fiscal: false,
-        itbis_defecto: 18.0
+        modo_fiscal: false
     };
 
     secuencias: SecuenciaNCF[] = [];
