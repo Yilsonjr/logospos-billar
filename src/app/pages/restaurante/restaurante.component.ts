@@ -5,6 +5,7 @@ import { FloorMapComponent } from './floor-map/floor-map.component';
 import { OrderModalComponent } from './order-modal/order-modal.component';
 import { BillSplitComponent } from './bill-split/bill-split.component';
 import { RestaurantTablesService } from '../../services/restaurant-tables.service';
+import { AuthService } from '../../services/auth.service';
 import { TableWithOrder } from '../../models/restaurant.models';
 
 @Component({
@@ -80,16 +81,22 @@ import { TableWithOrder } from '../../models/restaurant.models';
           </div>
         </div>
         <div class="d-flex gap-2">
-          <a routerLink="/restaurante/reportes" class="btn-kds" style="background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%)">
-            <i class="bi bi-bar-chart-fill"></i> Reportes
-          </a>
-          <a routerLink="/restaurante/admin" class="btn-kds" style="background:linear-gradient(135deg,#374151 0%,#1f2937 100%)">
-            <i class="bi bi-gear-fill"></i> Configurar
-          </a>
-          <a routerLink="/restaurante/cocina" class="btn-kds">
-            <span class="kds-dot"></span>
-            <i class="bi bi-fire"></i> Pantalla Cocina
-          </a>
+          @if (tienePermiso('restaurante.reportes')) {
+            <a routerLink="/restaurante/reportes" class="btn-kds" style="background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%)">
+              <i class="bi bi-bar-chart-fill"></i> Reportes
+            </a>
+          }
+          @if (tienePermiso('restaurante.admin')) {
+            <a routerLink="/restaurante/admin" class="btn-kds" style="background:linear-gradient(135deg,#374151 0%,#1f2937 100%)">
+              <i class="bi bi-gear-fill"></i> Configurar
+            </a>
+          }
+          @if (tienePermiso('restaurante.cocina')) {
+            <a routerLink="/restaurante/cocina" class="btn-kds">
+              <span class="kds-dot"></span>
+              <i class="bi bi-fire"></i> Pantalla Cocina
+            </a>
+          }
         </div>
       </div>
 
@@ -155,8 +162,13 @@ export class RestauranteComponent implements OnInit {
 
   constructor(
     private tablesService: RestaurantTablesService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  tienePermiso(permiso: string): boolean {
+    return this.authService.tienePermiso(permiso);
+  }
 
   async ngOnInit(): Promise<void> {
     await this.cargarMesasRapidas();

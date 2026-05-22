@@ -32,20 +32,76 @@
 }
 .ra-modal-header {
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #fff;
+  border-bottom: none;
   flex-shrink: 0;
   border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.ra-modal-header h6 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ra-modal-header-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 .ra-modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 1.5rem 1.25rem 1rem;
 }
 .ra-modal-footer {
-  padding: 0.75rem 1.25rem;
-  border-top: 1px solid #e2e8f0;
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
   flex-shrink: 0;
   border-radius: 0 0 16px 16px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Field group dentro de modales */
+.ra-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.ra-field-group .form-control,
+.ra-field-group .form-select {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.7rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ra-field-group .form-control:focus,
+.ra-field-group .form-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+}
+.ra-modal-divider {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #94a3b8;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0.1rem;
 }
 
 /* ── Page ─────────────────────────────────────────── */
@@ -362,4 +418,91 @@
 .btn-xs {
   padding: 2px 8px;
   font-size: 0.75rem;
+}
+
+/* ── Guarniciones / Modificadores admin panel ──────── */
+.ra-mods-panel {
+  background: #f8faff;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+.ra-mods-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.1rem;
+}
+.mod-grupos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.mod-grupo-admin {
+  background: #fff;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+}
+.mod-grupo-admin-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #3730a3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+.mod-chips-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.mod-chip-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 3px 10px 3px 10px;
+  font-size: 0.8rem;
+  color: #1e40af;
+}
+.mod-chip-nombre { font-weight: 500; }
+.mod-chip-extra {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #059669;
+  background: #d1fae5;
+  border-radius: 10px;
+  padding: 1px 5px;
+}
+.mod-chip-del {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 0;
+  line-height: 1;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  margin-left: 2px;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  justify-content: center;
+  transition: background .12s, color .12s;
+}
+.mod-chip-del:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.mod-add-form {
+  background: #fff;
+  border: 1px dashed #c7d2fe;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
 }

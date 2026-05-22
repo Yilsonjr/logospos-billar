@@ -104,15 +104,24 @@ export const PERMISOS_SISTEMA = {
   'reportes.caja': 'Reportes de Caja',
   'reportes.clientes': 'Reportes de Clientes',
 
-  // Restaurante
+  // Restaurante — acceso general
   'restaurante.mesas': 'Ver Mapa de Mesas',
   'restaurante.ordenes': 'Gestionar Órdenes de Mesa',
   'restaurante.cobrar': 'Cobrar y Procesar Pagos',
   'restaurante.cocina': 'Pantalla de Cocina (KDS)',
-  'restaurante.admin': 'Administrar Restaurante (Zonas, Menú, Categorías)',
+  'restaurante.admin': 'Acceder a Configuración del Restaurante',
   'restaurante.inventario': 'Inventario del Restaurante (Insumos, Recetas)',
   'restaurante.compras': 'Registrar Compras de Insumos',
   'restaurante.reportes': 'Reportes del Restaurante',
+  // Restaurante — tabs del admin (control granular)
+  'restaurante.admin.zonas': 'Configurar Zonas del Restaurante',
+  'restaurante.admin.mesas': 'Configurar Mesas del Restaurante',
+  'restaurante.admin.categorias': 'Configurar Categorías del Menú',
+  'restaurante.admin.platos': 'Configurar Platos del Menú',
+  'restaurante.admin.inventario': 'Gestionar Inventario de Insumos',
+  'restaurante.admin.compras': 'Registrar Compras de Insumos (Admin)',
+  'restaurante.admin.ordenes': 'Ver Historial de Órdenes',
+  'restaurante.admin.impresoras': 'Configurar Impresoras del Restaurante',
 
   // Configuración
   'config.general': 'Configuración General',
@@ -196,6 +205,11 @@ export const ROLES_PREDEFINIDOS = [
       'restaurante.mesas', 'restaurante.ordenes', 'restaurante.cobrar',
       'restaurante.cocina', 'restaurante.admin', 'restaurante.inventario',
       'restaurante.compras', 'restaurante.reportes',
+      // Acceso completo a todas las tabs del admin
+      'restaurante.admin.zonas', 'restaurante.admin.mesas',
+      'restaurante.admin.categorias', 'restaurante.admin.platos',
+      'restaurante.admin.inventario', 'restaurante.admin.compras',
+      'restaurante.admin.ordenes', 'restaurante.admin.impresoras',
       'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimientos', 'caja.arqueo', 'caja.historial',
       'reportes.ventas', 'reportes.caja',
       'clientes.ver', 'clientes.crear',
@@ -211,6 +225,8 @@ export const ROLES_PREDEFINIDOS = [
       'dashboard.ver',
       'restaurante.mesas', 'restaurante.ordenes', 'restaurante.cobrar',
       'restaurante.reportes',
+      // Solo puede ver historial de órdenes en el admin
+      'restaurante.admin', 'restaurante.admin.ordenes',
       'caja.ver', 'caja.abrir', 'caja.cerrar', 'caja.movimientos', 'caja.arqueo',
       'clientes.ver', 'clientes.crear'
     ],

@@ -4,7 +4,7 @@ import { SupabaseService } from './supabase.service';
 import {
   RestaurantOrder, RestaurantOrderItem, OrderWithItems,
   CrearOrden, AgregarItemOrden, KitchenTicketItem,
-  EstadoOrden, MenuCategory, MenuItem
+  EstadoOrden, MenuCategory, MenuItem, MenuItemModifier
 } from '../models/restaurant.models';
 
 @Injectable({ providedIn: 'root' })
@@ -460,6 +460,37 @@ export class RestaurantOrdersService {
       .update({ activo: false })
       .eq('id', id)
       .eq('negocio_id', this.negocioId);
+    if (error) throw error;
+  }
+
+  // ── Guarniciones / Modificadores ──────────────────────────
+
+  async cargarModificadores(menuItemId: string): Promise<MenuItemModifier[]> {
+    const { data, error } = await this.supabaseService.client
+      .from('menu_item_modifiers')
+      .select('*')
+      .eq('menu_item_id', menuItemId)
+      .eq('activo', true)
+      .order('orden');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async crearModificador(mod: Omit<MenuItemModifier, 'id' | 'created_at'>): Promise<MenuItemModifier> {
+    const { data, error } = await this.supabaseService.client
+      .from('menu_item_modifiers')
+      .insert(mod)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async eliminarModificador(id: string): Promise<void> {
+    const { error } = await this.supabaseService.client
+      .from('menu_item_modifiers')
+      .update({ activo: false })
+      .eq('id', id);
     if (error) throw error;
   }
 }

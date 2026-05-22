@@ -8,10 +8,11 @@ import { InventoryRestaurantService, CompraAgrupada } from '../../../services/in
 import { NegociosService } from '../../../services/negocios.service';
 import { PrintersAdminComponent } from '../printers-admin/printers-admin.component';
 import { PrintService } from '../../../services/print.service';
+import { AuthService } from '../../../services/auth.service';
 import {
   RestaurantZone, RestaurantTable, MenuCategory, MenuItem,
   RestaurantInventoryItem, RestaurantInventoryMovement, TipoMovimientoInventario,
-  RestaurantPrinter
+  RestaurantPrinter, MenuItemModifier
 } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
 
@@ -69,6 +70,14 @@ export class RestaurantAdminComponent implements OnInit {
     { inventory_item_id: '', cantidad_requerida: 1, unidad_medida: 'unidad' };
   guardandoReceta = false;
 
+  // Guarniciones / Modificadores del plato
+  modificadores: MenuItemModifier[] = [];
+  modGruposUnicos: string[] = [];
+  modForm: { grupo_nombre: string; nombre: string; precio_adicional: number; obligatorio: boolean; max_seleccion: number } =
+    { grupo_nombre: '', nombre: '', precio_adicional: 0, obligatorio: false, max_seleccion: 1 };
+  guardandoMod = false;
+  cargandoMods = false;
+
   // ── Inventario ────────────────────────────────────────────
   inventarioItems: RestaurantInventoryItem[] = [];
   movimientos: RestaurantInventoryMovement[] = [];
@@ -125,11 +134,31 @@ export class RestaurantAdminComponent implements OnInit {
     private inventoryService: InventoryRestaurantService,
     private negociosService: NegociosService,
     private printService: PrintService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
-    await this.cargarTab('zonas');
+    await this.cargarTab(this.primeraTabAccesible);
+  }
+
+  /** Devuelve true si el usuario puede ver el tab dado.
+   *  Lógica: super admin siempre puede (tienePermiso lo maneja).
+   *  Si el rol tiene ALGÚN sub-permiso restaurante.admin.* → se aplica control granular.
+   *  Si NO tiene ningún sub-permiso → se acepta que tiene restaurante.admin completo (backward compat).
+   */
+  puedeVerTab(tab: Tab): boolean {
+    const subPermiso = `restaurante.admin.${tab}`;
+    if (this.authService.tienePermiso(subPermiso)) return true;
+    // Backward compat: si no tiene ningún sub-permiso definido, acceso completo via restaurante.admin
+    const haySubPermisos = (['zonas','mesas','categorias','platos','inventario','compras','ordenes','impresoras'] as Tab[])
+      .some(t => this.authService.tienePermiso(`restaurante.admin.${t}`));
+    return !haySubPermisos && this.authService.tienePermiso('restaurante.admin');
+  }
+
+  get primeraTabAccesible(): Tab {
+    const todas: Tab[] = ['zonas','mesas','categorias','platos','inventario','compras','ordenes','impresoras'];
+    return todas.find(t => this.puedeVerTab(t)) ?? 'ordenes';
   }
 
   async cargarTab(tab: Tab): Promise<void> {
@@ -333,6 +362,9 @@ export class RestaurantAdminComponent implements OnInit {
   abrirFormPlato(plato?: MenuItem): void {
     this.editandoPlato = plato || null;
     this.receta = [];
+    this.modificadores = [];
+    this.modGruposUnicos = [];
+    this.modForm = { grupo_nombre: '', nombre: '', precio_adicional: 0, obligatorio: false, max_seleccion: 1 };
     this.recetaItemForm = { inventory_item_id: '', cantidad_requerida: 1, unidad_medida: 'unidad' };
     this.platoForm = plato
       ? { categoria_id: plato.categoria_id, nombre: plato.nombre, descripcion: plato.descripcion || '',
@@ -346,8 +378,11 @@ export class RestaurantAdminComponent implements OnInit {
           precio: 0, costo_estimado: null, tiempo_preparacion_minutos: 15, notas_cocina: '',
           requiere_inventario: false, enviar_a_cocina: true, disponible: true };
     this.mostrarFormPlato = true;
-    if (plato?.requiere_inventario && this.usaInventario) {
-      this.cargarReceta(plato.id);
+    if (plato) {
+      this.cargarModificadores(plato.id);
+      if (plato.requiere_inventario && this.usaInventario) {
+        this.cargarReceta(plato.id);
+      }
     }
   }
 
@@ -366,6 +401,62 @@ export class RestaurantAdminComponent implements OnInit {
       Swal.fire('Error', e.message, 'error');
     } finally {
       this.cargando = false;
+    }
+  }
+
+  get modificadoresPorGrupo(): { grupo: string; items: MenuItemModifier[] }[] {
+    const map = new Map<string, MenuItemModifier[]>();
+    for (const mod of this.modificadores) {
+      if (!map.has(mod.grupo_nombre)) map.set(mod.grupo_nombre, []);
+      map.get(mod.grupo_nombre)!.push(mod);
+    }
+    return Array.from(map.entries()).map(([grupo, items]) => ({ grupo, items }));
+  }
+
+  async cargarModificadores(menuItemId: string): Promise<void> {
+    this.cargandoMods = true;
+    try {
+      this.modificadores = await this.ordersService.cargarModificadores(menuItemId);
+      this.modGruposUnicos = [...new Set(this.modificadores.map(m => m.grupo_nombre))];
+      this.cdr.detectChanges();
+    } catch (e) {
+      console.error('[RestaurantAdmin] Error cargando modificadores:', e);
+    } finally {
+      this.cargandoMods = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async agregarModificador(): Promise<void> {
+    if (!this.editandoPlato || !this.modForm.grupo_nombre.trim() || !this.modForm.nombre.trim()) return;
+    this.guardandoMod = true;
+    try {
+      await this.ordersService.crearModificador({
+        menu_item_id: this.editandoPlato.id,
+        grupo_nombre: this.modForm.grupo_nombre.trim(),
+        nombre: this.modForm.nombre.trim(),
+        precio_adicional: this.modForm.precio_adicional || 0,
+        obligatorio: this.modForm.obligatorio,
+        max_seleccion: this.modForm.max_seleccion || 1,
+        orden: this.modificadores.length + 1,
+        activo: true
+      });
+      this.modForm = { ...this.modForm, nombre: '', precio_adicional: 0 };
+      await this.cargarModificadores(this.editandoPlato.id);
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    } finally {
+      this.guardandoMod = false;
+    }
+  }
+
+  async eliminarModificador(modId: string): Promise<void> {
+    if (!this.editandoPlato) return;
+    try {
+      await this.ordersService.eliminarModificador(modId);
+      await this.cargarModificadores(this.editandoPlato.id);
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
     }
   }
 

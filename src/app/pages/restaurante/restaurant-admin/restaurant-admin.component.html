@@ -18,35 +18,49 @@
 
   <!-- TABS -->
   <div class="ra-tabs mb-4">
-    <button class="ra-tab" [class.active]="tabActiva==='zonas'" (click)="cargarTab('zonas')">
-      <i class="bi bi-map-fill"></i> Zonas
-    </button>
-    <button class="ra-tab" [class.active]="tabActiva==='mesas'" (click)="cargarTab('mesas')">
-      <i class="bi bi-grid-fill"></i> Mesas
-    </button>
-    <button class="ra-tab" [class.active]="tabActiva==='categorias'" (click)="cargarTab('categorias')">
-      <i class="bi bi-tags-fill"></i> Categorías Menú
-    </button>
-    <button class="ra-tab" [class.active]="tabActiva==='platos'" (click)="cargarTab('platos')">
-      <i class="bi bi-egg-fried"></i> Platos
-    </button>
-    @if (usaInventario) {
+    @if (puedeVerTab('zonas')) {
+      <button class="ra-tab" [class.active]="tabActiva==='zonas'" (click)="cargarTab('zonas')">
+        <i class="bi bi-map-fill"></i> Zonas
+      </button>
+    }
+    @if (puedeVerTab('mesas')) {
+      <button class="ra-tab" [class.active]="tabActiva==='mesas'" (click)="cargarTab('mesas')">
+        <i class="bi bi-grid-fill"></i> Mesas
+      </button>
+    }
+    @if (puedeVerTab('categorias')) {
+      <button class="ra-tab" [class.active]="tabActiva==='categorias'" (click)="cargarTab('categorias')">
+        <i class="bi bi-tags-fill"></i> Categorías Menú
+      </button>
+    }
+    @if (puedeVerTab('platos')) {
+      <button class="ra-tab" [class.active]="tabActiva==='platos'" (click)="cargarTab('platos')">
+        <i class="bi bi-egg-fried"></i> Platos
+      </button>
+    }
+    @if (usaInventario && puedeVerTab('inventario')) {
       <button class="ra-tab" [class.active]="tabActiva==='inventario'" (click)="cargarTab('inventario')">
         <i class="bi bi-boxes"></i> Inventario
         @if (hayStockBajo) {
           <span class="badge bg-danger ms-1">!</span>
         }
       </button>
+    }
+    @if (usaInventario && puedeVerTab('compras')) {
       <button class="ra-tab" [class.active]="tabActiva==='compras'" (click)="cargarTab('compras')">
         <i class="bi bi-cart-plus-fill"></i> Compras
       </button>
     }
-    <button class="ra-tab" [class.active]="tabActiva==='ordenes'" (click)="cargarTab('ordenes')">
-      <i class="bi bi-clock-history"></i> Historial de Órdenes
-    </button>
-    <button class="ra-tab" [class.active]="tabActiva==='impresoras'" (click)="cargarTab('impresoras')">
-      <i class="bi bi-printer-fill"></i> Impresoras
-    </button>
+    @if (puedeVerTab('ordenes')) {
+      <button class="ra-tab" [class.active]="tabActiva==='ordenes'" (click)="cargarTab('ordenes')">
+        <i class="bi bi-clock-history"></i> Historial de Órdenes
+      </button>
+    }
+    @if (puedeVerTab('impresoras')) {
+      <button class="ra-tab" [class.active]="tabActiva==='impresoras'" (click)="cargarTab('impresoras')">
+        <i class="bi bi-printer-fill"></i> Impresoras
+      </button>
+    }
   </div>
 
   <!-- SPINNER -->
@@ -446,6 +460,117 @@
             </div>
           }
 
+          <!-- ── Guarniciones y Modificadores ── -->
+          <div class="ra-mods-panel mt-3">
+            <div class="ra-mods-header">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-sliders2 text-primary"></i>
+                <span class="fw-semibold small">Acompañantes y Opciones</span>
+                @if (modificadores.length > 0) {
+                  <span class="badge bg-primary rounded-pill">{{ modificadores.length }}</span>
+                }
+              </div>
+              <span class="text-muted" style="font-size:.72rem">Papa frita, Salsa, Tamaño, etc.</span>
+            </div>
+
+            @if (!editandoPlato) {
+              <p class="text-muted small mb-0 mt-2">
+                <i class="bi bi-info-circle me-1"></i>Guarda el plato primero para agregar opciones.
+              </p>
+            } @else {
+              <!-- Grupos existentes -->
+              @if (cargandoMods) {
+                <div class="text-muted small mt-2">
+                  <span class="spinner-border spinner-border-sm me-1"></span> Cargando…
+                </div>
+              } @else if (modificadoresPorGrupo.length > 0) {
+                <div class="mod-grupos-list mt-2">
+                  @for (grupo of modificadoresPorGrupo; track grupo.grupo) {
+                    <div class="mod-grupo-admin">
+                      <div class="mod-grupo-admin-label">
+                        <i class="bi bi-collection-fill me-1"></i>{{ grupo.grupo }}
+                        <span class="text-muted ms-1" style="font-size:.7rem">
+                          · {{ grupo.items[0]?.obligatorio ? 'Requerido' : 'Opcional' }}
+                          @if ((grupo.items[0]?.max_seleccion ?? 0) > 1) {
+                            · Máx {{ grupo.items[0]?.max_seleccion }}
+                          } @else {
+                            · Elige 1
+                          }
+                        </span>
+                      </div>
+                      <div class="mod-chips-admin">
+                        @for (mod of grupo.items; track mod.id) {
+                          <div class="mod-chip-admin">
+                            <span class="mod-chip-nombre">{{ mod.nombre }}</span>
+                            @if (mod.precio_adicional > 0) {
+                              <span class="mod-chip-extra">+RD${{ mod.precio_adicional }}</span>
+                            }
+                            <button class="mod-chip-del" (click)="eliminarModificador(mod.id)" title="Eliminar">
+                              <i class="bi bi-x-lg"></i>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-muted small mb-0 mt-2">
+                  <i class="bi bi-lightbulb me-1 text-warning"></i>Sin opciones aún. Agrega guarniciones, salsas, tamaños…
+                </p>
+              }
+
+              <!-- Formulario agregar modificador -->
+              <div class="mod-add-form mt-2">
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-3">
+                    <label class="ra-label">Grupo</label>
+                    <input class="form-control form-control-sm" list="grupos-exist"
+                      [(ngModel)]="modForm.grupo_nombre"
+                      placeholder="Guarnición, Salsa, Tamaño…">
+                    <datalist id="grupos-exist">
+                      @for (g of modGruposUnicos; track g) {
+                        <option [value]="g"></option>
+                      }
+                    </datalist>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="ra-label">Opción</label>
+                    <input class="form-control form-control-sm"
+                      [(ngModel)]="modForm.nombre"
+                      placeholder="Papa frita, Arroz, Pequeño…">
+                  </div>
+                  <div class="col-6 col-md-2">
+                    <label class="ra-label">Extra (RD$)</label>
+                    <input type="number" class="form-control form-control-sm"
+                      [(ngModel)]="modForm.precio_adicional" min="0" step="0.5" placeholder="0">
+                  </div>
+                  <div class="col-4 col-md-2">
+                    <label class="ra-label">Máx.</label>
+                    <input type="number" class="form-control form-control-sm"
+                      [(ngModel)]="modForm.max_seleccion" min="1" max="10">
+                  </div>
+                  <div class="col-auto d-flex align-items-end gap-2 pb-1">
+                    <div class="form-check mb-0">
+                      <input class="form-check-input" type="checkbox" id="chkModObl"
+                        [(ngModel)]="modForm.obligatorio">
+                      <label class="form-check-label ra-label mb-0" for="chkModObl">Req.</label>
+                    </div>
+                    <button class="btn btn-primary btn-sm px-3"
+                      (click)="agregarModificador()"
+                      [disabled]="guardandoMod || !modForm.grupo_nombre.trim() || !modForm.nombre.trim()">
+                      @if (guardandoMod) {
+                        <span class="spinner-border spinner-border-sm"></span>
+                      } @else {
+                        <i class="bi bi-plus-lg"></i> Agregar
+                      }
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
           <div class="d-flex gap-2 mt-3">
             <button class="ra-btn-save" (click)="guardarPlato()">
               <i class="bi bi-check-lg"></i> Guardar
@@ -667,106 +792,160 @@
 
     <!-- MODAL: Crear/Editar insumo -->
     @if (mostrarFormInv) {
-      <div class="ra-modal-backdrop" (click)="mostrarFormInv=false">
-        <div class="ra-modal" (click)="$event.stopPropagation()">
+      <div class="ra-modal-overlay" (click)="mostrarFormInv=false">
+        <div class="ra-modal" style="max-width:520px" (click)="$event.stopPropagation()">
+
           <div class="ra-modal-header">
-            <h6 class="mb-0">{{ editandoInv ? 'Editar insumo' : 'Nuevo insumo' }}</h6>
+            <h6>
+              <span class="ra-modal-header-icon" style="background:rgba(255,255,255,.12)">
+                <i class="bi bi-box-seam"></i>
+              </span>
+              {{ editandoInv ? 'Editar insumo' : 'Nuevo insumo' }}
+            </h6>
             <button class="btn-close btn-close-white" (click)="mostrarFormInv=false"></button>
           </div>
+
           <div class="ra-modal-body">
-            <div class="row g-2">
+
+            <!-- Bloque: Identificación -->
+            <div class="ra-modal-divider mb-3">Identificación</div>
+            <div class="row g-3 mb-3">
               <div class="col-8">
-                <label class="form-label small">Nombre *</label>
-                <input class="form-control form-control-sm" [(ngModel)]="invForm.nombre" placeholder="Coca-Cola, Harina, Pollo…">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-tag me-1"></i>Nombre *</label>
+                  <input class="form-control" [(ngModel)]="invForm.nombre"
+                    placeholder="Coca-Cola, Harina, Pollo…" autofocus>
+                </div>
               </div>
               <div class="col-4">
-                <label class="form-label small">Unidad *</label>
-                <select class="form-select form-select-sm" [(ngModel)]="invForm.unidad_medida">
-                  @for (u of unidades; track u) {
-                    <option [value]="u">{{ u }}</option>
-                  }
-                </select>
-              </div>
-              <div class="col-4">
-                <label class="form-label small">Stock actual</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="invForm.cantidad_actual" min="0" step="0.001">
-              </div>
-              <div class="col-4">
-                <label class="form-label small">Stock mínimo</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="invForm.cantidad_minima" min="0" step="0.001">
-              </div>
-              <div class="col-4">
-                <label class="form-label small">Costo unitario (RD$)</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="invForm.costo_unitario" min="0" step="0.01">
-              </div>
-              <div class="col-6">
-                <label class="form-label small">Proveedor</label>
-                <input class="form-control form-control-sm" [(ngModel)]="invForm.proveedor" placeholder="Opcional">
-              </div>
-              <div class="col-6">
-                <label class="form-label small">Ubicación</label>
-                <input class="form-control form-control-sm" [(ngModel)]="invForm.ubicacion" placeholder="Bodega, Nevera…">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-rulers me-1"></i>Unidad *</label>
+                  <select class="form-select" [(ngModel)]="invForm.unidad_medida">
+                    @for (u of unidades; track u) {
+                      <option [value]="u">{{ u }}</option>
+                    }
+                  </select>
+                </div>
               </div>
             </div>
+
+            <!-- Bloque: Stock y costo -->
+            <div class="ra-modal-divider mb-3">Stock y costo</div>
+            <div class="row g-3 mb-3">
+              <div class="col-4">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-archive me-1"></i>Stock actual</label>
+                  <input type="number" class="form-control" [(ngModel)]="invForm.cantidad_actual" min="0" step="0.001">
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-exclamation-triangle me-1"></i>Stock mínimo</label>
+                  <input type="number" class="form-control" [(ngModel)]="invForm.cantidad_minima" min="0" step="0.001">
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-currency-dollar me-1"></i>Costo unit. (RD$)</label>
+                  <input type="number" class="form-control" [(ngModel)]="invForm.costo_unitario" min="0" step="0.01">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloque: Info adicional -->
+            <div class="ra-modal-divider mb-3">Info adicional <span class="fw-normal text-muted" style="text-transform:none;letter-spacing:0">(opcional)</span></div>
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-truck me-1"></i>Proveedor</label>
+                  <input class="form-control" [(ngModel)]="invForm.proveedor" placeholder="Nombre del proveedor">
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-geo-alt me-1"></i>Ubicación</label>
+                  <input class="form-control" [(ngModel)]="invForm.ubicacion" placeholder="Bodega, Nevera, Almacén…">
+                </div>
+              </div>
+            </div>
+
           </div>
+
           <div class="ra-modal-footer">
-            <button class="btn btn-sm btn-outline-secondary" (click)="mostrarFormInv=false">Cancelar</button>
-            <button class="btn btn-sm btn-primary" (click)="guardarInv()" [disabled]="cargando">
+            <button class="btn btn-light btn-sm px-3" (click)="mostrarFormInv=false">Cancelar</button>
+            <button class="btn btn-primary btn-sm px-4 fw-bold" (click)="guardarInv()" [disabled]="cargando">
               @if (cargando) { <span class="spinner-border spinner-border-sm me-1"></span> }
-              Guardar
+              <i class="bi bi-check-lg me-1"></i>
+              {{ editandoInv ? 'Actualizar' : 'Guardar insumo' }}
             </button>
           </div>
+
         </div>
       </div>
     }
 
     <!-- MODAL: Registrar entrada de stock -->
     @if (mostrarFormEntrada) {
-      <div class="ra-modal-backdrop" (click)="mostrarFormEntrada=false">
-        <div class="ra-modal" (click)="$event.stopPropagation()">
-          <div class="ra-modal-header">
-            <h6 class="mb-0"><i class="bi bi-box-arrow-in-down me-2"></i>Registrar Entrada de Stock</h6>
+      <div class="ra-modal-overlay" (click)="mostrarFormEntrada=false">
+        <div class="ra-modal" style="max-width:460px" (click)="$event.stopPropagation()">
+
+          <div class="ra-modal-header" style="background:linear-gradient(135deg,#065f46,#047857)">
+            <h6>
+              <span class="ra-modal-header-icon" style="background:rgba(255,255,255,.15)">
+                <i class="bi bi-box-arrow-in-down"></i>
+              </span>
+              Registrar Entrada de Stock
+            </h6>
             <button class="btn-close btn-close-white" (click)="mostrarFormEntrada=false"></button>
           </div>
+
           <div class="ra-modal-body">
-            <div class="row g-2">
+            <div class="row g-3">
               <div class="col-12">
-                <label class="form-label small">Insumo / Bebida *</label>
-                <select class="form-select form-select-sm" [(ngModel)]="entradaForm.inventory_item_id">
-                  <option value="">— Seleccionar —</option>
-                  @for (item of inventarioItems; track item.id) {
-                    <option [value]="item.id">
-                      {{ item.nombre }} ({{ item.cantidad_actual | number:'1.0-2' }} {{ item.unidad_medida }})
-                    </option>
-                  }
-                </select>
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-box-seam me-1"></i>Insumo / Bebida *</label>
+                  <select class="form-select" [(ngModel)]="entradaForm.inventory_item_id">
+                    <option value="">— Seleccionar insumo —</option>
+                    @for (item of inventarioItems; track item.id) {
+                      <option [value]="item.id">
+                        {{ item.nombre }} · stock actual: {{ item.cantidad_actual | number:'1.0-2' }} {{ item.unidad_medida }}
+                      </option>
+                    }
+                  </select>
+                </div>
               </div>
               <div class="col-6">
-                <label class="form-label small">Cantidad a ingresar *</label>
-                <input type="number" class="form-control form-control-sm"
-                  [(ngModel)]="entradaForm.cantidad" min="0.001" step="0.001" placeholder="0">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-plus-circle me-1"></i>Cantidad a ingresar *</label>
+                  <input type="number" class="form-control"
+                    [(ngModel)]="entradaForm.cantidad" min="0.001" step="0.001" placeholder="0">
+                </div>
               </div>
               <div class="col-6">
-                <label class="form-label small">Razón</label>
-                <input class="form-control form-control-sm" [(ngModel)]="entradaForm.razon"
-                  placeholder="Compra, donación…">
+                <div class="ra-field-group">
+                  <label class="ra-label"><i class="bi bi-chat-left-text me-1"></i>Razón</label>
+                  <input class="form-control" [(ngModel)]="entradaForm.razon"
+                    placeholder="Compra, donación…">
+                </div>
               </div>
             </div>
           </div>
+
           <div class="ra-modal-footer">
-            <button class="btn btn-sm btn-outline-secondary" (click)="mostrarFormEntrada=false">Cancelar</button>
-            <button class="btn btn-sm btn-success" (click)="guardarEntrada()" [disabled]="cargando">
+            <button class="btn btn-light btn-sm px-3" (click)="mostrarFormEntrada=false">Cancelar</button>
+            <button class="btn btn-success btn-sm px-4 fw-bold" (click)="guardarEntrada()" [disabled]="cargando">
               @if (cargando) { <span class="spinner-border spinner-border-sm me-1"></span> }
               <i class="bi bi-box-arrow-in-down me-1"></i>Registrar Entrada
             </button>
           </div>
+
         </div>
       </div>
-      }
+    }
 
       <!-- WIZARD: Crear Producto Vendible -->
       @if (mostrarWizardProducto && wizardInsumoOrigen) {
-        <div class="ra-modal-backdrop" (click)="mostrarWizardProducto=false">
+        <div class="ra-modal-overlay" (click)="mostrarWizardProducto=false">
           <div class="ra-modal" style="max-width:480px" (click)="$event.stopPropagation()">
             <div class="ra-modal-header" style="background:#0d6efd">
               <h6 class="mb-0">
