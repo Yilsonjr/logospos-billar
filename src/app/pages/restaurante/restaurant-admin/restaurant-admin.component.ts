@@ -512,11 +512,11 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       await this.ordersService.crearMenuItem({
         categoria_id: plato.categoria_id,
         nombre: `${plato.nombre} (copia)`,
-        descripcion: plato.descripcion,
+        descripcion: plato.descripcion ?? undefined,
         precio: plato.precio,
         costo_estimado: plato.costo_estimado ?? null,
         tiempo_preparacion_minutos: plato.tiempo_preparacion_minutos,
-        notas_cocina: plato.notas_cocina,
+        notas_cocina: plato.notas_cocina ?? undefined,
         requiere_inventario: false,
         enviar_a_cocina: plato.enviar_a_cocina,
         disponible: false
