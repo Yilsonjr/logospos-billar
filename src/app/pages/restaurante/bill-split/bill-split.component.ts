@@ -399,7 +399,8 @@ export class BillSplitComponent implements OnInit {
         }
         await this.ordersService.cerrarOrden(this.orden.id);
 
-        // Imprimir recibo — agente térmico si está configurado, siempre abre ventana del navegador
+        // Imprimir recibo — térmica si hay agente+impresora caja, si no fallback al navegador
+        let imprimioTermica = false;
         try {
           await this.printService.imprimirReciboRestaurant({
             orden: this.orden,
@@ -407,10 +408,13 @@ export class BillSplitComponent implements OnInit {
             formaPago: cuenta.forma_pago,
             negocioNombre: this.negocioNombre
           });
+          imprimioTermica = true;
         } catch {
-          console.warn('[BillSplit] Impresora térmica no disponible');
+          console.warn('[BillSplit] Impresora térmica no disponible, abriendo navegador');
         }
-        this.abrirTicketEnNavegador(cuenta.forma_pago, ncf, cuenta.tipo_ncf, cuenta.rnc_cliente);
+        if (!imprimioTermica) {
+          this.abrirTicketEnNavegador(cuenta.forma_pago, ncf, cuenta.tipo_ncf, cuenta.rnc_cliente);
+        }
 
         Swal.fire({
           icon: 'success',
