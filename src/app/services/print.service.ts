@@ -235,6 +235,94 @@ export class PrintService {
     return true;
   }
 
+  /**
+   * Imprime la pre-cuenta (documento no fiscal) en la impresora tipo 'caja'.
+   * Retorna true si imprimió en térmica, false si no hay agente/impresora.
+   */
+  async imprimirPrecuenta(params: {
+    identificador: string;
+    ordenId: string;
+    items: Array<{ cantidad: number; nombre: string; subtotal: number; notas?: string }>;
+    subtotal: number;
+    impuesto: number;
+    total: number;
+    negocioNombre: string;
+  }): Promise<boolean> {
+    const url = this.agentUrl;
+    if (!url) return false;
+
+    let impresoras: RestaurantPrinter[] = [];
+    try { impresoras = await this.cargarImpresoras(); } catch { return false; }
+
+    const cajaP = impresoras.find(p => p.tipo === 'caja' && p.activa);
+    if (!cajaP) return false;
+
+    const bytes = this.generarPrecuenta(cajaP, params);
+    await this.enviarAlAgente(url, cajaP.ip, cajaP.puerto, bytes, cajaP.copies, cajaP.tipo_conexion, cajaP.puerto_usb);
+    return true;
+  }
+
+  private generarPrecuenta(
+    printer: RestaurantPrinter,
+    params: {
+      identificador: string;
+      ordenId: string;
+      items: Array<{ cantidad: number; nombre: string; subtotal: number; notas?: string }>;
+      subtotal: number;
+      impuesto: number;
+      total: number;
+      negocioNombre: string;
+    }
+  ): number[] {
+    const chars = printer.caracteres_por_linea || 42;
+    const buf: number[] = [];
+    const push  = (...bytes: number[]) => buf.push(...bytes);
+    const texto = (str: string)        => buf.push(...this.encodeText(str));
+    const linea = (str = '')           => { texto(str); push(LF); };
+    const sep   = (c = '-')            => linea(c.repeat(chars));
+    const fmt   = (n: number)          => `RD$ ${n.toFixed(2)}`;
+    const col2  = (izq: string, der: string) => {
+      const espacio = Math.max(1, chars - izq.length - der.length);
+      linea(izq + ' '.repeat(espacio) + der);
+    };
+
+    push(...INIT, ...ALIGN_CENTER, ...BOLD_ON, ...FONT_DOUBLE);
+    linea(params.negocioNombre.substring(0, 20));
+    push(...FONT_NORMAL, ...BOLD_OFF);
+    linea('PRE-CUENTA');
+    linea('-- DOCUMENTO NO FISCAL --');
+    sep('=');
+
+    push(...ALIGN_LEFT);
+    col2(params.identificador, `#${params.ordenId.slice(-6).toUpperCase()}`);
+    linea(new Date().toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' }));
+    sep();
+
+    for (const item of params.items) {
+      const precio  = fmt(item.subtotal);
+      const izqLen  = chars - precio.length - 1;
+      const izq     = `${item.cantidad}x ${item.nombre}`.substring(0, izqLen);
+      col2(izq.padEnd(izqLen), precio);
+      if (item.notas) linea(`  * ${item.notas}`);
+    }
+    sep();
+
+    col2('Subtotal:', fmt(params.subtotal));
+    if (params.impuesto > 0) col2('ITBIS:', fmt(params.impuesto));
+    sep();
+    push(...BOLD_ON);
+    col2('TOTAL ESTIMADO:', fmt(params.total));
+    push(...BOLD_OFF);
+    sep('=');
+
+    push(...ALIGN_CENTER);
+    linea('Este documento no es comprobante fiscal.');
+    push(LF, LF);
+
+    if (printer.corte_automatico) push(...CUT_FULL);
+    return buf;
+  }
+
   // ============================================================
   // Generación ESC/POS — Comanda de cocina/barra
   // ============================================================

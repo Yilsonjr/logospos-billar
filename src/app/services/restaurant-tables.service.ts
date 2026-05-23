@@ -177,9 +177,47 @@ export class RestaurantTablesService {
       .eq('negocio_id', this.negocioId);
 
     if (error) throw error;
-    // Actualizar en memoria
     const mesas = this.mesasSubject.value.map(m =>
       m.id === id ? { ...m, estado } : m
+    );
+    this.mesasSubject.next(mesas);
+  }
+
+  async reservarMesa(id: string, datos: {
+    reserva_nombre: string;
+    reserva_hora: string;
+    reserva_personas?: number | null;
+    reserva_notas?: string | null;
+  }): Promise<void> {
+    const { error } = await this.supabaseService.client
+      .from('restaurant_tables')
+      .update({ estado: 'reservada', ...datos })
+      .eq('id', id)
+      .eq('negocio_id', this.negocioId);
+
+    if (error) throw error;
+    const mesas = this.mesasSubject.value.map(m =>
+      m.id === id ? { ...m, estado: 'reservada' as EstadoMesa, ...datos } : m
+    );
+    this.mesasSubject.next(mesas);
+  }
+
+  async cancelarReserva(id: string): Promise<void> {
+    const { error } = await this.supabaseService.client
+      .from('restaurant_tables')
+      .update({
+        estado: 'libre',
+        reserva_nombre: null,
+        reserva_hora: null,
+        reserva_personas: null,
+        reserva_notas: null
+      })
+      .eq('id', id)
+      .eq('negocio_id', this.negocioId);
+
+    if (error) throw error;
+    const mesas = this.mesasSubject.value.map(m =>
+      m.id === id ? { ...m, estado: 'libre' as EstadoMesa, reserva_nombre: null, reserva_hora: null, reserva_personas: null, reserva_notas: null } : m
     );
     this.mesasSubject.next(mesas);
   }

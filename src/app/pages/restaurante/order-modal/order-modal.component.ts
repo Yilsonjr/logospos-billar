@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
 import { PrintService } from '../../../services/print.service';
+import { NegociosService } from '../../../services/negocios.service';
 import {
   TableWithOrder, MenuCategory, MenuItem, MenuItemModifier,
   CartItem, ModificadorSeleccionado, RestaurantOrder,
@@ -52,6 +53,7 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   constructor(
     private ordersService: RestaurantOrdersService,
     private printService: PrintService,
+    private negociosService: NegociosService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -425,14 +427,11 @@ export class OrderModalComponent implements OnInit, OnDestroy {
     return modificadores.map(m => m.nombre).join(', ');
   }
 
-  imprimirPrecuenta(): void {
+  async imprimirPrecuenta(): Promise<void> {
     if (!this.orden || !this.itemsPersistidos.length) return;
-    const itemsHTML = this.itemsPersistidos
-      .map(i => `<tr><td>${i.cantidad}× ${i.menu_item?.nombre || 'Item'}</td><td style="text-align:right">RD$ ${(i.subtotal || 0).toFixed(2)}</td></tr>`)
-      .join('');
 
-    let identificador: string;
     const np = (this.orden as any).numero_pedido_dia;
+    let identificador: string;
     if (this.tipoOrden === 'mesa') {
       identificador = `Mesa ${this.orden.mesa?.numero_mesa || '-'}`;
     } else if (this.tipoOrden === 'barra') {
@@ -442,9 +441,51 @@ export class OrderModalComponent implements OnInit, OnDestroy {
       identificador = `${label}${np ? ` #${np}` : ''}${this.clienteNombre ? ` | ${this.clienteNombre}` : ''}`;
     }
 
+    const items = this.itemsPersistidos.map(i => ({
+      cantidad: i.cantidad,
+      nombre: i.menu_item?.nombre || 'Item',
+      subtotal: i.subtotal || 0,
+      notas: (i as any).notas_especiales || undefined
+    }));
+
+    const negocio = await this.negociosService.cargarNegocio().catch(() => null);
+    const negocioNombre = negocio?.nombre || 'RESTAURANTE';
+
+    // Intentar térmica primero
+    let imprimioTermica = false;
+    try {
+      imprimioTermica = await this.printService.imprimirPrecuenta({
+        identificador,
+        ordenId: this.orden.id,
+        items,
+        subtotal: this.subtotalOrden,
+        impuesto: this.impuestoOrden,
+        total: this.totalOrden,
+        negocioNombre
+      });
+    } catch {
+      console.warn('[OrderModal] Error en térmica, abriendo navegador');
+    }
+
+    if (!imprimioTermica) {
+      this.abrirPrecuentaNavegador(identificador, items, negocioNombre);
+    }
+  }
+
+  private abrirPrecuentaNavegador(
+    identificador: string,
+    items: Array<{ cantidad: number; nombre: string; subtotal: number; notas?: string }>,
+    negocioNombre: string
+  ): void {
+    if (!this.orden) return;
+    const itemsHTML = items
+      .map(i => `<tr><td>${i.cantidad}× ${i.nombre}${i.notas ? `<br><small style="color:#666">* ${i.notas}</small>` : ''}</td><td style="text-align:right">RD$ ${i.subtotal.toFixed(2)}</td></tr>`)
+      .join('');
+
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pre-Cuenta</title>
 <style>
-  body{font-family:monospace;width:300px;margin:0 auto;font-size:12px}
+  @page{size:80mm auto;margin:3mm}
+  body{font-family:monospace;width:76mm;margin:0 auto;font-size:12px}
   h2,p{text-align:center;margin:4px 0}
   table{width:100%;border-collapse:collapse}
   td{padding:2px 0}
@@ -452,22 +493,28 @@ export class OrderModalComponent implements OnInit, OnDestroy {
   .total td{font-weight:bold;font-size:14px}
   .nofiscal{font-size:10px;text-align:center;margin-top:8px;color:#666}
 </style></head><body>
+<h2>${negocioNombre}</h2>
 <h2>PRE-CUENTA</h2>
 <p>─────────────────────────</p>
-<p>${identificador} &nbsp;|&nbsp; Orden #${this.orden.id.slice(-6).toUpperCase()}</p>
+<p>${identificador} | #${this.orden.id.slice(-6).toUpperCase()}</p>
 <div class="divider"></div>
 <table>${itemsHTML}</table>
 <div class="divider"></div>
 <table>
   <tr><td>Subtotal</td><td style="text-align:right">RD$ ${this.subtotalOrden.toFixed(2)}</td></tr>
   <tr><td>ITBIS</td><td style="text-align:right">RD$ ${this.impuestoOrden.toFixed(2)}</td></tr>
-  <tr class="total"><td>TOTAL ESTIMADO</td><td style="text-align:right">RD$ ${this.totalOrden.toFixed(2)}</td></tr>
+  <tr><td><b>TOTAL ESTIMADO</b></td><td style="text-align:right"><b>RD$ ${this.totalOrden.toFixed(2)}</b></td></tr>
 </table>
 <p class="nofiscal">─── DOCUMENTO NO FISCAL ───</p>
-<p class="nofiscal">Este documento no es un comprobante fiscal.</p>
 <p class="nofiscal">${new Date().toLocaleString('es-DO')}</p>
 </body></html>`;
-    const w = window.open('', '_blank', 'width=380,height=620');
-    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); }
+
+    const w = window.open('', '_blank', 'width=420,height=600');
+    if (w) {
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      w.location.href = url;
+      setTimeout(() => { w.print(); URL.revokeObjectURL(url); }, 600);
+    }
   }
 }

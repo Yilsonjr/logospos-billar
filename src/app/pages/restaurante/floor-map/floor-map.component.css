@@ -288,6 +288,29 @@
   font-weight: 600;
 }
 
+/* ── Reserva info ─────────────────────────────────── */
+.mesa-reserva-info {
+  margin-top: 6px;
+  background: #fef9c3;
+  border-radius: 8px;
+  padding: 5px 8px;
+  width: 100%;
+  text-align: left;
+}
+.mesa-reserva-nombre {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #92400e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mesa-reserva-sub {
+  font-size: .72rem;
+  color: #a16207;
+  margin-top: 1px;
+}
+
 /* ── Quick action ─────────────────────────────────── */
 .mesa-quick-action { padding: 0.4rem 0.5rem 0.5rem; }
 

@@ -63,6 +63,11 @@ export interface RestaurantTable {
   ubicacion_y: number;
   activa: boolean;
   notas?: string | null;
+  // Reserva
+  reserva_nombre?: string | null;
+  reserva_hora?: string | null;    // HH:MM
+  reserva_personas?: number | null;
+  reserva_notas?: string | null;
   created_at?: string;
   updated_at?: string;
   // Relaciones opcionales (joins)

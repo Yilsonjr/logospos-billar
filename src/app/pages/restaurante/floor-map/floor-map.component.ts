@@ -101,6 +101,113 @@ export class FloorMapComponent implements OnInit, OnDestroy {
     if (isConfirmed) await this.cambiarEstado(mesa, 'libre');
   }
 
+  async abrirReserva(mesa: TableWithOrder, event: Event): Promise<void> {
+    event.stopPropagation();
+
+    // Hora por defecto: próxima hora redonda
+    const ahora = new Date();
+    ahora.setHours(ahora.getHours() + 1, 0, 0, 0);
+    const horaDefault = ahora.toTimeString().slice(0, 5);
+
+    const { value: datos, isConfirmed } = await Swal.fire({
+      title: `Reservar Mesa ${mesa.numero_mesa}`,
+      html: `
+        <div style="text-align:left">
+          <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">
+            Nombre del cliente *
+          </label>
+          <input id="res-nombre" class="swal2-input" style="margin:0 0 12px 0;width:100%"
+            placeholder="Ej: Juan Martínez" value="${mesa.reserva_nombre || ''}">
+
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div style="flex:1">
+              <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">
+                Hora de llegada *
+              </label>
+              <input id="res-hora" type="time" class="swal2-input" style="margin:0;width:100%"
+                value="${mesa.reserva_hora || horaDefault}">
+            </div>
+            <div style="flex:1">
+              <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">
+                Personas
+              </label>
+              <input id="res-personas" type="number" class="swal2-input" style="margin:0;width:100%"
+                min="1" max="50" placeholder="2" value="${mesa.reserva_personas || ''}">
+            </div>
+          </div>
+
+          <label style="font-size:.85rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">
+            Notas (opcional)
+          </label>
+          <textarea id="res-notas" class="swal2-textarea" style="margin:0;width:100%;height:70px"
+            placeholder="Cumpleaños, alergias, mesa preferida…">${mesa.reserva_notas || ''}</textarea>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '<i class="bi bi-calendar-check me-1"></i>Reservar',
+      confirmButtonColor: '#f59e0b',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      didOpen: () => {
+        (document.getElementById('res-nombre') as HTMLInputElement).focus();
+      },
+      preConfirm: () => {
+        const nombre   = (document.getElementById('res-nombre') as HTMLInputElement).value.trim();
+        const hora     = (document.getElementById('res-hora') as HTMLInputElement).value;
+        const personas = (document.getElementById('res-personas') as HTMLInputElement).value;
+        const notas    = (document.getElementById('res-notas') as HTMLTextAreaElement).value.trim();
+        if (!nombre) { Swal.showValidationMessage('El nombre del cliente es requerido'); return false; }
+        if (!hora)   { Swal.showValidationMessage('La hora de llegada es requerida'); return false; }
+        return { nombre, hora, personas: personas ? +personas : null, notas: notas || null };
+      }
+    });
+
+    if (!isConfirmed || !datos) return;
+
+    try {
+      await this.tablesService.reservarMesa(mesa.id, {
+        reserva_nombre:   datos.nombre,
+        reserva_hora:     datos.hora,
+        reserva_personas: datos.personas,
+        reserva_notas:    datos.notas
+      });
+      mesa.estado          = 'reservada';
+      mesa.reserva_nombre  = datos.nombre;
+      mesa.reserva_hora    = datos.hora;
+      mesa.reserva_personas = datos.personas;
+      mesa.reserva_notas   = datos.notas;
+      this.cdr.detectChanges();
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    }
+  }
+
+  async cancelarReserva(mesa: TableWithOrder, event: Event): Promise<void> {
+    event.stopPropagation();
+    const { isConfirmed } = await Swal.fire({
+      title: `¿Cancelar reserva de ${mesa.reserva_nombre}?`,
+      text: 'La mesa volverá a estado Libre.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cancelar reserva',
+      cancelButtonText: 'No',
+      confirmButtonColor: '#ef4444'
+    });
+    if (!isConfirmed) return;
+
+    try {
+      await this.tablesService.cancelarReserva(mesa.id);
+      mesa.estado           = 'libre';
+      mesa.reserva_nombre   = null;
+      mesa.reserva_hora     = null;
+      mesa.reserva_personas = null;
+      mesa.reserva_notas    = null;
+      this.cdr.detectChanges();
+    } catch (e: any) {
+      Swal.fire('Error', e.message, 'error');
+    }
+  }
+
   // Métricas rápidas
   get totalMesas(): number { return this.mesas.length; }
   get mesasLibres(): number { return this.mesas.filter(m => m.estado === 'libre').length; }

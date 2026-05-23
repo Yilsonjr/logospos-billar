@@ -127,6 +127,21 @@
                   </span>
                 </div>
               }
+
+              <!-- Info de reserva -->
+              @if (mesa.estado === 'reservada' && mesa.reserva_nombre) {
+                <div class="mesa-reserva-info">
+                  <div class="mesa-reserva-nombre">
+                    <i class="bi bi-person-fill"></i> {{ mesa.reserva_nombre }}
+                  </div>
+                  <div class="mesa-reserva-sub">
+                    <i class="bi bi-clock"></i> {{ mesa.reserva_hora }}
+                    @if (mesa.reserva_personas) {
+                      &nbsp;·&nbsp;<i class="bi bi-people-fill"></i> {{ mesa.reserva_personas }}
+                    }
+                  </div>
+                </div>
+              }
             </div>
 
             <!-- Footer -->
@@ -145,6 +160,31 @@
                 <button class="btn btn-success btn-sm w-100 fw-semibold"
                   (click)="$event.stopPropagation(); cambiarEstado(mesa, 'libre')">
                   <i class="bi bi-check2-circle me-1"></i>Marcar lista
+                </button>
+              </div>
+            }
+
+            <!-- Acción rápida: Reservar (mesa libre) -->
+            @if (mesa.estado === 'libre') {
+              <div class="mesa-quick-action">
+                <button class="btn btn-warning btn-sm w-100 fw-semibold"
+                  (click)="abrirReserva(mesa, $event)">
+                  <i class="bi bi-calendar-plus me-1"></i>Reservar
+                </button>
+              </div>
+            }
+
+            <!-- Acciones reserva activa -->
+            @if (mesa.estado === 'reservada') {
+              <div class="mesa-quick-action d-flex gap-1">
+                <button class="btn btn-success btn-sm flex-fill fw-semibold"
+                  (click)="$event.stopPropagation(); mesaSeleccionada.emit(mesa)">
+                  <i class="bi bi-door-open me-1"></i>Abrir orden
+                </button>
+                <button class="btn btn-outline-danger btn-sm"
+                  title="Cancelar reserva"
+                  (click)="cancelarReserva(mesa, $event)">
+                  <i class="bi bi-x-lg"></i>
                 </button>
               </div>
             }
