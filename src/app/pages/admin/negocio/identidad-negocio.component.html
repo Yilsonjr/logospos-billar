@@ -229,6 +229,42 @@
                             </div>
                         </div>
 
+                            <!-- Formato de Ticket Térmico -->
+                            <div class="col-12">
+                                <div class="card border-0 bg-light rounded-3 p-3 mb-2">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <i class="fa-solid fa-receipt text-primary"></i>
+                                        <span class="fw-bold small">Formato de Ticket Térmico</span>
+                                    </div>
+                                    <div class="d-flex gap-3">
+                                        <label class="d-flex align-items-center gap-2 p-2 rounded-3 border flex-fill"
+                                            [class.bg-primary-subtle]="negocioForm.get('formato_ticket')?.value === '58mm'"
+                                            [class.border-primary]="negocioForm.get('formato_ticket')?.value === '58mm'"
+                                            [class.bg-white]="negocioForm.get('formato_ticket')?.value !== '58mm'"
+                                            style="cursor:pointer">
+                                            <input type="radio" class="form-check-input mt-0"
+                                                formControlName="formato_ticket" value="58mm">
+                                            <div>
+                                                <div class="fw-semibold small">58 mm</div>
+                                                <div class="text-muted" style="font-size:0.72rem">Rollo estrecho</div>
+                                            </div>
+                                        </label>
+                                        <label class="d-flex align-items-center gap-2 p-2 rounded-3 border flex-fill"
+                                            [class.bg-primary-subtle]="negocioForm.get('formato_ticket')?.value === '80mm'"
+                                            [class.border-primary]="negocioForm.get('formato_ticket')?.value === '80mm'"
+                                            [class.bg-white]="negocioForm.get('formato_ticket')?.value !== '80mm'"
+                                            style="cursor:pointer">
+                                            <input type="radio" class="form-check-input mt-0"
+                                                formControlName="formato_ticket" value="80mm">
+                                            <div>
+                                                <div class="fw-semibold small">80 mm</div>
+                                                <div class="text-muted" style="font-size:0.72rem">Rollo estándar</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                         <!-- Botón de Acción -->
                         <div class="d-flex justify-content-end gap-3 mt-4 border-top pt-4">
                             <button type="button" class="btn btn-light px-4 py-2 rounded-3 fw-bold" [disabled]="saving" (click)="cargarDatos()">

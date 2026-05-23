@@ -37,7 +37,8 @@ export class IdentidadNegocioComponent implements OnInit {
       email: ['', Validators.email],
       web: [''],
       modo_impuesto: ['sin_impuesto'],
-      tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]]
+      tasa_itbis_pct: [18, [Validators.min(0), Validators.max(100)]],
+      formato_ticket: ['80mm']
     });
   }
 
@@ -60,7 +61,8 @@ export class IdentidadNegocioComponent implements OnInit {
           this.negocioForm.patchValue({
             ...data,
             modo_impuesto: data.modo_impuesto ?? 'sin_impuesto',
-            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18
+            tasa_itbis_pct: tasaPct > 0 ? tasaPct : 18,
+            formato_ticket: data.formato_ticket ?? '80mm'
           });
           if (data.logo_url && (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))) {
             this.logoPreview = data.logo_url;

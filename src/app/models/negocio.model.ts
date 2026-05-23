@@ -26,6 +26,9 @@ export interface Negocio {
     // Notas internas del desarrollador (no visibles para el cliente)
     notas_internas?: string | null;
 
+    // Formato de ticket térmico
+    formato_ticket?: '58mm' | '80mm';
+
     // Agente de impresión local (LAN)
     print_agent_url?: string | null;
 

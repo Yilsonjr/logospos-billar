@@ -63,21 +63,41 @@
             <!-- Propina -->
             <div class="propina-section mt-2">
               <label class="small fw-bold mb-1 d-block">Propina:</label>
-              <div class="btn-group btn-group-sm w-100 mb-2">
-                @for (pct of [0, 10, 15, 18]; track pct) {
+              <div class="btn-group btn-group-sm w-100">
+                <button type="button" class="btn"
+                  [class.btn-secondary]="propinaOpcion === 0 && !propinaPersonalizada"
+                  [class.btn-outline-secondary]="propinaOpcion !== 0 || propinaPersonalizada"
+                  (click)="aplicarPropinaPct(0)">
+                  Sin propina
+                </button>
+                @for (pct of [10, 15, 18]; track pct) {
                   <button type="button" class="btn"
                     [class.btn-primary]="propinaOpcion === pct"
                     [class.btn-outline-secondary]="propinaOpcion !== pct"
                     (click)="aplicarPropinaPct($any(pct))">
-                    {{ pct === 0 ? 'Sin propina' : pct + '%' }}
+                    {{ pct }}%
                   </button>
                 }
+                <button type="button" class="btn"
+                  [class.btn-warning]="propinaPersonalizada"
+                  [class.btn-outline-secondary]="!propinaPersonalizada"
+                  (click)="activarPropinaPersonalizada()">
+                  Otro
+                </button>
               </div>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text">RD$</span>
-                <input type="number" class="form-control" [(ngModel)]="propinaGlobal"
-                  min="0" placeholder="0.00" (change)="aplicarPropinaPct(0)">
-              </div>
+
+              @if (propinaPersonalizada) {
+                <div class="input-group input-group-sm mt-2">
+                  <span class="input-group-text">RD$</span>
+                  <input type="number" class="form-control" [(ngModel)]="propinaGlobal"
+                    min="0" placeholder="0.00" (change)="aplicarPropinaManual()">
+                  <span class="input-group-text text-muted small">monto personalizado</span>
+                </div>
+              } @else if (propinaOpcion > 0) {
+                <div class="text-end text-muted small mt-1">
+                  Propina: <span class="fw-bold text-dark">RD$ {{ propinaGlobal | number:'1.2-2' }}</span>
+                </div>
+              }
             </div>
 
             <div class="d-flex justify-content-between fw-bold fs-5 border-top pt-2 mt-2 text-success">
