@@ -125,6 +125,10 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   ordenSeleccionada: any = null;
   cargandoDetalle = false;
   busquedaOrden = '';
+  negocioNombre = '';
+  negocioFormatoTicket: '58mm' | '80mm' = '80mm';
+  negocioModoImpuesto: 'sin_impuesto' | 'encima' | 'incluido' = 'sin_impuesto';
+  negocioTasaItbis = 0;
   filtroEstadoOrden = '';
 
   readonly unidades = ['unidad', 'kg', 'g', 'litro', 'ml', 'botella', 'caja', 'docena', 'porción'];
@@ -149,6 +153,13 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
+    const negocio = await this.negociosService.cargarNegocio().catch(() => null);
+    if (negocio) {
+      this.negocioNombre = negocio.nombre || '';
+      this.negocioFormatoTicket = negocio.formato_ticket ?? '80mm';
+      this.negocioModoImpuesto = negocio.modo_impuesto ?? 'sin_impuesto';
+      this.negocioTasaItbis = negocio.tasa_itbis ?? 0;
+    }
     await this.cargarTab(this.primeraTabAccesible);
   }
 
@@ -806,6 +817,89 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     } finally {
       this.cargandoDetalle = false;
       this.cdr.detectChanges();
+    }
+  }
+
+  reimprimirTicket(orden: any): void {
+    const fmt = this.negocioFormatoTicket;
+    const ancho = fmt === '58mm' ? '54mm' : '76mm';
+    const anchoPx = fmt === '58mm' ? 200 : 280;
+    const fuentePx = fmt === '58mm' ? 10 : 12;
+
+    const items = (orden.items || []).filter((i: any) => i.estado !== 'cancelado');
+    const itemsHTML = items.map((i: any) =>
+      `<tr><td>${i.cantidad}× ${i.menu_item?.nombre || 'Item'}</td><td class="r">RD$ ${(i.subtotal || 0).toFixed(2)}</td></tr>`
+    ).join('');
+
+    const subtotal = orden.subtotal || 0;
+    const impuesto = orden.impuesto || orden.impuestos || 0;
+    const propina  = orden.propina  || 0;
+    const total    = orden.total    || 0;
+
+    const pago = orden.pagos?.[0];
+    const formaPago = pago?.forma_pago || pago?.metodo_pago || 'efectivo';
+    const ncf = pago?.ncf || null;
+    const tipoNcf = pago?.tipo_ncf || '';
+    const rncCliente = pago?.rnc_cliente || '';
+
+    const identificador = orden.mesa
+      ? `Mesa ${orden.mesa.numero_mesa}`
+      : (orden.numero_pedido_dia ? `Pedido #${orden.numero_pedido_dia}` : `Orden #${orden.id.slice(-6).toUpperCase()}`);
+
+    const itbisRow = this.negocioModoImpuesto !== 'sin_impuesto' && impuesto > 0
+      ? `<tr><td>ITBIS (${Math.round(this.negocioTasaItbis * 100)}%)</td><td class="r">RD$ ${impuesto.toFixed(2)}</td></tr>`
+      : '';
+    const propinaRow = propina > 0 ? `<tr><td>Propina</td><td class="r">RD$ ${propina.toFixed(2)}</td></tr>` : '';
+    const ncfSection = ncf
+      ? `<div class="div"></div><p class="c bold" style="font-size:${fuentePx-1}px">COMPROBANTE FISCAL</p>
+         <p class="c" style="font-size:${fuentePx-1}px">Tipo: ${tipoNcf}</p>
+         <p class="c bold" style="letter-spacing:1px">${ncf}</p>
+         ${rncCliente ? `<p class="c small">RNC: ${rncCliente}</p>` : ''}`
+      : '';
+    const piePagina = ncf
+      ? `<p class="small c">─── DOCUMENTO FISCAL ───</p>`
+      : `<p class="small c">─── DOCUMENTO NO FISCAL ───</p>`;
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ticket</title>
+<style>
+  @page { size: ${fmt} auto; margin: 3mm; }
+  * { box-sizing: border-box; }
+  body { font-family:'Courier New',monospace; width:${ancho}; margin:0 auto; font-size:${fuentePx}px; line-height:1.4; }
+  h2 { text-align:center; margin:4px 0; font-size:${fuentePx+2}px; }
+  p { text-align:center; margin:2px 0; }
+  table { width:100%; border-collapse:collapse; }
+  td { padding:1px 0; vertical-align:top; }
+  .r { text-align:right; white-space:nowrap; padding-left:4px; }
+  .div { border-top:1px dashed #000; margin:5px 0; }
+  .total td { font-weight:bold; font-size:${fuentePx+2}px; border-top:1px solid #000; padding-top:3px; }
+  .c { text-align:center; } .bold { font-weight:bold; }
+  .small { font-size:${fuentePx-2}px; color:#555; }
+</style></head><body>
+<h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
+<div class="div"></div>
+<p>${identificador} &nbsp;|&nbsp; #${orden.id.slice(-6).toUpperCase()}</p>
+<p class="small">${this.formatearFecha(orden.hora_cierre || orden.updated_at)}</p>
+<div class="div"></div>
+<table>${itemsHTML}</table>
+<div class="div"></div>
+<table>
+  <tr><td>Subtotal</td><td class="r">RD$ ${subtotal.toFixed(2)}</td></tr>
+  ${itbisRow}${propinaRow}
+  <tr class="total"><td>TOTAL (${formaPago})</td><td class="r">RD$ ${total.toFixed(2)}</td></tr>
+</table>
+${ncfSection}
+<div class="div"></div>
+${piePagina}
+<p class="small">¡Gracias por su visita!</p>
+<p class="small">REIMPRESIÓN — ${new Date().toLocaleString('es-DO')}</p>
+</body></html>`;
+
+    const w = window.open('', '_blank', `width=${anchoPx + 40},height=600`);
+    if (w) {
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      w.location.href = url;
+      setTimeout(() => { w.print(); URL.revokeObjectURL(url); }, 600);
     }
   }
 

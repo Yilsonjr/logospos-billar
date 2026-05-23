@@ -1449,8 +1449,13 @@
               </div>
             }
           </div>
-          <div class="ra-modal-footer bg-light p-3 d-flex justify-content-end">
-            <button class="btn btn-sm btn-secondary" (click)="ordenSeleccionada = null">Cerrar Detalle</button>
+          <div class="ra-modal-footer bg-light p-3 d-flex justify-content-between align-items-center">
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+              (click)="reimprimirTicket(ordenSeleccionada)"
+              title="Reimprimir ticket de esta orden">
+              <i class="bi bi-printer-fill"></i> Reimprimir Ticket
+            </button>
+            <button class="btn btn-sm btn-secondary" (click)="ordenSeleccionada = null">Cerrar</button>
           </div>
         </div>
       </div>
