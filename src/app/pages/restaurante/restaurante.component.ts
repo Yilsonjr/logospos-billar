@@ -113,7 +113,17 @@ import { TableWithOrder, TipoOrden, RestaurantOrder } from '../../models/restaur
             <p class="rest-subtitle">Gestión de mesas, barra y pedidos</p>
           </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+          @if (tienePermiso('restaurante.admin')) {
+            <a routerLink="/restaurante/admin" [queryParams]="{tab:'creditos'}" class="btn-kds" style="background:linear-gradient(135deg,#0369a1,#0284c7)">
+              <i class="bi bi-credit-card-fill"></i> Créditos
+            </a>
+          }
+          @if (tienePermiso('restaurante.admin')) {
+            <a routerLink="/restaurante/admin" [queryParams]="{tab:'ordenes'}" class="btn-kds" style="background:linear-gradient(135deg,#059669,#047857)">
+              <i class="bi bi-clock-history"></i> Historial
+            </a>
+          }
           @if (tienePermiso('restaurante.reportes')) {
             <a routerLink="/restaurante/reportes" class="btn-kds" style="background:linear-gradient(135deg,#4f46e5,#6366f1)">
               <i class="bi bi-bar-chart-fill"></i> Reportes

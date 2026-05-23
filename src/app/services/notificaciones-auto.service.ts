@@ -129,7 +129,7 @@ export class NotificacionesAutoService {
     this.cuentasCobrarService.cuentas$.subscribe(cuentas => {
       // Verificar cuentas próximas a vencer (7 días)
       const cuentasProximasVencer = cuentas.filter(c => {
-        if (c.estado === 'pagada') return false;
+        if (c.estado === 'pagada' || !c.fecha_vencimiento) return false;
 
         const fechaVencimiento = new Date(c.fecha_vencimiento);
         const ahora = new Date();
@@ -141,7 +141,7 @@ export class NotificacionesAutoService {
 
       if (cuentasProximasVencer.length > 0) {
         cuentasProximasVencer.forEach(cuenta => {
-          const fechaVencimiento = new Date(cuenta.fecha_vencimiento);
+          const fechaVencimiento = new Date(cuenta.fecha_vencimiento!);
           const ahora = new Date();
           const dias = Math.ceil((fechaVencimiento.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
 

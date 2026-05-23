@@ -9,6 +9,8 @@ import { CajaService } from '../../../services/caja.service';
 import { AuthService } from '../../../services/auth.service';
 import { PrintService } from '../../../services/print.service';
 import { FiscalService } from '../../../services/fiscal.service';
+import { CuentasCobrarService } from '../../../services/cuentas-cobrar.service';
+import { ClientesService } from '../../../services/clientes.service';
 import { ConfiguracionFiscal, TIPOS_COMPROBANTE } from '../../../models/fiscal.model';
 import {
   OrderWithItems, OrderItemWithMenuItem, CuentaComensal, FormaPago
@@ -50,7 +52,8 @@ export class BillSplitComponent implements OnInit {
   readonly tiposComprobante = TIPOS_COMPROBANTE.filter(t => t.codigo !== 'B03' && t.codigo !== 'B04');
 
   readonly formasPago: FormaPago[] = ['efectivo', 'tarjeta', 'transferencia', 'cheque', 'mixto', 'credito'];
-  clienteCredito = '';  // Nombre del cliente cuando forma_pago = credito
+  clienteCredito = '';
+  clienteCreditoId: number | null = null;  // ID si es cliente registrado
 
   constructor(
     private ordersService: RestaurantOrdersService,
@@ -61,6 +64,8 @@ export class BillSplitComponent implements OnInit {
     private authService: AuthService,
     private printService: PrintService,
     private fiscalService: FiscalService,
+    private cuentasCobrarService: CuentasCobrarService,
+    private clientesService: ClientesService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -69,7 +74,8 @@ export class BillSplitComponent implements OnInit {
       this.cargando = true;
       const [negocio] = await Promise.all([
         this.negociosService.cargarNegocio(),
-        this.fiscalService.cargarConfiguracion()
+        this.fiscalService.cargarConfiguracion(),
+        this.clientesService.cargarClientes()
       ]);
       this.tasaItbis = negocio?.tasa_itbis ?? 0;
       this.modoImpuesto = negocio?.modo_impuesto ?? 'sin_impuesto';
@@ -210,22 +216,48 @@ export class BillSplitComponent implements OnInit {
   async procesarPago(cuenta: CuentaComensal): Promise<void> {
     if (!this.orden) return;
 
-    // Crédito: pedir nombre del cliente antes de procesar
+    // Crédito: seleccionar cliente registrado o ingresar nombre libre
     if (cuenta.forma_pago === 'credito' && !this.clienteCredito.trim()) {
-      const { value: nombre } = await Swal.fire({
+      const clientes = this.clientesService.getClientesActivos();
+      const opcionesHtml = clientes.map(c =>
+        `<option value="${c.id}">${c.nombre}${c.telefono ? ' · ' + c.telefono : ''}</option>`
+      ).join('');
+
+      const { value: seleccion, isConfirmed } = await Swal.fire({
         title: 'Cobro a Crédito',
-        html: `<p class="text-muted small mb-2">Ingresa el nombre del cliente que queda a deber</p>`,
-        input: 'text',
-        inputPlaceholder: 'Nombre del cliente...',
-        inputAttributes: { autocomplete: 'off' },
+        html: `
+          <p class="text-muted small mb-3">Selecciona un cliente registrado o ingresa un nombre</p>
+          <select id="swal-cliente-select" class="swal2-input" style="width:100%;margin-bottom:8px">
+            <option value="">— Cliente no registrado —</option>
+            ${opcionesHtml}
+          </select>
+          <input id="swal-cliente-nombre" class="swal2-input" placeholder="Nombre (si no está registrado)" style="width:100%">
+        `,
         showCancelButton: true,
         confirmButtonText: 'Confirmar Crédito',
         confirmButtonColor: '#6f42c1',
         cancelButtonText: 'Cancelar',
-        inputValidator: (v) => !v?.trim() ? 'El nombre es requerido' : null
+        didOpen: () => {
+          const select = document.getElementById('swal-cliente-select') as HTMLSelectElement;
+          const input  = document.getElementById('swal-cliente-nombre') as HTMLInputElement;
+          select.addEventListener('change', () => {
+            const opt = clientes.find(c => c.id === +select.value);
+            if (opt) { input.value = opt.nombre; input.disabled = true; }
+            else      { input.value = '';         input.disabled = false; }
+          });
+        },
+        preConfirm: () => {
+          const select = document.getElementById('swal-cliente-select') as HTMLSelectElement;
+          const input  = document.getElementById('swal-cliente-nombre') as HTMLInputElement;
+          const nombre = input.value.trim() || clientes.find(c => c.id === +select.value)?.nombre || '';
+          if (!nombre) { Swal.showValidationMessage('El nombre del cliente es requerido'); return false; }
+          return { clienteId: select.value ? +select.value : null, nombre };
+        }
       });
-      if (!nombre) return;
-      this.clienteCredito = nombre.trim();
+
+      if (!isConfirmed || !seleccion) return;
+      this.clienteCredito   = seleccion.nombre;
+      this.clienteCreditoId = seleccion.clienteId;
     }
 
     try {
@@ -288,21 +320,20 @@ export class BillSplitComponent implements OnInit {
               });
             }
           } else if (cuenta.forma_pago === 'credito') {
-            // Crédito: NO entra a caja, se registra en cuentas_por_cobrar existente
+            // Crédito: usa CuentasCobrarService para mantener balance_pendiente del cliente
             const identificador = this.orden!.mesa
               ? `Mesa ${this.orden!.mesa.numero_mesa}`
               : `Pedido #${this.orden!.numero_pedido_dia || this.orden!.id.slice(-6).toUpperCase()}`;
-            await this.supabaseService.client
-              .from('cuentas_por_cobrar')
-              .insert({
-                negocio_id: negocioId,
-                concepto: `Restaurante ${identificador} — ${this.clienteCredito}`,
-                monto_total: cuenta.total,
-                monto_pagado: 0,
-                monto_pendiente: cuenta.total,
-                fecha_venta: new Date().toISOString().split('T')[0],
-                estado: 'pendiente'
-              });
+            await this.cuentasCobrarService.crearCuenta({
+              cliente_id: this.clienteCreditoId ?? null,
+              venta_id: null,
+              concepto: `Restaurante ${identificador} — ${this.clienteCredito}`,
+              monto_total: cuenta.total,
+              monto_pagado: 0,
+              monto_pendiente: cuenta.total,
+              fecha_venta: new Date().toISOString().split('T')[0],
+              estado: 'pendiente'
+            });
           } else {
             // Método simple (efectivo, tarjeta, transferencia, cheque)
             let metodoLabel = '(Efectivo)';

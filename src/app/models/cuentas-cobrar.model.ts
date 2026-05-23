@@ -1,16 +1,17 @@
 export interface CuentaPorCobrar {
   id?: number;
-  venta_id: number;
-  cliente_id: number;
+  venta_id?: number | null;     // Null para órdenes de restaurante
+  cliente_id?: number | null;   // Null si el cliente no está registrado
   concepto: string;
-  cliente_nombre?: string; // Para mostrar en UI
+  cliente_nombre?: string;      // Para mostrar en UI
   monto_total: number;
   monto_pagado: number;
   monto_pendiente: number;
   fecha_venta: string;
-  fecha_vencimiento: string;
+  fecha_vencimiento?: string | null;
   estado: 'pendiente' | 'parcial' | 'pagada' | 'vencida';
   notas?: string;
+  negocio_id?: string;
   created_at?: string;
   updated_at?: string;
 }

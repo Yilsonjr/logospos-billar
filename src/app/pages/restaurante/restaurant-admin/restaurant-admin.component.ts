@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { RestaurantTablesService } from '../../../services/restaurant-tables.service';
 import { RestaurantOrdersService } from '../../../services/restaurant-orders.service';
 import { InventoryRestaurantService, CompraAgrupada } from '../../../services/inventory-restaurant.service';
@@ -10,6 +10,7 @@ import { PrintersAdminComponent } from '../printers-admin/printers-admin.compone
 import { PrintService } from '../../../services/print.service';
 import { AuthService } from '../../../services/auth.service';
 import { SupabaseService } from '../../../services/supabase.service';
+import { CuentasCobrarService } from '../../../services/cuentas-cobrar.service';
 import { environment } from '../../../environment/environment';
 import {
   RestaurantZone, RestaurantTable, MenuCategory, MenuItem,
@@ -157,6 +158,8 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     private printService: PrintService,
     private authService: AuthService,
     private supabaseService: SupabaseService,
+    private cuentasCobrarService: CuentasCobrarService,
+    private route: ActivatedRoute,
     public cdr: ChangeDetectorRef
   ) {}
 
@@ -168,7 +171,10 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       this.negocioModoImpuesto = negocio.modo_impuesto ?? 'sin_impuesto';
       this.negocioTasaItbis = negocio.tasa_itbis ?? 0;
     }
-    await this.cargarTab(this.primeraTabAccesible);
+    // Soportar ?tab=ordenes para navegación directa desde la pantalla principal
+    const tabParam = this.route.snapshot.queryParamMap.get('tab') as Tab | null;
+    const tabInicial = (tabParam && this.puedeVerTab(tabParam)) ? tabParam : this.primeraTabAccesible;
+    await this.cargarTab(tabInicial);
   }
 
   ngOnDestroy(): void { }
@@ -952,16 +958,12 @@ ${piePagina}
     if (!this.creditoSeleccionado || this.abonoMonto <= 0) return;
     this.procesandoAbono = true;
     try {
-      const negocioId = localStorage.getItem('logos_negocio_id') || '';
-      const { error } = await this.supabaseService.client
-        .from('pagos_cuentas')
-        .insert({
-          cuenta_id: this.creditoSeleccionado.id,
-          negocio_id: negocioId,
-          monto: this.abonoMonto,
-          metodo_pago: this.abonoFormaPago
-        });
-      if (error) throw error;
+      await this.cuentasCobrarService.registrarPago({
+        cuenta_id: this.creditoSeleccionado.id,
+        monto: this.abonoMonto,
+        metodo_pago: this.abonoFormaPago,
+        fecha_pago: new Date().toISOString()
+      });
       this.creditoSeleccionado = null;
       await this.cargarCreditos();
       Swal.fire({ icon: 'success', title: 'Abono registrado', timer: 1500, showConfirmButton: false });
