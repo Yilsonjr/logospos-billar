@@ -216,6 +216,26 @@ export class BillSplitComponent implements OnInit {
   async procesarPago(cuenta: CuentaComensal): Promise<void> {
     if (!this.orden) return;
 
+    // Verificar caja abierta antes de procesar cualquier pago
+    if (cuenta.forma_pago !== 'credito') {
+      const caja = await this.cajaService.verificarCajaAbierta().catch(() => null);
+      if (!caja) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Caja cerrada',
+          html: `<p>No hay una caja abierta para registrar este pago.</p>
+                 <p class="text-muted small mb-0">Abre la caja antes de procesar cobros en efectivo, tarjeta u otros métodos.</p>`,
+          confirmButtonText: 'Ir a Caja',
+          confirmButtonColor: '#f59e0b',
+          showCancelButton: true,
+          cancelButtonText: 'Cancelar',
+        }).then(r => {
+          if (r.isConfirmed) window.location.href = '/caja';
+        });
+        return;
+      }
+    }
+
     // Crédito: buscar cliente registrado o ingresar nombre libre
     if (cuenta.forma_pago === 'credito' && !this.clienteCredito.trim()) {
       const clientes = this.clientesService.getClientesActivos();
