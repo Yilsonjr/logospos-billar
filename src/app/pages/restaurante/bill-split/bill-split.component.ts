@@ -402,15 +402,14 @@ export class BillSplitComponent implements OnInit {
         // Imprimir recibo — térmica si hay agente+impresora caja, si no fallback al navegador
         let imprimioTermica = false;
         try {
-          await this.printService.imprimirReciboRestaurant({
+          imprimioTermica = await this.printService.imprimirReciboRestaurant({
             orden: this.orden,
             propina: this.propinaGlobal,
             formaPago: cuenta.forma_pago,
             negocioNombre: this.negocioNombre
           });
-          imprimioTermica = true;
         } catch {
-          console.warn('[BillSplit] Impresora térmica no disponible, abriendo navegador');
+          console.warn('[BillSplit] Error en impresora térmica, abriendo navegador');
         }
         if (!imprimioTermica) {
           this.abrirTicketEnNavegador(cuenta.forma_pago, ncf, cuenta.tipo_ncf, cuenta.rnc_cliente);

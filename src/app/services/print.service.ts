@@ -202,6 +202,10 @@ export class PrintService {
    * Busca automáticamente la impresora de tipo 'caja' activa.
    * Si no hay agente o impresora configurada, omite silenciosamente.
    */
+  /**
+   * Retorna true si imprimió en térmica, false si no había agente/impresora configurada.
+   * Lanza error solo si el envío al agente falla (impresora fuera de línea, etc.).
+   */
   async imprimirReciboRestaurant(params: {
     orden: {
       id: string;
@@ -214,20 +218,21 @@ export class PrintService {
     propina: number;
     formaPago: string;
     negocioNombre: string;
-  }): Promise<void> {
+  }): Promise<boolean> {
     const url = this.agentUrl;
-    if (!url) return;
+    if (!url) return false;
 
     let impresoras: RestaurantPrinter[] = [];
     try {
       impresoras = await this.cargarImpresoras();
-    } catch { return; }
+    } catch { return false; }
 
     const cajaP = impresoras.find(p => p.tipo === 'caja' && p.activa);
-    if (!cajaP) return;
+    if (!cajaP) return false;
 
     const bytes = this.generarReciboRestaurant(cajaP, params);
     await this.enviarAlAgente(url, cajaP.ip, cajaP.puerto, bytes, cajaP.copies, cajaP.tipo_conexion, cajaP.puerto_usb);
+    return true;
   }
 
   // ============================================================
