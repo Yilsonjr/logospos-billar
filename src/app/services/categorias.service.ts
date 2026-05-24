@@ -28,9 +28,11 @@ export class CategoriasService {
     try {
       console.log('🔄 Cargando categorías...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('categorias')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('activo', true) // Solo categorías activas
         .order('nombre', { ascending: true }); // Ordenar alfabéticamente
 
@@ -55,9 +57,11 @@ export class CategoriasService {
     try {
       console.log('🔄 Cargando todas las categorías...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('categorias')
         .select('*')
+        .eq('negocio_id', negocioId)
         .order('nombre', { ascending: true }); // Ordenar alfabéticamente
 
       if (error) {

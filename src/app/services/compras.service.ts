@@ -26,12 +26,14 @@ export class ComprasService {
     try {
       console.log('🔄 Cargando compras...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('compras')
         .select(`
           *,
           proveedores (nombre)
         `)
+        .eq('negocio_id', negocioId)
         .order('fecha_compra', { ascending: false });
 
       if (error) {
@@ -335,9 +337,11 @@ export class ComprasService {
   // Obtener compras por proveedor
   async obtenerComprasPorProveedor(proveedorId: number): Promise<Compra[]> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('compras')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('proveedor_id', proveedorId)
         .order('fecha_compra', { ascending: false });
 
@@ -353,9 +357,11 @@ export class ComprasService {
   // Obtener compras por estado
   async obtenerComprasPorEstado(estado: string): Promise<Compra[]> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('compras')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('estado', estado)
         .order('fecha_compra', { ascending: false });
 
