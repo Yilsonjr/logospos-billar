@@ -21,12 +21,14 @@ export class CuentasCobrarService {
     try {
       console.log('🔄 Cargando cuentas por cobrar...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('cuentas_por_cobrar')
         .select(`
           *,
           clientes (nombre)
         `)
+        .eq('negocio_id', negocioId)
         .order('fecha_vencimiento', { ascending: true });
 
       if (error) {

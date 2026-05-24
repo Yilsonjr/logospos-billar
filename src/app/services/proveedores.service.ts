@@ -24,9 +24,11 @@ export class ProveedoresService {
     try {
       console.log('🔄 Cargando proveedores...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('proveedores')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('activo', true)
         .order('nombre', { ascending: true });
 
@@ -49,9 +51,11 @@ export class ProveedoresService {
     try {
       console.log('🔄 Cargando todos los proveedores...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('proveedores')
         .select('*')
+        .eq('negocio_id', negocioId)
         .order('nombre', { ascending: true });
 
       if (error) {

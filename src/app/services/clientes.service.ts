@@ -43,9 +43,11 @@ export class ClientesService {
     try {
       console.log('🔄 Cargando clientes de Supabase...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('activo', true)
         .order('nombre', { ascending: true });
 
@@ -71,9 +73,11 @@ export class ClientesService {
     try {
       console.log('🔄 Cargando todos los clientes...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .select('*')
+        .eq('negocio_id', negocioId)
         .order('nombre', { ascending: true });
 
       if (error) {
@@ -249,9 +253,11 @@ export class ClientesService {
   // Obtener cliente general (para ventas sin cliente específico)
   async getClienteGeneral(): Promise<Cliente | null> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('clientes')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('nombre', 'Cliente General')
         .single();
 

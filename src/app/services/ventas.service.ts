@@ -206,9 +206,11 @@ export class VentasService {
     try {
       console.log('🔄 Cargando ventas...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('ventas')
         .select('*')
+        .eq('negocio_id', negocioId)
         .order('created_at', { ascending: false })
         .limit(limite);
 
@@ -373,9 +375,11 @@ export class VentasService {
   // Obtener ventas por rango de fechas
   async obtenerVentasPorFecha(fechaInicio: string, fechaFin: string): Promise<Venta[]> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('ventas')
         .select('*')
+        .eq('negocio_id', negocioId)
         .gte('created_at', fechaInicio)
         .lte('created_at', fechaFin)
         .order('created_at', { ascending: false });
@@ -394,9 +398,11 @@ export class VentasService {
     try {
       const hoy = new Date().toISOString().split('T')[0];
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('ventas')
         .select('total')
+        .eq('negocio_id', negocioId)
         .gte('created_at', `${hoy}T00:00:00`)
         .lte('created_at', `${hoy}T23:59:59`)
         .eq('estado', 'completada');

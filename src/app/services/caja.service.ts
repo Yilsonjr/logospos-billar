@@ -91,9 +91,11 @@ export class CajaService {
   // Obtener TODAS las cajas abiertas (para ADMIN)
   async obtenerTodasCajasAbiertas(): Promise<Caja[]> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('cajas')
         .select('*')
+        .eq('negocio_id', negocioId)
         .eq('estado', 'abierta')
         .order('fecha_apertura', { ascending: false });
 
@@ -333,9 +335,11 @@ export class CajaService {
     try {
       console.log('🔄 Cargando historial de cajas...');
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('cajas')
         .select('*')
+        .eq('negocio_id', negocioId)
         .order('fecha_apertura', { ascending: false })
         .limit(limite);
 
@@ -352,9 +356,11 @@ export class CajaService {
   // Obtener cajas por rango de fechas
   async obtenerCajasPorFecha(fechaInicio: string, fechaFin: string): Promise<Caja[]> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('cajas')
         .select('*')
+        .eq('negocio_id', negocioId)
         .gte('fecha_apertura', fechaInicio)
         .lte('fecha_apertura', fechaFin)
         .order('fecha_apertura', { ascending: false });

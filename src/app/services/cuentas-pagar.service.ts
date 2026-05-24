@@ -43,12 +43,14 @@ export class CuentasPagarService {
   async cargarCuentas(filtros?: FiltrosCuentasPagar): Promise<void> {
     try {
       console.log('🔄 Cargando cuentas por pagar...', filtros);
+      const negocioId = this.authService.getNegocioId();
       let query = this.supabaseService.client
         .from('cuentas_pagar')
         .select(`
           *,
           proveedores (nombre)
-        `);
+        `)
+        .eq('negocio_id', negocioId);
 
       // Aplicar filtros
       if (filtros) {
@@ -385,6 +387,7 @@ export class CuentasPagarService {
 
   async obtenerEstadisticasPorProveedor(): Promise<EstadisticasProveedor[]> {
     try {
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('cuentas_pagar')
         .select(`
@@ -395,7 +398,8 @@ export class CuentasPagarService {
           estado,
           fecha_factura,
           fecha_vencimiento
-        `);
+        `)
+        .eq('negocio_id', negocioId);
 
       if (error) throw error;
 
@@ -439,12 +443,14 @@ export class CuentasPagarService {
       const fechaLimite = new Date();
       fechaLimite.setDate(fechaLimite.getDate() + dias);
 
+      const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('cuentas_pagar')
         .select(`
           *,
           proveedores (nombre)
         `)
+        .eq('negocio_id', negocioId)
         .lte('fecha_vencimiento', fechaLimite.toISOString().split('T')[0])
         .neq('estado', 'pagada')
         .order('fecha_vencimiento', { ascending: true });
