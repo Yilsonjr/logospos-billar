@@ -29,7 +29,8 @@
 /* ── Buscador de platos ───────────────────────────── */
 .platos-search-wrap {
   position: relative;
-  min-width: 180px;
+  width: 200px;
+  flex-shrink: 0;
 }
 .platos-search-icon {
   position: absolute;
