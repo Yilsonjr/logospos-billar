@@ -323,7 +323,11 @@
           <div class="plato-form-header">
             <div class="d-flex align-items-center gap-3">
               <div class="plato-form-icon">
-                <i class="fa-solid fa-{{ editandoPlato ? 'pen' : 'plus' }}"></i>
+                @if (editandoPlato) {
+                  <i class="fa-solid fa-pen"></i>
+                } @else {
+                  <i class="fa-solid fa-plus"></i>
+                }
               </div>
               <div>
                 <div class="plato-form-title">
@@ -505,10 +509,10 @@
             </button>
           </div>
           }
-        </div>
 
-        <!-- ── Paneles adicionales: tab Acompañantes ── -->
-        @if (editandoPlato && drawerTab === 'acompanantes') {
+          <!-- ── Tab: Acompañantes (dentro del form-card para que el scroll funcione) ── -->
+          @if (editandoPlato && drawerTab === 'acompanantes') {
+            <div class="plato-acomp-scroll">
 
           <!-- Panel de receta -->
           @if (usaInventario && platoForm.requiere_inventario) {
@@ -662,9 +666,11 @@
               </div>
             </div>
           </div>
+            </div><!-- /plato-acomp-scroll -->
+          }
 
-        }
-      </div>
+        </div><!-- /plato-form-card -->
+      </div><!-- /plato-drawer -->
     }
 
     <!-- ════════════════════════════════════════

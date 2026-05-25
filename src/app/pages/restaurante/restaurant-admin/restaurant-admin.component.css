@@ -796,10 +796,20 @@
   z-index: 2;
 }
 
+/* Tab Acompañantes: área scrolleable dentro del form-card */
+.plato-acomp-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 /* Paneles receta y mods dentro del drawer */
 .plato-drawer .ra-receta-panel,
 .plato-drawer .ra-mods-panel {
-  margin: 0 16px 16px;
+  margin: 0 0 16px;
 }
 
 /* ════════════════════════════════════════════════════
