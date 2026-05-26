@@ -27,6 +27,9 @@ export class FloorMapComponent implements OnInit, OnDestroy {
   cargando = true;
   errorMsg = '';
 
+  // Panel contextual
+  mesaPanel: TableWithOrder | null = null;
+
   readonly colorEstado = COLOR_ESTADO_MESA;
   readonly labelEstado = LABEL_ESTADO_MESA;
   readonly estadosLeyenda: EstadoMesa[] = ['libre', 'ocupada', 'reservada', 'limpieza', 'bloqueada'];
@@ -72,11 +75,62 @@ export class FloorMapComponent implements OnInit, OnDestroy {
   }
 
   seleccionarMesa(mesa: TableWithOrder): void {
-    if (mesa.estado === 'bloqueada') {
-      Swal.fire('Mesa bloqueada', 'Esta mesa no está disponible.', 'info');
-      return;
-    }
+    this.mesaPanel = mesa;
+  }
+
+  cerrarPanel(): void {
+    this.mesaPanel = null;
+  }
+
+  abrirOrden(): void {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
     this.mesaSeleccionada.emit(mesa);
+  }
+
+  async bloquearMesa(): Promise<void> {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
+    await this.cambiarEstado(mesa, 'bloqueada');
+  }
+
+  async liberarBloqueo(): Promise<void> {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
+    await this.cambiarEstado(mesa, 'libre');
+  }
+
+  async enviarLimpieza(): Promise<void> {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
+    await this.cambiarEstado(mesa, 'limpieza');
+  }
+
+  async marcarListaPanel(): Promise<void> {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
+    await this.cambiarEstado(mesa, 'libre');
+  }
+
+  async abrirReservaPanel(): Promise<void> {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
+    const fakeEvent = new Event('click');
+    await this.abrirReserva(mesa, fakeEvent);
+  }
+
+  async cancelarReservaPanel(): Promise<void> {
+    if (!this.mesaPanel) return;
+    const mesa = this.mesaPanel;
+    this.cerrarPanel();
+    const fakeEvent = new Event('click');
+    await this.cancelarReserva(mesa, fakeEvent);
   }
 
   async cambiarEstado(mesa: TableWithOrder, nuevoEstado: EstadoMesa): Promise<void> {

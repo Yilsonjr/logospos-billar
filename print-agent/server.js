@@ -10,12 +10,13 @@
  *   node server.js
  */
 
-const http                   = require('http');
-const https                  = require('https');
-const net                    = require('net');
-const fs                     = require('fs');
-const path                   = require('path');
-const { execSync, spawnSync } = require('child_process');
+const http                        = require('http');
+const https                       = require('https');
+const net                         = require('net');
+const fs                          = require('fs');
+const os                          = require('os');
+const path                        = require('path');
+const { execSync, spawnSync, exec } = require('child_process');
 
 // Detectar si corre como ejecutable SEA (.exe) o como script node
 let _base;
@@ -74,24 +75,73 @@ function readBody(req) {
 }
 
 // ============================================================
-// Enviar bytes a impresora USB (puerto Windows: USB001, USB002, COM3...)
-// Escribe ESC/POS raw directo al puerto del sistema operativo
+// Enviar bytes a impresora USB via Win32 Spooler API (OpenPrinter/WritePrinter)
+// Acepta el NOMBRE de la impresora tal como aparece en Windows (ej: "POS-80").
+// Usa PowerShell inline con P/Invoke — funciona con cualquier impresora
+// instalada en Windows, con o sin compartir, con o sin driver TCP.
 // ============================================================
 
-function printUsb(portName, bytes, copies = 1) {
+function printUsb(printerName, bytes, copies = 1) {
   return new Promise((resolve, reject) => {
-    const portPath = `\\\\.\\${portName}`; // ej: \\.\USB001
-    const buffer   = Buffer.from(bytes);
+    const b64 = Buffer.from(bytes).toString('base64');
 
-    const writeNext = (remaining) => {
-      if (remaining <= 0) { resolve(); return; }
-      fs.writeFile(portPath, buffer, (err) => {
-        if (err) { reject(new Error(`Error en puerto ${portName}: ${err.message}`)); return; }
-        writeNext(remaining - 1);
-      });
-    };
+    const psScript = `
+$ErrorActionPreference = 'Stop'
+$bytes = [System.Convert]::FromBase64String('${b64}')
+$sig = @'
+using System;
+using System.Runtime.InteropServices;
+public class Winspool {
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]
+  public class DOCINFOA {
+    public string pDocName    = "RAW";
+    public string pOutputFile = null;
+    public string pDataType   = "RAW";
+  }
+  [DllImport("winspool.drv", EntryPoint="OpenPrinterA")]
+  public static extern bool OpenPrinter(string n, out IntPtr h, IntPtr d);
+  [DllImport("winspool.drv")]
+  public static extern bool ClosePrinter(IntPtr h);
+  [DllImport("winspool.drv", EntryPoint="StartDocPrinterA")]
+  public static extern int StartDocPrinter(IntPtr h, int l, DOCINFOA di);
+  [DllImport("winspool.drv")]
+  public static extern bool EndDocPrinter(IntPtr h);
+  [DllImport("winspool.drv")]
+  public static extern bool WritePrinter(IntPtr h, byte[] b, int n, out int w);
+}
+'@
+Add-Type -TypeDefinition $sig -Language CSharp
+$copies = ${parseInt(copies)}
+$h = [IntPtr]::Zero
+if (-not [Winspool]::OpenPrinter('${printerName.replace(/'/g, "''")}', [ref]$h, [IntPtr]::Zero)) {
+  throw "No se pudo abrir la impresora '${printerName.replace(/'/g, "''")}'."
+}
+try {
+  for ($i = 0; $i -lt $copies; $i++) {
+    $di = New-Object Winspool+DOCINFOA
+    [Winspool]::StartDocPrinter($h, 1, $di) | Out-Null
+    $written = 0
+    [Winspool]::WritePrinter($h, $bytes, $bytes.Length, [ref]$written) | Out-Null
+    [Winspool]::EndDocPrinter($h) | Out-Null
+  }
+} finally {
+  [Winspool]::ClosePrinter($h) | Out-Null
+}
+Write-Output "OK"
+`.trim();
 
-    writeNext(copies);
+    exec(
+      `powershell -NoProfile -NonInteractive -Command "${psScript.replace(/"/g, '\\"')}"`,
+      { windowsHide: true, timeout: 15000 },
+      (err, stdout, stderr) => {
+        if (err || !stdout.trim().endsWith('OK')) {
+          const msg = stderr?.trim() || err?.message || 'Error desconocido';
+          reject(new Error(`Error USB "${printerName}": ${msg}`));
+        } else {
+          resolve();
+        }
+      }
+    );
   });
 }
 
@@ -219,20 +269,23 @@ async function requestHandler(req, res) {
   }
 
   // ── POST /print-usb ──────────────────────────────────────
-  // Body: { port_name: "USB001", data: number[], copies?: number }
+  // Body: { printer_name: "POS-80", data: number[], copies?: number }
+  // Nota: también acepta port_name por retrocompatibilidad, pero
+  // printer_name (nombre Windows) es más confiable vía spooler.
   if (req.method === 'POST' && req.url === '/print-usb') {
     let body;
     try { body = await readBody(req); }
     catch (e) { return json(res, 400, { error: e.message }); }
 
-    const { port_name, data, copies = 1 } = body;
-    if (!port_name || !Array.isArray(data)) {
-      return json(res, 400, { error: 'Faltan campos: port_name, data (array de bytes)' });
+    const { printer_name, port_name, data, copies = 1 } = body;
+    const target = printer_name || port_name;
+    if (!target || !Array.isArray(data)) {
+      return json(res, 400, { error: 'Faltan campos: printer_name, data (array de bytes)' });
     }
 
-    console.log(`[USB] ${port_name} — ${data.length} bytes × ${copies} cop.`);
+    console.log(`[USB] "${target}" — ${data.length} bytes × ${copies} cop.`);
     try {
-      await printUsb(port_name, data, parseInt(copies));
+      await printUsb(target, data, parseInt(copies));
       return json(res, 200, { ok: true, bytes: data.length });
     } catch (e) {
       console.error(`[USB ERROR] ${e.message}`);

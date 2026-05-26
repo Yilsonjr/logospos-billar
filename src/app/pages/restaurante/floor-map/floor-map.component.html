@@ -4,7 +4,7 @@
   <div class="fm-stats mb-4">
     <div class="fm-stat fm-stat-total">
       <div class="fm-stat-icon">
-        <i class="bi bi-grid-3x3-gap-fill"></i>
+        <i class="fa-solid fa-table-cells-large"></i>
       </div>
       <div>
         <div class="fm-stat-val">{{ totalMesas }}</div>
@@ -13,7 +13,7 @@
     </div>
     <div class="fm-stat fm-stat-libre">
       <div class="fm-stat-icon">
-        <i class="bi bi-check-circle-fill"></i>
+        <i class="fa-solid fa-circle-check"></i>
       </div>
       <div>
         <div class="fm-stat-val">{{ mesasLibres }}</div>
@@ -22,7 +22,7 @@
     </div>
     <div class="fm-stat fm-stat-ocupada">
       <div class="fm-stat-icon">
-        <i class="bi bi-people-fill"></i>
+        <i class="fa-solid fa-users"></i>
       </div>
       <div>
         <div class="fm-stat-val">{{ mesasOcupadas }}</div>
@@ -31,7 +31,7 @@
     </div>
     <div class="fm-stat fm-stat-pct">
       <div class="fm-stat-icon">
-        <i class="bi bi-bar-chart-fill"></i>
+        <i class="fa-solid fa-chart-bar"></i>
       </div>
       <div>
         <div class="fm-stat-val">{{ ocupacionPct }}<span class="fm-pct-sym">%</span></div>
@@ -47,7 +47,7 @@
     <div class="fm-zone-tabs">
       <button class="fm-zone-tab" [class.active]="!zonaSeleccionadaId"
         (click)="onZonaChange('')">
-        <i class="bi bi-grid-fill me-1"></i>Todas
+        <i class="fa-solid fa-border-all me-1"></i>Todas
       </button>
       @for (zona of zonas; track trackByZona($index, zona)) {
         <button class="fm-zone-tab"
@@ -67,7 +67,7 @@
         }
       </div>
       <button class="fm-refresh-btn" (click)="cargarDatos()" [disabled]="cargando">
-        <i class="bi bi-arrow-clockwise" [class.spin]="cargando"></i>
+        <i class="fa-solid fa-rotate-right" [class.spin]="cargando"></i>
         <span>Actualizar</span>
       </button>
     </div>
@@ -84,7 +84,7 @@
   <!-- ERROR -->
   @else if (errorMsg) {
     <div class="alert alert-danger d-flex align-items-center gap-2 rounded-3">
-      <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+      <i class="fa-solid fa-triangle-exclamation flex-shrink-0"></i>
       <span>{{ errorMsg }}</span>
       <button class="btn btn-sm btn-outline-danger ms-auto" (click)="cargarDatos()">Reintentar</button>
     </div>
@@ -102,6 +102,7 @@
       <div class="mesas-grid">
         @for (mesa of mesasFiltradas; track trackByMesa($index, mesa)) {
           <div class="mesa-card mesa-{{ mesa.estado }}"
+               [class.mesa-panel-open]="mesaPanel?.id === mesa.id"
                (click)="seleccionarMesa(mesa)">
 
             <!-- Barra de estado superior -->
@@ -120,7 +121,7 @@
               @if (mesa.orden_activa) {
                 <div class="mesa-orden-row">
                   <span class="mesa-tiempo">
-                    <i class="bi bi-clock-fill"></i> {{ mesa.tiempo_ocupada_minutos }}m
+                    <i class="fa-solid fa-clock"></i> {{ mesa.tiempo_ocupada_minutos }}m
                   </span>
                   <span class="mesa-total">
                     RD$ {{ mesa.orden_activa.total | number:'1.0-0' }}
@@ -132,12 +133,12 @@
               @if (mesa.estado === 'reservada' && mesa.reserva_nombre) {
                 <div class="mesa-reserva-info">
                   <div class="mesa-reserva-nombre">
-                    <i class="bi bi-person-fill"></i> {{ mesa.reserva_nombre }}
+                    <i class="fa-solid fa-user"></i> {{ mesa.reserva_nombre }}
                   </div>
                   <div class="mesa-reserva-sub">
-                    <i class="bi bi-clock"></i> {{ mesa.reserva_hora }}
+                    <i class="fa-regular fa-clock"></i> {{ mesa.reserva_hora }}
                     @if (mesa.reserva_personas) {
-                      &nbsp;·&nbsp;<i class="bi bi-people-fill"></i> {{ mesa.reserva_personas }}
+                      &nbsp;·&nbsp;<i class="fa-solid fa-users"></i> {{ mesa.reserva_personas }}
                     }
                   </div>
                 </div>
@@ -147,51 +148,149 @@
             <!-- Footer -->
             <div class="mesa-foot">
               <span class="mesa-cap">
-                <i class="bi bi-people-fill"></i> {{ mesa.capacidad }}
+                <i class="fa-solid fa-users"></i> {{ mesa.capacidad }}
               </span>
               @if (mesa.zona && mesa.zona.nombre) {
                 <span class="mesa-zona-tag">{{ mesa.zona.nombre }}</span>
               }
             </div>
 
-            <!-- Acción rápida: Limpieza lista -->
-            @if (mesa.estado === 'limpieza') {
-              <div class="mesa-quick-action">
-                <button class="btn btn-success btn-sm w-100 fw-semibold"
-                  (click)="$event.stopPropagation(); cambiarEstado(mesa, 'libre')">
-                  <i class="bi bi-check2-circle me-1"></i>Marcar lista
-                </button>
-              </div>
-            }
-
-            <!-- Acción rápida: Reservar (mesa libre) -->
-            @if (mesa.estado === 'libre') {
-              <div class="mesa-quick-action">
-                <button class="btn btn-warning btn-sm w-100 fw-semibold"
-                  (click)="abrirReserva(mesa, $event)">
-                  <i class="bi bi-calendar-plus me-1"></i>Reservar
-                </button>
-              </div>
-            }
-
-            <!-- Acciones reserva activa -->
-            @if (mesa.estado === 'reservada') {
-              <div class="mesa-quick-action d-flex gap-1">
-                <button class="btn btn-success btn-sm flex-fill fw-semibold"
-                  (click)="$event.stopPropagation(); mesaSeleccionada.emit(mesa)">
-                  <i class="bi bi-door-open me-1"></i>Abrir orden
-                </button>
-                <button class="btn btn-outline-danger btn-sm"
-                  title="Cancelar reserva"
-                  (click)="cancelarReserva(mesa, $event)">
-                  <i class="bi bi-x-lg"></i>
-                </button>
-              </div>
-            }
           </div>
         }
       </div>
     }
+  }
+
+  <!-- ── PANEL CONTEXTUAL ─────────────────────────────────────────── -->
+  @if (mesaPanel) {
+    <!-- Backdrop -->
+    <div class="fm-panel-backdrop" (click)="cerrarPanel()"></div>
+
+    <!-- Panel -->
+    <div class="fm-panel">
+      <!-- Handle + header -->
+      <div class="fm-panel-handle"></div>
+      <div class="fm-panel-header">
+        <div class="fm-panel-mesa-info">
+          <span class="fm-panel-num">Mesa {{ mesaPanel.numero_mesa }}</span>
+          @if (mesaPanel.nombre_mesa) {
+            <span class="fm-panel-alias">{{ mesaPanel.nombre_mesa }}</span>
+          }
+          <span class="fm-panel-badge fm-badge-{{ mesaPanel.estado }}">
+            {{ labelEstado[mesaPanel.estado] }}
+          </span>
+        </div>
+        <button class="fm-panel-close" (click)="cerrarPanel()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Info de reserva dentro del panel -->
+      @if (mesaPanel.estado === 'reservada' && mesaPanel.reserva_nombre) {
+        <div class="fm-panel-reserva-row">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span><strong>{{ mesaPanel.reserva_nombre }}</strong></span>
+          @if (mesaPanel.reserva_hora) {
+            <span class="fm-panel-reserva-hora">
+              <i class="fa-regular fa-clock"></i> {{ mesaPanel.reserva_hora }}
+            </span>
+          }
+          @if (mesaPanel.reserva_personas) {
+            <span><i class="fa-solid fa-users"></i> {{ mesaPanel.reserva_personas }}p</span>
+          }
+        </div>
+      }
+
+      <!-- Info de orden activa -->
+      @if (mesaPanel.orden_activa) {
+        <div class="fm-panel-orden-row">
+          <i class="fa-solid fa-receipt"></i>
+          <span>{{ mesaPanel.tiempo_ocupada_minutos }}m ocupada</span>
+          <span class="fm-panel-total">RD$ {{ mesaPanel.orden_activa.total | number:'1.0-0' }}</span>
+        </div>
+      }
+
+      <!-- Acciones según estado -->
+      <div class="fm-panel-actions">
+
+        <!-- LIBRE -->
+        @if (mesaPanel.estado === 'libre') {
+          <button class="fm-action-btn fm-action-primary" (click)="abrirOrden()">
+            <i class="fa-solid fa-utensils"></i>
+            <span>Abrir Orden</span>
+          </button>
+          <button class="fm-action-btn fm-action-warning" (click)="abrirReservaPanel()">
+            <i class="fa-solid fa-calendar-plus"></i>
+            <span>Reservar</span>
+          </button>
+          <button class="fm-action-btn fm-action-cyan" (click)="enviarLimpieza()">
+            <i class="fa-solid fa-broom"></i>
+            <span>Limpieza</span>
+          </button>
+          <button class="fm-action-btn fm-action-muted" (click)="bloquearMesa()">
+            <i class="fa-solid fa-lock"></i>
+            <span>Bloquear</span>
+          </button>
+        }
+
+        <!-- OCUPADA -->
+        @if (mesaPanel.estado === 'ocupada') {
+          <button class="fm-action-btn fm-action-primary" (click)="abrirOrden()">
+            <i class="fa-solid fa-receipt"></i>
+            <span>Ver Orden</span>
+          </button>
+          <button class="fm-action-btn fm-action-cyan" (click)="enviarLimpieza()">
+            <i class="fa-solid fa-broom"></i>
+            <span>Limpieza</span>
+          </button>
+          <button class="fm-action-btn fm-action-muted" (click)="bloquearMesa()">
+            <i class="fa-solid fa-lock"></i>
+            <span>Bloquear</span>
+          </button>
+        }
+
+        <!-- RESERVADA -->
+        @if (mesaPanel.estado === 'reservada') {
+          <button class="fm-action-btn fm-action-primary" (click)="abrirOrden()">
+            <i class="fa-solid fa-utensils"></i>
+            <span>Abrir Orden</span>
+          </button>
+          <button class="fm-action-btn fm-action-warning" (click)="abrirReservaPanel()">
+            <i class="fa-solid fa-pen"></i>
+            <span>Editar Reserva</span>
+          </button>
+          <button class="fm-action-btn fm-action-danger" (click)="cancelarReservaPanel()">
+            <i class="fa-solid fa-calendar-xmark"></i>
+            <span>Cancelar Reserva</span>
+          </button>
+          <button class="fm-action-btn fm-action-muted" (click)="bloquearMesa()">
+            <i class="fa-solid fa-lock"></i>
+            <span>Bloquear</span>
+          </button>
+        }
+
+        <!-- LIMPIEZA -->
+        @if (mesaPanel.estado === 'limpieza') {
+          <button class="fm-action-btn fm-action-success" (click)="marcarListaPanel()">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Marcar Lista</span>
+          </button>
+          <button class="fm-action-btn fm-action-muted" (click)="bloquearMesa()">
+            <i class="fa-solid fa-lock"></i>
+            <span>Bloquear</span>
+          </button>
+        }
+
+        <!-- BLOQUEADA -->
+        @if (mesaPanel.estado === 'bloqueada') {
+          <button class="fm-action-btn fm-action-success" (click)="liberarBloqueo()">
+            <i class="fa-solid fa-lock-open"></i>
+            <span>Liberar Mesa</span>
+          </button>
+        }
+
+      </div>
+    </div>
   }
 
 </div>

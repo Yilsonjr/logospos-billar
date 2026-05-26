@@ -558,9 +558,9 @@ export class PrintService {
     let body: object;
 
     if (tipoConexion === 'usb') {
-      if (!puertoUsb) throw new Error('Puerto USB no configurado (ej: USB001)');
+      if (!puertoUsb) throw new Error('Nombre de impresora USB no configurado (ej: POS-80)');
       endpoint = `${agentUrl}/print-usb`;
-      body = { port_name: puertoUsb, data: bytes, copies };
+      body = { printer_name: puertoUsb, data: bytes, copies };
     } else {
       endpoint = `${agentUrl}/print`;
       body = { ip, puerto, data: bytes, copies };
