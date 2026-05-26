@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PrintingService, TicketFormat } from '../../services/printing.service';
 import { NegociosService } from '../../services/negocios.service';
+import { PrintService } from '../../services/print.service';
 import { Negocio } from '../../models/negocio.model';
 
 export interface DatosCierreTicket {
@@ -42,8 +43,9 @@ export class TicketCierreComponent implements OnInit {
 
     constructor(
         private negociosService: NegociosService,
-        private printingService: PrintingService
-    ) { 
+        private printingService: PrintingService,
+        private printService: PrintService
+    ) {
         this.formato = this.printingService.currentFormat;
     }
 
@@ -54,7 +56,11 @@ export class TicketCierreComponent implements OnInit {
 
         if (!this.datos) {
             console.error('TicketCierreComponent: No se proporcionaron datos de cierre.');
+            return;
         }
+
+        // Imprimir automáticamente en térmica al mostrar el ticket
+        this.imprimirTermica();
     }
 
     cambiarFormato(nuevoFormato: any) {
@@ -79,8 +85,23 @@ export class TicketCierreComponent implements OnInit {
         });
     }
 
-    imprimir() {
-        window.print();
+    async imprimir() {
+        const imprimioTermica = await this.imprimirTermica();
+        if (!imprimioTermica) {
+            window.print();
+        }
+    }
+
+    private async imprimirTermica(): Promise<boolean> {
+        try {
+            return await this.printService.imprimirCierreCaja({
+                ...this.datos,
+                negocioNombre: this.negocio?.nombre || 'LogosPOS'
+            });
+        } catch (e) {
+            console.error('[TicketCierre] Error impresora térmica:', e);
+            return false;
+        }
     }
 
     onCerrar() {

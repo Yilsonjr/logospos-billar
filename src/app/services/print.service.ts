@@ -591,6 +591,124 @@ export class PrintService {
     } catch { return []; }
   }
 
+  /**
+   * Imprime el resumen de cierre de caja en la impresora tipo 'caja'.
+   * Retorna true si imprimió en térmica, false si no hay agente/impresora.
+   */
+  async imprimirCierreCaja(datos: {
+    id: number;
+    fecha_apertura: string;
+    fecha_cierre: string;
+    monto_inicial: number;
+    ventas_efectivo: number;
+    ventas_tarjeta: number;
+    total_entradas: number;
+    total_salidas: number;
+    monto_esperado: number;
+    monto_real: number;
+    diferencia: number;
+    usuario_apertura: string;
+    usuario_cierre?: string;
+    negocioNombre: string;
+  }): Promise<boolean> {
+    const url = this.agentUrl;
+    if (!url) return false;
+
+    let impresoras: RestaurantPrinter[] = [];
+    try { impresoras = await this.cargarImpresoras(); } catch { return false; }
+
+    const cajaP = impresoras.find(p => p.tipo === 'caja' && p.activa);
+    if (!cajaP) return false;
+
+    const bytes = this.generarTicketCierre(cajaP, datos);
+    await this.enviarAlAgente(url, cajaP.ip, cajaP.puerto, bytes, cajaP.copies, cajaP.tipo_conexion, cajaP.puerto_usb);
+    return true;
+  }
+
+  private generarTicketCierre(
+    printer: RestaurantPrinter,
+    datos: {
+      id: number;
+      fecha_apertura: string;
+      fecha_cierre: string;
+      monto_inicial: number;
+      ventas_efectivo: number;
+      ventas_tarjeta: number;
+      total_entradas: number;
+      total_salidas: number;
+      monto_esperado: number;
+      monto_real: number;
+      diferencia: number;
+      usuario_apertura: string;
+      usuario_cierre?: string;
+      negocioNombre: string;
+    }
+  ): number[] {
+    const chars = printer.caracteres_por_linea || 42;
+    const buf: number[] = [];
+    const push  = (...b: number[]) => buf.push(...b);
+    const texto = (str: string)    => buf.push(...this.encodeText(str));
+    const linea = (str = '')       => { texto(str); push(LF); };
+    const sep   = (c = '-')        => linea(c.repeat(chars));
+
+    const fmt = (v: number) => `RD$ ${new Intl.NumberFormat('es-DO').format(v)}`;
+    const fmtFecha = (f: string) => new Date(f).toLocaleString('es-DO', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+    const fila = (label: string, valor: string) => {
+      const pad = chars - label.length - valor.length;
+      linea(label + ' '.repeat(Math.max(1, pad)) + valor);
+    };
+
+    push(...INIT, ...ALIGN_CENTER, ...BOLD_ON, ...FONT_DOUBLE);
+    linea('CIERRE DE CAJA');
+    push(...FONT_NORMAL, ...BOLD_OFF);
+    linea(datos.negocioNombre);
+    sep('=');
+
+    push(...ALIGN_LEFT);
+    linea(`Caja #${datos.id}`);
+    linea(`Cajero : ${datos.usuario_cierre || datos.usuario_apertura}`);
+    linea(`Apertura: ${fmtFecha(datos.fecha_apertura)}`);
+    linea(`Cierre  : ${fmtFecha(datos.fecha_cierre)}`);
+    sep();
+
+    push(...BOLD_ON);
+    linea('VENTAS');
+    push(...BOLD_OFF);
+    fila('Efectivo',  fmt(datos.ventas_efectivo));
+    fila('Tarjeta',   fmt(datos.ventas_tarjeta));
+    fila('Entradas',  fmt(datos.total_entradas));
+    fila('Salidas',   fmt(datos.total_salidas));
+    sep();
+
+    push(...BOLD_ON);
+    linea('ARQUEO');
+    push(...BOLD_OFF);
+    fila('Monto inicial', fmt(datos.monto_inicial));
+    fila('Esperado',      fmt(datos.monto_esperado));
+    fila('Contado',       fmt(datos.monto_real));
+
+    push(...BOLD_ON);
+    const dif = datos.diferencia;
+    fila('Diferencia', fmt(dif));
+    push(...BOLD_OFF);
+
+    sep('=');
+    push(...ALIGN_CENTER);
+    linea(dif === 0 ? 'CUADRE EXACTO' : dif > 0 ? `SOBRANTE: ${fmt(dif)}` : `FALTANTE: ${fmt(Math.abs(dif))}`);
+    push(LF, LF, LF);
+
+    linea('_'.repeat(Math.floor(chars * 0.6)));
+    linea('Firma del cajero');
+    push(LF, LF);
+
+    if (printer.corte_automatico) push(...CUT_PARTIAL);
+
+    return buf;
+  }
+
   /** Verifica si el agente está corriendo haciendo ping a /health */
   async verificarAgente(): Promise<boolean> {
     const url = this.agentUrl;
