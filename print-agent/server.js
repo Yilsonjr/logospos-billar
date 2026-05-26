@@ -83,46 +83,68 @@ function readBody(req) {
 
 function printUsb(printerName, bytes, copies = 1) {
   return new Promise((resolve, reject) => {
-    // Escribir archivo temporal binario
     const tmpFile = path.join(os.tmpdir(), `logos_${Date.now()}.bin`);
     fs.writeFile(tmpFile, Buffer.from(bytes), (writeErr) => {
       if (writeErr) return reject(new Error(`Error archivo temporal: ${writeErr.message}`));
 
-      const safeName = printerName.replace(/'/g, "''");
-      const safeTmp  = tmpFile.replace(/\\/g, '\\\\');
-      const n        = parseInt(copies);
+      const n = parseInt(copies);
 
-      // System.Printing carga una DLL pre-compilada de Windows — sin compilación C#,
-      // arranca en <1 segundo. AddJob con JobStream envía bytes RAW directamente al spooler.
-      const psScript = `
-$ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.Printing
-Add-Type -AssemblyName ReachFramework
-$bytes = [System.IO.File]::ReadAllBytes('${safeTmp}')
-$srv = New-Object System.Printing.LocalPrintServer
-$pq  = $srv.GetPrintQueue('${safeName}')
-for ($i = 0; $i -lt ${n}; $i++) {
-  $job    = $pq.AddJob('LogosPOS')
-  $stream = $job.JobStream
-  $stream.Write($bytes, 0, $bytes.Length)
-  $stream.Close()
-}
-Write-Output 'OK'
-`.trim();
+      // Usa winspool.drv via PowerShell script file (evita problemas de escaping).
+      // Escribe el script a un .ps1 temporal para mayor confiabilidad en contexto de servicio.
+      const psFile = path.join(os.tmpdir(), `logos_ps_${Date.now()}.ps1`);
+      const psScript = [
+        `$ErrorActionPreference = 'Stop'`,
+        `$sig = @'`,
+        `using System;`,
+        `using System.Runtime.InteropServices;`,
+        `public class WinSpooler {`,
+        `  [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Auto)]`,
+        `  public class DOCINFO { public string pDocName="RAW"; public string pOutputFile=null; public string pDataType="RAW"; }`,
+        `  [DllImport("winspool.drv",CharSet=CharSet.Auto)] public static extern bool OpenPrinter(string n,out IntPtr h,IntPtr d);`,
+        `  [DllImport("winspool.drv")] public static extern bool ClosePrinter(IntPtr h);`,
+        `  [DllImport("winspool.drv",CharSet=CharSet.Auto)] public static extern int StartDocPrinter(IntPtr h,int l,DOCINFO di);`,
+        `  [DllImport("winspool.drv")] public static extern bool EndDocPrinter(IntPtr h);`,
+        `  [DllImport("winspool.drv")] public static extern bool WritePrinter(IntPtr h,byte[] b,int n,out int w);`,
+        `}`,
+        `'@`,
+        `Add-Type -TypeDefinition $sig`,
+        `$bytes = [System.IO.File]::ReadAllBytes('${tmpFile.replace(/\\/g, '\\\\')}')`,
+        `$h = [IntPtr]::Zero`,
+        `if (-not [WinSpooler]::OpenPrinter('${printerName.replace(/'/g, "''")}', [ref]$h, [IntPtr]::Zero)) { throw "No se pudo abrir: ${printerName.replace(/'/g, "''")}" }`,
+        `try {`,
+        `  for ($i=0; $i -lt ${n}; $i++) {`,
+        `    $di = New-Object WinSpooler+DOCINFO`,
+        `    [WinSpooler]::StartDocPrinter($h,1,$di) | Out-Null`,
+        `    $w=0; [WinSpooler]::WritePrinter($h,$bytes,$bytes.Length,[ref]$w) | Out-Null`,
+        `    [WinSpooler]::EndDocPrinter($h) | Out-Null`,
+        `  }`,
+        `} finally { [WinSpooler]::ClosePrinter($h) | Out-Null }`,
+        `Write-Output 'OK'`
+      ].join('\n');
 
-      exec(
-        `powershell -NoProfile -NonInteractive -Command "${psScript.replace(/"/g, '\\"')}"`,
-        { windowsHide: true, timeout: 20000 },
-        (err, stdout, stderr) => {
+      fs.writeFile(psFile, psScript, 'utf8', (psErr) => {
+        if (psErr) {
           try { fs.unlinkSync(tmpFile); } catch {}
-          if (err || !(stdout || '').trim().endsWith('OK')) {
-            const msg = (stderr || '').trim() || err?.message || 'Error desconocido';
-            reject(new Error(`Error USB "${printerName}": ${msg}`));
-          } else {
-            resolve();
-          }
+          return reject(new Error(`Error escribiendo script: ${psErr.message}`));
         }
-      );
+
+        exec(
+          `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${psFile}"`,
+          { windowsHide: true, timeout: 25000 },
+          (err, stdout, stderr) => {
+            try { fs.unlinkSync(tmpFile); } catch {}
+            try { fs.unlinkSync(psFile);  } catch {}
+            const out = (stdout || '').trim();
+            const errTxt = (stderr || '').trim();
+            if (err || !out.endsWith('OK')) {
+              const msg = errTxt || err?.message || `stdout: ${out || '(vacío)'}`;
+              reject(new Error(`Error USB "${printerName}": ${msg}`));
+            } else {
+              resolve();
+            }
+          }
+        );
+      });
     });
   });
 }
@@ -193,6 +215,7 @@ function pingPrinter(ip, puerto) {
 // ============================================================
 
 async function requestHandler(req, res) {
+  try {
   const origin = req.headers.origin || '';
   setCors(res, origin);
 
@@ -265,14 +288,17 @@ async function requestHandler(req, res) {
       return json(res, 400, { error: 'Faltan campos: printer_name, data (array de bytes)' });
     }
 
-    console.log(`[USB] "${target}" — ${data.length} bytes × ${copies} cop.`);
-    try {
-      await printUsb(target, data, parseInt(copies));
-      return json(res, 200, { ok: true, bytes: data.length });
-    } catch (e) {
-      console.error(`[USB ERROR] ${e.message}`);
-      return json(res, 502, { error: e.message });
-    }
+    console.log(`[USB] "${target}" — ${data.length} bytes × ${copies} cop. (queued)`);
+
+    // Responder de inmediato para no exceder el timeout de Cloudflare.
+    // La impresión corre en background; el resultado queda en el log.
+    json(res, 202, { ok: true, queued: true, bytes: data.length });
+
+    printUsb(target, data, parseInt(copies))
+      .then(() => console.log(`[USB OK] "${target}" — impreso correctamente`))
+      .catch(e => console.error(`[USB ERROR] ${e.message}`));
+
+    return;
   }
 
   // ── GET /list-printers ───────────────────────────────────
@@ -284,6 +310,11 @@ async function requestHandler(req, res) {
   }
 
   json(res, 404, { error: 'Ruta no encontrada' });
+
+  } catch (err) {
+    console.error('[HANDLER ERROR]', err.message);
+    if (!res.headersSent) json(res, 500, { error: 'Error interno' });
+  }
 }
 
 // ── Servidores HTTP y HTTPS usando el mismo handler ───────────
