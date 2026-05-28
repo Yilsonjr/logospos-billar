@@ -1061,12 +1061,41 @@
               <div class="col-12">
                 <div class="ra-field-group">
                   <label class="ra-label"><i class="fa-solid fa-layer-group me-1"></i>Categoría</label>
-                  <select class="form-select" [(ngModel)]="invForm.categoria">
-                    <option value="">— Sin categoría —</option>
-                    @for (cat of CATEGORIAS_INV; track cat) {
-                      <option [value]="cat">{{ cat }}</option>
+                  <div class="inv-cat-search-wrap">
+                    <div class="inv-cat-input-row">
+                      <i class="fa-solid fa-layer-group inv-cat-icon"></i>
+                      <input
+                        type="text"
+                        class="inv-cat-input"
+                        placeholder="Buscar categoría..."
+                        [(ngModel)]="invCatBusqueda"
+                        (focus)="abrirCatDropdown()"
+                        (blur)="cerrarCatDropdown()"
+                        (input)="invCatDropdown = true"
+                        autocomplete="off"
+                      />
+                      <i class="fa-solid fa-chevron-down inv-cat-arrow" [class.rotated]="invCatDropdown"></i>
+                    </div>
+                    @if (invCatDropdown) {
+                      <div class="inv-cat-dropdown">
+                        <div
+                          class="inv-cat-option"
+                          (mousedown)="seleccionarCatInv('')"
+                          [class.selected]="!invForm.categoria"
+                        >— Sin categoría —</div>
+                        @for (cat of invCatsFiltradas; track cat) {
+                          <div
+                            class="inv-cat-option"
+                            (mousedown)="seleccionarCatInv(cat)"
+                            [class.selected]="invForm.categoria === cat"
+                          >{{ cat }}</div>
+                        }
+                        @if (invCatsFiltradas.length === 0) {
+                          <div class="inv-cat-empty">Sin resultados</div>
+                        }
+                      </div>
                     }
-                  </select>
+                  </div>
                 </div>
               </div>
             </div>

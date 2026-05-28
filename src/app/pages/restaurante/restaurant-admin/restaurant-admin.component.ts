@@ -108,8 +108,35 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     'Bebida', 'Licor', 'Cerveza', 'Vino',
     'Carne', 'Pescado', 'Vegetal', 'Lácteo',
     'Cereal', 'Condimento', 'Embutido', 'Postre',
-    'Limpieza', 'Desechable', 'Otro'
+    'Snack', 'Limpieza', 'Desechable', 'Otro'
   ];
+
+  // Buscador de categoría de insumo
+  invCatBusqueda   = '';
+  invCatDropdown   = false;
+
+  get invCatsFiltradas(): string[] {
+    const q = this.invCatBusqueda.toLowerCase().trim();
+    return q
+      ? this.CATEGORIAS_INV.filter(c => c.toLowerCase().includes(q))
+      : this.CATEGORIAS_INV;
+  }
+
+  seleccionarCatInv(cat: string): void {
+    this.invForm.categoria = cat;
+    this.invCatBusqueda    = cat;
+    this.invCatDropdown    = false;
+  }
+
+  abrirCatDropdown(): void {
+    this.invCatBusqueda = this.invForm.categoria || '';
+    this.invCatDropdown = true;
+  }
+
+  cerrarCatDropdown(): void {
+    // Pequeño delay para que el click en opción se registre antes de cerrar
+    setTimeout(() => { this.invCatDropdown = false; }, 180);
+  }
 
   get categoriasFiltroInv(): string[] {
     const set = new Set(this.inventarioItems.map(i => i.categoria).filter(Boolean) as string[]);
@@ -761,6 +788,8 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       ? { ...item }
       : { nombre: '', categoria: '', unidad_medida: 'unidad', cantidad_actual: 0,
           cantidad_minima: 0, costo_unitario: 0, activo: true, imagen_url: null };
+    this.invCatBusqueda = this.invForm.categoria || '';
+    this.invCatDropdown = false;
     this.mostrarFormInv = true;
   }
 
