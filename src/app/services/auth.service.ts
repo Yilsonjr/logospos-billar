@@ -250,33 +250,29 @@ export class AuthService {
 
   // Logout
   async logout() {
-    try {
-      const currentState = this.authStateSubject.value;
+    const currentState = this.authStateSubject.value;
 
-      if (currentState.token) {
-        // Marcar sesión como inactiva
-        await this.supabaseService.client
-          .from('sesiones')
-          .update({ activa: false })
-          .eq('token', currentState.token);
-      }
+    // 1. Limpiar estado y storage INMEDIATAMENTE (no esperar la BD)
+    this.limpiarStorage();
+    this.authStateSubject.next({
+      isAuthenticated: false,
+      usuario: null,
+      token: null,
+      permisos: []
+    });
 
-      // Limpiar almacenamiento (incluyendo JWT para RLS)
-      this.limpiarStorage();
+    // 2. Navegar al login de inmediato
+    this.router.navigate(['/login']);
 
-      // Actualizar estado
-      this.authStateSubject.next({
-        isAuthenticated: false,
-        usuario: null,
-        token: null,
-        permisos: []
-      });
-
-      // Redirigir al login
-      this.router.navigate(['/login']);
-
-    } catch (error) {
-      console.error('Error en logout:', error);
+    // 3. Marcar sesión como inactiva en background (fire-and-forget)
+    if (currentState.token) {
+      this.supabaseService.client
+        .from('sesiones')
+        .update({ activa: false })
+        .eq('token', currentState.token)
+        .then(({ error }) => {
+          if (error) console.warn('[Auth] No se pudo marcar sesión inactiva:', error.message);
+        });
     }
   }
 
