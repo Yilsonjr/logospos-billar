@@ -34,6 +34,14 @@ export class AuthService {
       // Intentar recuperar de localStorage o sessionStorage
       let token = localStorage.getItem('logos_token') || sessionStorage.getItem('logos_token');
       let usuarioData = localStorage.getItem('logos_usuario') || sessionStorage.getItem('logos_usuario');
+      const jwt = localStorage.getItem('logos_jwt') || sessionStorage.getItem('logos_jwt');
+
+      // Si hay sesión pero sin JWT (sesión legacy pre-Phase2), forzar re-login
+      if (token && usuarioData && !jwt) {
+        console.warn('[Auth] Sesión sin JWT — requiere re-autenticación para RLS.');
+        this.limpiarStorage();
+        return; // Redirigirá al login por AuthGuard
+      }
 
       if (token && usuarioData) {
         const usuario = JSON.parse(usuarioData);
@@ -87,41 +95,20 @@ export class AuthService {
 
   // ── LOGIN ──────────────────────────────────────────────────
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    // Sin conexión → login offline directamente
+    if (!this.supabaseService.isOnline) {
+      return this.loginOffline(credentials);
+    }
+
     try {
-      // Intentar primero el login seguro via Edge Function
-      if (this.supabaseService.isOnline) {
-        try {
-          return await this.loginViaEdgeFunction(credentials);
-        } catch (edgeErr: any) {
-          // Si la Edge Function no está desplegada aún (404/503), caer al método legacy
-          const esErrorInfraestructura =
-            edgeErr?.status === 404 ||
-            edgeErr?.status === 503 ||
-            edgeErr?.message?.includes('Failed to fetch') ||
-            edgeErr?.message?.includes('NetworkError');
-
-          if (esErrorInfraestructura) {
-            console.warn('[Auth] Edge Function no disponible, usando login legacy:', edgeErr.message);
-          } else {
-            // Error de credenciales u otro error de negocio — propagar
-            throw edgeErr;
-          }
-        }
-      }
-
-      // ── Fallback: login legacy (directo a BD) ───────────────
-      return await this.loginLegacy(credentials);
-
+      return await this.loginViaEdgeFunction(credentials);
     } catch (error: any) {
       console.error('Error en login:', error);
 
-      if (!this.supabaseService.isOnline || error.message?.includes('FetchError') || error.message?.includes('Network Error')) {
-        console.log('📶 Intento de login offline...');
-        try {
-          return await this.loginOffline(credentials);
-        } catch (offlineError: any) {
-          throw new Error(offlineError.message || 'Error en login offline');
-        }
+      // Si es error de red, intentar modo offline
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        console.log('📶 Sin conexión — intentando modo offline...');
+        return this.loginOffline(credentials);
       }
 
       throw new Error(error.message || 'Error al iniciar sesión');
@@ -158,9 +145,13 @@ export class AuthService {
     // Aplicar JWT al cliente Supabase → todas las queries quedan bajo RLS correcto
     this.supabaseService.setJwt(jwt);
 
-    // Persistir JWT para restaurar sesión al recargar
+    // JWT siempre en localStorage: ya lleva su propio exp, no hay riesgo de
+    // quedarse colgado — y esto evita que al reabrir el navegador las queries
+    // fallen por falta de JWT (sessionStorage se borra al cerrar el tab).
+    localStorage.setItem('logos_jwt', jwt);
+
+    // Los datos de sesión respetan la opción "recordar"
     const storage = credentials.recordar ? localStorage : sessionStorage;
-    storage.setItem('logos_jwt',     jwt);
     storage.setItem('logos_token',   token);
     storage.setItem('logos_usuario', JSON.stringify(usuario));
     localStorage.setItem('logos_negocio_id', usuario.negocio_id);
@@ -173,68 +164,6 @@ export class AuthService {
 
     console.log('🔐 Login seguro via Edge Function ✅');
     return { usuario, token, expiracion };
-  }
-
-  // ── Login legacy: consulta directa a BD (fallback) ──────────
-  private async loginLegacy(credentials: LoginCredentials): Promise<LoginResponse> {
-    console.warn('⚠️  Usando login legacy — despliega la Edge Function para máxima seguridad.');
-
-    const { data: usuario, error: errorUsuario } = await this.supabaseService.client
-      .from('usuarios')
-      .select('*')
-      .or(`username.eq.${credentials.username},email.eq.${credentials.username}`)
-      .eq('activo', true)
-      .single();
-
-    if (errorUsuario || !usuario) throw new Error('Usuario no encontrado o inactivo');
-
-    const { data: rol, error: errorRol } = await this.supabaseService.client
-      .from('roles').select('*').eq('id', usuario.rol_id).single();
-    if (!errorRol && rol) usuario.rol = rol;
-
-    const esValida = await bcrypt.compare(credentials.password, usuario.password);
-    if (!esValida) throw new Error('Contraseña incorrecta');
-
-    const token      = this.generarToken();
-    const expiracion = new Date();
-    expiracion.setHours(expiracion.getHours() + (credentials.recordar ? 24 * 7 : 8));
-
-    const sesion: Omit<Sesion, 'id'> = {
-      usuario_id:       usuario.id,
-      token,
-      fecha_inicio:     new Date().toISOString(),
-      fecha_expiracion: expiracion.toISOString(),
-      ip_address:       await this.obtenerIP(),
-      user_agent:       navigator.userAgent,
-      activa:           true
-    };
-
-    await this.supabaseService.client.from('sesiones').insert([sesion]);
-    await this.supabaseService.client.from('usuarios')
-      .update({ ultimo_acceso: new Date().toISOString() }).eq('id', usuario.id);
-
-    const permisos = await this.cargarPermisosUsuario(usuario.id);
-    await this.guardarUsuarioOffline(usuario, credentials.password, token, expiracion.toISOString());
-
-    if (credentials.recordar) {
-      localStorage.setItem('logos_token', token);
-      localStorage.setItem('logos_usuario', JSON.stringify(usuario));
-    } else {
-      sessionStorage.setItem('logos_token', token);
-      sessionStorage.setItem('logos_usuario', JSON.stringify(usuario));
-    }
-    localStorage.setItem('logos_negocio_id', usuario.negocio_id);
-
-    await this.negociosService.cargarNegocioActual(usuario.negocio_id);
-    this.authStateSubject.next({ isAuthenticated: true, usuario, token, permisos });
-
-    const response: LoginResponse = {
-      usuario,
-      token,
-      expiracion: expiracion.toISOString()
-    };
-
-    return response;
   }
 
   // --- LOGICA OFFLINE (Dexie) ---
@@ -326,13 +255,7 @@ export class AuthService {
       }
 
       // Limpiar almacenamiento (incluyendo JWT para RLS)
-      localStorage.removeItem('logos_token');
-      localStorage.removeItem('logos_usuario');
-      localStorage.removeItem('logos_negocio_id');
-      sessionStorage.removeItem('logos_token');
-      sessionStorage.removeItem('logos_usuario');
-      // Limpiar JWT y resetear cliente Supabase al modo anónimo
-      this.supabaseService.clearJwt();
+      this.limpiarStorage();
 
       // Actualizar estado
       this.authStateSubject.next({
@@ -348,6 +271,16 @@ export class AuthService {
     } catch (error) {
       console.error('Error en logout:', error);
     }
+  }
+
+  /** Limpia todo el storage de sesión y resetea el cliente Supabase a anon. */
+  private limpiarStorage(): void {
+    localStorage.removeItem('logos_token');
+    localStorage.removeItem('logos_usuario');
+    localStorage.removeItem('logos_negocio_id');
+    sessionStorage.removeItem('logos_token');
+    sessionStorage.removeItem('logos_usuario');
+    this.supabaseService.clearJwt(); // también limpia logos_jwt de localStorage
   }
 
   // Obtener negocio_id actual
@@ -468,16 +401,6 @@ export class AuthService {
     const timestamp = Date.now().toString();
     const random = Math.random().toString(36).substring(2);
     return `logos_${timestamp}_${random}`;
-  }
-
-  // Obtener IP del usuario (simulado)
-  private async obtenerIP(): Promise<string> {
-    try {
-      // En producción, usar un servicio real para obtener la IP
-      return '127.0.0.1';
-    } catch (error) {
-      return 'unknown';
-    }
   }
 
   // Cambiar contraseña
