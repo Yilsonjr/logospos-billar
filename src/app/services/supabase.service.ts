@@ -28,12 +28,53 @@ export class SupabaseService {
     sesiones_offline: Table<SesionOffline>;
   };
 
+  /** URL pública del proyecto Supabase (sin trailing slash) */
+  readonly supabaseUrl     = environment.SUPABASE_URL;
+  /** Anon key pública (safe para exponer, limita permisos) */
+  readonly supabaseAnonKey = environment.SUPABASE_KEY;
+
   constructor() {
     this.supabase = createClient(
       environment.SUPABASE_URL,
       environment.SUPABASE_KEY
     );
     this.initDexie();
+    // Restaurar JWT de sesión previa al iniciar
+    this.restaurarJwt();
+  }
+
+  /**
+   * Establece el JWT firmado por la Edge Function.
+   * A partir de aquí TODAS las queries usan este JWT en el header
+   * Authorization → PostgREST lo pasa a las políticas RLS.
+   */
+  setJwt(jwt: string): void {
+    this.supabase = createClient(
+      environment.SUPABASE_URL,
+      environment.SUPABASE_KEY,
+      {
+        global: { headers: { Authorization: `Bearer ${jwt}` } },
+        auth:   { persistSession: false, autoRefreshToken: false }
+      }
+    );
+  }
+
+  /** Elimina el JWT y vuelve al cliente anónimo (al hacer logout). */
+  clearJwt(): void {
+    localStorage.removeItem('logos_jwt');
+    sessionStorage.removeItem('logos_jwt');
+    this.supabase = createClient(
+      environment.SUPABASE_URL,
+      environment.SUPABASE_KEY
+    );
+  }
+
+  /** Intenta restaurar el JWT guardado en storage al recargar la página. */
+  private restaurarJwt(): void {
+    const jwt = localStorage.getItem('logos_jwt') || sessionStorage.getItem('logos_jwt');
+    if (jwt) {
+      this.setJwt(jwt);
+    }
   }
 
   private initDexie() {

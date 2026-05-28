@@ -85,105 +85,36 @@ export class AuthService {
     }
   }
 
-  // Login
+  // ── LOGIN ──────────────────────────────────────────────────
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
-      // Buscar usuario por username o email
-      const { data: usuario, error: errorUsuario } = await this.supabaseService.client
-        .from('usuarios')
-        .select('*')
-        .or(`username.eq.${credentials.username},email.eq.${credentials.username}`)
-        .eq('activo', true)
-        .single();
+      // Intentar primero el login seguro via Edge Function
+      if (this.supabaseService.isOnline) {
+        try {
+          return await this.loginViaEdgeFunction(credentials);
+        } catch (edgeErr: any) {
+          // Si la Edge Function no está desplegada aún (404/503), caer al método legacy
+          const esErrorInfraestructura =
+            edgeErr?.status === 404 ||
+            edgeErr?.status === 503 ||
+            edgeErr?.message?.includes('Failed to fetch') ||
+            edgeErr?.message?.includes('NetworkError');
 
-      if (errorUsuario || !usuario) {
-        throw new Error('Usuario no encontrado o inactivo');
+          if (esErrorInfraestructura) {
+            console.warn('[Auth] Edge Function no disponible, usando login legacy:', edgeErr.message);
+          } else {
+            // Error de credenciales u otro error de negocio — propagar
+            throw edgeErr;
+          }
+        }
       }
 
-      // Cargar información del rol por separado
-      const { data: rol, error: errorRol } = await this.supabaseService.client
-        .from('roles')
-        .select('*')
-        .eq('id', usuario.rol_id)
-        .single();
-
-      if (!errorRol && rol) {
-        usuario.rol = rol;
-      }
-
-      // Verificar contraseña con HASHEO bcrypt
-      const esValida = await bcrypt.compare(credentials.password, usuario.password);
-      if (!esValida) {
-        throw new Error('Contraseña incorrecta');
-      }
-
-      // Generar token de sesión
-      const token = this.generarToken();
-      const expiracion = new Date();
-      expiracion.setHours(expiracion.getHours() + (credentials.recordar ? 24 * 7 : 8)); // 7 días si "recordar", 8 horas si no
-
-      // Crear sesión en BD
-      const sesion: Omit<Sesion, 'id'> = {
-        usuario_id: usuario.id,
-        token,
-        fecha_inicio: new Date().toISOString(),
-        fecha_expiracion: expiracion.toISOString(),
-        ip_address: await this.obtenerIP(),
-        user_agent: navigator.userAgent,
-        activa: true
-      };
-
-      await this.supabaseService.client
-        .from('sesiones')
-        .insert([sesion]);
-
-      // Actualizar último acceso
-      await this.supabaseService.client
-        .from('usuarios')
-        .update({ ultimo_acceso: new Date().toISOString() })
-        .eq('id', usuario.id);
-
-      // Cargar permisos
-      const permisos = await this.cargarPermisosUsuario(usuario.id);
-
-      // Guardar en Dexie para acceso offline
-      await this.guardarUsuarioOffline(usuario, credentials.password, token, expiracion.toISOString());
-
-      // Guardar en localStorage
-      if (credentials.recordar) {
-        localStorage.setItem('logos_token', token);
-        localStorage.setItem('logos_usuario', JSON.stringify(usuario));
-      } else {
-        sessionStorage.setItem('logos_token', token);
-        sessionStorage.setItem('logos_usuario', JSON.stringify(usuario));
-      }
-
-      // Guardar negocio_id por separado para fácil acceso
-      localStorage.setItem('logos_negocio_id', usuario.negocio_id);
-
-      // Cargar datos del negocio
-      await this.negociosService.cargarNegocioActual(usuario.negocio_id);
-
-      // Actualizar estado
-      this.authStateSubject.next({
-        isAuthenticated: true,
-        usuario,
-        token,
-        permisos
-      });
-
-      const response: LoginResponse = {
-        usuario,
-        token,
-        expiracion: expiracion.toISOString()
-      };
-
-      return response;
+      // ── Fallback: login legacy (directo a BD) ───────────────
+      return await this.loginLegacy(credentials);
 
     } catch (error: any) {
       console.error('Error en login:', error);
 
-      // Si es error de red o timeout, intentar login offline
       if (!this.supabaseService.isOnline || error.message?.includes('FetchError') || error.message?.includes('Network Error')) {
         console.log('📶 Intento de login offline...');
         try {
@@ -195,6 +126,115 @@ export class AuthService {
 
       throw new Error(error.message || 'Error al iniciar sesión');
     }
+  }
+
+  // ── Login seguro: Edge Function firma JWT con service_role ──
+  private async loginViaEdgeFunction(credentials: LoginCredentials): Promise<LoginResponse> {
+    const url = `${this.supabaseService.supabaseUrl}/functions/v1/auth-login`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${this.supabaseService.supabaseAnonKey}`,
+        'apikey':        this.supabaseService.supabaseAnonKey,
+      },
+      body: JSON.stringify({
+        username: credentials.username,
+        password: credentials.password,
+        recordar: credentials.recordar ?? false,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      const error: any = new Error(err.error || 'Error de autenticación');
+      error.status = res.status;
+      throw error;
+    }
+
+    const { jwt, token, expiracion, usuario } = await res.json();
+
+    // Aplicar JWT al cliente Supabase → todas las queries quedan bajo RLS correcto
+    this.supabaseService.setJwt(jwt);
+
+    // Persistir JWT para restaurar sesión al recargar
+    const storage = credentials.recordar ? localStorage : sessionStorage;
+    storage.setItem('logos_jwt',     jwt);
+    storage.setItem('logos_token',   token);
+    storage.setItem('logos_usuario', JSON.stringify(usuario));
+    localStorage.setItem('logos_negocio_id', usuario.negocio_id);
+
+    const permisos = await this.cargarPermisosUsuario(usuario.id);
+    await this.guardarUsuarioOffline(usuario, credentials.password, token, expiracion);
+    await this.negociosService.cargarNegocioActual(usuario.negocio_id);
+
+    this.authStateSubject.next({ isAuthenticated: true, usuario, token, permisos });
+
+    console.log('🔐 Login seguro via Edge Function ✅');
+    return { usuario, token, expiracion };
+  }
+
+  // ── Login legacy: consulta directa a BD (fallback) ──────────
+  private async loginLegacy(credentials: LoginCredentials): Promise<LoginResponse> {
+    console.warn('⚠️  Usando login legacy — despliega la Edge Function para máxima seguridad.');
+
+    const { data: usuario, error: errorUsuario } = await this.supabaseService.client
+      .from('usuarios')
+      .select('*')
+      .or(`username.eq.${credentials.username},email.eq.${credentials.username}`)
+      .eq('activo', true)
+      .single();
+
+    if (errorUsuario || !usuario) throw new Error('Usuario no encontrado o inactivo');
+
+    const { data: rol, error: errorRol } = await this.supabaseService.client
+      .from('roles').select('*').eq('id', usuario.rol_id).single();
+    if (!errorRol && rol) usuario.rol = rol;
+
+    const esValida = await bcrypt.compare(credentials.password, usuario.password);
+    if (!esValida) throw new Error('Contraseña incorrecta');
+
+    const token      = this.generarToken();
+    const expiracion = new Date();
+    expiracion.setHours(expiracion.getHours() + (credentials.recordar ? 24 * 7 : 8));
+
+    const sesion: Omit<Sesion, 'id'> = {
+      usuario_id:       usuario.id,
+      token,
+      fecha_inicio:     new Date().toISOString(),
+      fecha_expiracion: expiracion.toISOString(),
+      ip_address:       await this.obtenerIP(),
+      user_agent:       navigator.userAgent,
+      activa:           true
+    };
+
+    await this.supabaseService.client.from('sesiones').insert([sesion]);
+    await this.supabaseService.client.from('usuarios')
+      .update({ ultimo_acceso: new Date().toISOString() }).eq('id', usuario.id);
+
+    const permisos = await this.cargarPermisosUsuario(usuario.id);
+    await this.guardarUsuarioOffline(usuario, credentials.password, token, expiracion.toISOString());
+
+    if (credentials.recordar) {
+      localStorage.setItem('logos_token', token);
+      localStorage.setItem('logos_usuario', JSON.stringify(usuario));
+    } else {
+      sessionStorage.setItem('logos_token', token);
+      sessionStorage.setItem('logos_usuario', JSON.stringify(usuario));
+    }
+    localStorage.setItem('logos_negocio_id', usuario.negocio_id);
+
+    await this.negociosService.cargarNegocioActual(usuario.negocio_id);
+    this.authStateSubject.next({ isAuthenticated: true, usuario, token, permisos });
+
+    const response: LoginResponse = {
+      usuario,
+      token,
+      expiracion: expiracion.toISOString()
+    };
+
+    return response;
   }
 
   // --- LOGICA OFFLINE (Dexie) ---
@@ -285,12 +325,14 @@ export class AuthService {
           .eq('token', currentState.token);
       }
 
-      // Limpiar almacenamiento
+      // Limpiar almacenamiento (incluyendo JWT para RLS)
       localStorage.removeItem('logos_token');
       localStorage.removeItem('logos_usuario');
+      localStorage.removeItem('logos_negocio_id');
       sessionStorage.removeItem('logos_token');
       sessionStorage.removeItem('logos_usuario');
-      localStorage.removeItem('logos_negocio_id'); // Clear negocio_id on logout
+      // Limpiar JWT y resetear cliente Supabase al modo anónimo
+      this.supabaseService.clearJwt();
 
       // Actualizar estado
       this.authStateSubject.next({
