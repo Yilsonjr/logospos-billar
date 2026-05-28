@@ -111,8 +111,15 @@ Deno.serve(async (req: Request) => {
     if (errUpdate) console.error('[auth-login] Error actualizando ultimo_acceso:', errUpdate)
 
     // ── 5. Firmar JWT con el secret de Supabase ───────────────
-    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET')!
-    console.log('[auth-login] jwtSecret presente:', !!jwtSecret)
+    // SUPABASE_JWT_SECRET no se puede inyectar manualmente (prefijo reservado),
+    // por eso usamos APP_JWT_SECRET con el mismo valor del proyecto.
+    // Comandos para configurarlo:
+    //   supabase secrets set APP_JWT_SECRET=<valor> --project-ref <ref>
+    const jwtSecret = Deno.env.get('APP_JWT_SECRET') ?? Deno.env.get('SUPABASE_JWT_SECRET') ?? ''
+    if (!jwtSecret) {
+      console.error('[auth-login] FATAL: APP_JWT_SECRET no está configurado')
+      return json({ error: 'Configuración incompleta del servidor' }, 500)
+    }
     const ahora     = Math.floor(Date.now() / 1000)
 
     const jwt = await firmarJWT({
