@@ -6,7 +6,7 @@ import {
   RestaurantReportsService,
   PeriodoReporte, FiltroFecha,
   ResumenVentas, VentaPorDia, TopPlato,
-  PagoPorMetodo, MargenPlato, ResumenInventario,
+  PagoPorMetodo, MargenPlato, ResumenInventario, InsumoReporte,
   GananciasResumen
 } from '../../../services/restaurant-reports.service';
 
@@ -187,6 +187,7 @@ export class ReportesRestauranteComponent implements OnInit {
   trackByPago(_: number, p: PagoPorMetodo): string { return p.forma_pago; }
   trackByMargen(_: number, m: MargenPlato): string { return m.menu_item_id; }
   trackByGanancia(_: number, g: any): string { return g.menu_item_id; }
+  trackByInsumo(_: number, i: InsumoReporte): string { return i.id; }
 
   colorGanancia(pct: number): string {
     if (pct >= 60) return 'text-success';
@@ -198,5 +199,137 @@ export class ReportesRestauranteComponent implements OnInit {
     if (pct >= 60) return 'badge-margen-alto';
     if (pct >= 35) return 'badge-margen-medio';
     return 'badge-margen-bajo';
+  }
+
+  // ============================================================
+  // INVENTARIO: ordenamiento y filtrado
+  // ============================================================
+
+  invOrden: 'nombre' | 'stock' | 'valor' | 'estado' = 'nombre';
+  invFiltroReporte: 'todos' | 'bajo' | 'sin_stock' = 'todos';
+  invBusquedaReporte = '';
+
+  get invItemsFiltrados(): InsumoReporte[] {
+    let items = this.inventario?.items || [];
+    const q = this.invBusquedaReporte.trim().toLowerCase();
+    if (q) items = items.filter(i =>
+      i.nombre.toLowerCase().includes(q) ||
+      (i.categoria || '').toLowerCase().includes(q) ||
+      (i.proveedor || '').toLowerCase().includes(q)
+    );
+    if (this.invFiltroReporte === 'bajo')      items = items.filter(i => i.estado === 'bajo');
+    if (this.invFiltroReporte === 'sin_stock') items = items.filter(i => i.estado === 'sin_stock');
+
+    return [...items].sort((a, b) => {
+      if (this.invOrden === 'stock') return a.cantidad_actual - b.cantidad_actual;
+      if (this.invOrden === 'valor') return b.valor_stock - a.valor_stock;
+      if (this.invOrden === 'estado') {
+        const p = (e: string) => e === 'sin_stock' ? 0 : e === 'bajo' ? 1 : 2;
+        return p(a.estado) - p(b.estado);
+      }
+      return a.nombre.localeCompare(b.nombre);
+    });
+  }
+
+  get invItemsReposicion(): InsumoReporte[] {
+    return (this.inventario?.items || [])
+      .filter(i => i.estado === 'bajo' || i.estado === 'sin_stock')
+      .sort((a, b) => (a.estado === 'sin_stock' ? -1 : 1) - (b.estado === 'sin_stock' ? -1 : 1));
+  }
+
+  get invValorFiltrado(): number {
+    return this.invItemsFiltrados.reduce((s, i) => s + i.valor_stock, 0);
+  }
+
+  // ============================================================
+  // EXPORTAR CSV / EXCEL
+  // ============================================================
+
+  private descargarCSV(filas: string[][], nombreArchivo: string): void {
+    const bom = '﻿'; // BOM para Excel con tildes
+    const contenido = bom + filas
+      .map(fila => fila.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  exportarInventarioCSV(): void {
+    if (!this.inventario?.items?.length) return;
+    const hoy = new Date().toISOString().split('T')[0];
+    const filas: string[][] = [
+      ['Nombre', 'Categoría', 'Stock Actual', 'Stock Mínimo', 'Unidad', 'Costo Unitario', 'Valor en Stock', 'Estado', 'Proveedor', 'Ubicación'],
+      ...this.inventario.items.map(i => [
+        i.nombre,
+        i.categoria || '',
+        String(i.cantidad_actual),
+        String(i.cantidad_minima),
+        i.unidad_medida,
+        String(i.costo_unitario),
+        String(i.valor_stock.toFixed(2)),
+        i.estado === 'sin_stock' ? 'Sin stock' : i.estado === 'bajo' ? 'Bajo mínimo' : 'OK',
+        i.proveedor || '',
+        i.ubicacion || ''
+      ])
+    ];
+    this.descargarCSV(filas, `inventario_restaurante_${hoy}.csv`);
+  }
+
+  exportarGananciasCSV(): void {
+    if (!this.ganancias?.detalleGanancias?.length) return;
+    const hoy = new Date().toISOString().split('T')[0];
+    const p = (n: number) => n.toFixed(2);
+    const filas: string[][] = [
+      ['Plato', 'Unidades Vendidas', 'Ingresos (RD$)', 'Costo Total (RD$)', 'Ganancia (RD$)', 'Margen %', 'Fuente Costo'],
+      ...this.ganancias.detalleGanancias.map(g => [
+        g.nombre,
+        String(g.cantidadVendida),
+        p(g.ingresoTotal),
+        g.fuente_costo === 'sin_datos' ? '' : p(g.costoTotal),
+        g.fuente_costo === 'sin_datos' ? '' : p(g.ganancia),
+        g.fuente_costo === 'sin_datos' ? '' : String(g.margenPct) + '%',
+        g.fuente_costo === 'receta' ? 'Receta inventario' : g.fuente_costo === 'estimado' ? 'Costo estimado' : 'Sin datos'
+      ]),
+      ['TOTAL', '', p(this.ganancias.totalVentas), p(this.ganancias.costoEstimado), p(this.ganancias.gananciaEstimada), String(this.ganancias.margenGlobal) + '%', '']
+    ];
+    this.descargarCSV(filas, `ganancias_restaurante_${hoy}.csv`);
+  }
+
+  exportarMargenesCSV(): void {
+    if (!this.margenes?.length) return;
+    const hoy = new Date().toISOString().split('T')[0];
+    const p = (n: number) => n.toFixed(2);
+    const filas: string[][] = [
+      ['Plato', 'Precio Venta (RD$)', 'Costo Receta (RD$)', 'Margen (RD$)', 'Margen %', 'Rentabilidad', 'Fuente'],
+      ...this.margenes.map(m => [
+        m.nombre,
+        p(m.precio_venta),
+        m.fuente_costo === 'sin_datos' ? '' : p(m.costo_receta),
+        m.fuente_costo === 'sin_datos' ? '' : p(m.margen),
+        m.fuente_costo === 'sin_datos' ? '' : String(m.margen_pct) + '%',
+        m.fuente_costo === 'sin_datos' ? 'Sin datos' : m.margen_pct >= 60 ? 'Bueno' : m.margen_pct >= 35 ? 'Aceptable' : 'Revisar',
+        m.fuente_costo === 'receta' ? 'Receta' : m.fuente_costo === 'estimado' ? 'Estimado' : 'Sin datos'
+      ])
+    ];
+    this.descargarCSV(filas, `margenes_restaurante_${hoy}.csv`);
+  }
+
+  // ============================================================
+  // IMPRIMIR / PDF
+  // ============================================================
+
+  imprimirReporte(): void {
+    window.print();
+  }
+
+  periodoLabel(): string {
+    const p = this.periodos.find(x => x.value === this.periodo);
+    if (this.periodo === 'personalizado') return `${this.fechaDesde} → ${this.fechaHasta}`;
+    return p?.label || '';
   }
 }

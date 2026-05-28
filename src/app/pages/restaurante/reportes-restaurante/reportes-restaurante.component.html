@@ -35,9 +35,29 @@
       </div>
     }
 
-    <button class="rr-refresh-btn" (click)="cargarTodo()" [disabled]="cargando" title="Actualizar">
-      <i class="bi bi-arrow-clockwise" [class.spin]="cargando"></i>
-    </button>
+    <div class="rr-topbar-actions">
+      <button class="rr-refresh-btn" (click)="cargarTodo()" [disabled]="cargando" title="Actualizar">
+        <i class="bi bi-arrow-clockwise" [class.spin]="cargando"></i>
+      </button>
+      <button class="rr-export-btn rr-export-print" (click)="imprimirReporte()" title="Imprimir / Guardar PDF">
+        <i class="bi bi-printer-fill"></i><span class="rr-export-label">PDF</span>
+      </button>
+      @if (tabActiva === 'inventario' && inventario) {
+        <button class="rr-export-btn rr-export-excel" (click)="exportarInventarioCSV()" title="Exportar inventario a Excel">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i><span class="rr-export-label">Excel</span>
+        </button>
+      }
+      @if (tabActiva === 'ganancias' && ganancias) {
+        <button class="rr-export-btn rr-export-excel" (click)="exportarGananciasCSV()" title="Exportar ganancias a Excel">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i><span class="rr-export-label">Excel</span>
+        </button>
+      }
+      @if (tabActiva === 'margenes' && margenes.length) {
+        <button class="rr-export-btn rr-export-excel" (click)="exportarMargenesCSV()" title="Exportar márgenes a Excel">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i><span class="rr-export-label">Excel</span>
+        </button>
+      }
+    </div>
   </div>
 
   <!-- ── LOADING ── -->
@@ -494,59 +514,197 @@
          TAB: INVENTARIO
     ══════════════════════════════════════════════════════ -->
     @if (tabActiva === 'inventario' && inventario) {
-      <div class="rr-grid-2">
-        <!-- Resumen de stock -->
-        <div class="rr-card">
-          <div class="rr-card-header">
-            <h6 class="rr-card-title"><i class="bi bi-boxes me-2"></i>Valuación de Stock</h6>
+
+      <!-- KPIs resumen -->
+      <div class="rr-inv-kpi-row">
+        <div class="rr-inv-kpi-card rr-inv-kpi-blue">
+          <i class="bi bi-boxes"></i>
+          <div>
+            <span class="rr-inv-kpi-val">{{ inventario.total_items }}</span>
+            <span class="rr-inv-kpi-label">Insumos activos</span>
           </div>
-          <div class="rr-inv-kpis">
-            <div class="rr-inv-kpi">
-              <span class="rr-inv-kpi-val text-primary">{{ inventario.total_items }}</span>
-              <span class="rr-inv-kpi-label">Insumos activos</span>
+        </div>
+        <div class="rr-inv-kpi-card rr-inv-kpi-green">
+          <i class="bi bi-cash-stack"></i>
+          <div>
+            <span class="rr-inv-kpi-val">{{ formatMoneda(inventario.valor_total_stock) }}</span>
+            <span class="rr-inv-kpi-label">Valor total en stock</span>
+          </div>
+        </div>
+        <div class="rr-inv-kpi-card" [class.rr-inv-kpi-yellow]="inventario.items_bajo_stock > 0" [class.rr-inv-kpi-muted]="inventario.items_bajo_stock === 0">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <div>
+            <span class="rr-inv-kpi-val">{{ inventario.items_bajo_stock }}</span>
+            <span class="rr-inv-kpi-label">Bajo stock mínimo</span>
+          </div>
+        </div>
+        <div class="rr-inv-kpi-card" [class.rr-inv-kpi-red]="inventario.items_sin_stock > 0" [class.rr-inv-kpi-muted]="inventario.items_sin_stock === 0">
+          <i class="bi bi-x-circle-fill"></i>
+          <div>
+            <span class="rr-inv-kpi-val">{{ inventario.items_sin_stock }}</span>
+            <span class="rr-inv-kpi-label">Sin stock</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerta de reposición -->
+      @if (invItemsReposicion.length > 0) {
+        <div class="rr-card rr-reposicion-card">
+          <div class="rr-card-header">
+            <h6 class="rr-card-title text-danger">
+              <i class="bi bi-cart-x-fill me-2"></i>Lista de Reposición
+              <span class="badge bg-danger ms-2">{{ invItemsReposicion.length }}</span>
+            </h6>
+            <span class="rr-card-sub">Insumos que necesitan restock</span>
+          </div>
+          <div class="rr-reposicion-grid">
+            @for (item of invItemsReposicion; track item.id) {
+              <div class="rr-repos-item" [class.rr-repos-critico]="item.estado === 'sin_stock'">
+                <div class="rr-repos-icon">
+                  @if (item.estado === 'sin_stock') {
+                    <i class="bi bi-x-circle-fill text-danger"></i>
+                  } @else {
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                  }
+                </div>
+                <div class="rr-repos-info">
+                  <span class="rr-repos-nombre">{{ item.nombre }}</span>
+                  @if (item.categoria) { <span class="rr-repos-cat">{{ item.categoria }}</span> }
+                </div>
+                <div class="rr-repos-stock">
+                  <span class="rr-repos-actual" [class.text-danger]="item.estado === 'sin_stock'" [class.text-warning]="item.estado === 'bajo'">
+                    {{ item.cantidad_actual | number:'1.0-2' }}
+                  </span>
+                  <span class="rr-repos-min">/ {{ item.cantidad_minima }} {{ item.unidad_medida }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Tabla completa de inventario -->
+      <div class="rr-card">
+        <div class="rr-card-header">
+          <h6 class="rr-card-title"><i class="bi bi-table me-2"></i>Stock Completo</h6>
+          <div class="rr-inv-toolbar">
+            <!-- Búsqueda -->
+            <div class="rr-inv-search-wrap">
+              <i class="bi bi-search rr-inv-search-icon"></i>
+              <input class="rr-inv-search" type="text" placeholder="Buscar insumo…"
+                [(ngModel)]="invBusquedaReporte">
             </div>
-            <div class="rr-inv-kpi">
-              <span class="rr-inv-kpi-val text-success">{{ formatMoneda(inventario.valor_total_stock) }}</span>
-              <span class="rr-inv-kpi-label">Valor total en stock</span>
+            <!-- Filtro estado -->
+            <div class="rr-inv-filter-pills">
+              <button class="rr-filter-pill" [class.active]="invFiltroReporte === 'todos'"     (click)="invFiltroReporte = 'todos'">Todos</button>
+              <button class="rr-filter-pill rr-pill-warn" [class.active]="invFiltroReporte === 'bajo'"      (click)="invFiltroReporte = 'bajo'">⚠ Bajo</button>
+              <button class="rr-filter-pill rr-pill-danger" [class.active]="invFiltroReporte === 'sin_stock'" (click)="invFiltroReporte = 'sin_stock'">✕ Sin stock</button>
             </div>
-            <div class="rr-inv-kpi">
-              <span class="rr-inv-kpi-val" [class.text-warning]="inventario.items_bajo_stock > 0" [class.text-muted]="inventario.items_bajo_stock === 0">
-                {{ inventario.items_bajo_stock }}
-              </span>
-              <span class="rr-inv-kpi-label">Bajo stock mínimo</span>
-            </div>
-            <div class="rr-inv-kpi">
-              <span class="rr-inv-kpi-val" [class.text-danger]="inventario.items_sin_stock > 0" [class.text-muted]="inventario.items_sin_stock === 0">
-                {{ inventario.items_sin_stock }}
-              </span>
-              <span class="rr-inv-kpi-label">Sin stock</span>
-            </div>
+            <!-- Ordenar -->
+            <select class="rr-inv-sort" [(ngModel)]="invOrden">
+              <option value="nombre">A–Z</option>
+              <option value="stock">↑ Stock</option>
+              <option value="valor">↓ Valor</option>
+              <option value="estado">⚠ Estado</option>
+            </select>
           </div>
         </div>
 
-        <!-- Top consumidos (últimos 30 días) -->
-        <div class="rr-card">
-          <div class="rr-card-header">
-            <h6 class="rr-card-title"><i class="bi bi-arrow-down-circle-fill me-2 text-danger"></i>Más Consumidos (30 días)</h6>
+        @if (invItemsFiltrados.length === 0) {
+          <div class="rr-empty">
+            <i class="bi bi-boxes"></i>
+            <span>Sin resultados</span>
           </div>
-          @if (inventario.top_consumidos.length === 0) {
-            <div class="rr-empty sm">
-              <i class="bi bi-box-seam"></i>
-              <span>Sin movimientos de consumo</span>
-            </div>
-          } @else {
-            <div class="rr-top-consumidos">
-              @for (c of inventario.top_consumidos; track c.nombre) {
-                <div class="rr-consumido-row">
-                  <span class="rr-consumido-nombre">{{ c.nombre }}</span>
-                  <span class="rr-consumido-cant">{{ c.consumido | number:'1.0-2' }} {{ c.unidad }}</span>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        } @else {
+          <div class="rr-table-wrap">
+            <table class="rr-table rr-inv-table">
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Categoría</th>
+                  <th class="text-end">Stock Actual</th>
+                  <th class="text-end">Mínimo</th>
+                  <th class="text-end">Costo Unit.</th>
+                  <th class="text-end">Valor Stock</th>
+                  <th class="text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of invItemsFiltrados; track trackByInsumo($index, item)) {
+                  <tr [class.rr-row-danger]="item.estado === 'sin_stock'" [class.rr-row-warning]="item.estado === 'bajo'">
+                    <td class="fw-semibold">
+                      {{ item.nombre }}
+                      @if (item.proveedor) {
+                        <div class="rr-inv-proveedor">{{ item.proveedor }}</div>
+                      }
+                    </td>
+                    <td>
+                      @if (item.categoria) {
+                        <span class="rr-cat-badge">{{ item.categoria }}</span>
+                      } @else {
+                        <span class="text-muted small">—</span>
+                      }
+                    </td>
+                    <td class="text-end font-monospace fw-bold"
+                      [class.text-danger]="item.estado === 'sin_stock'"
+                      [class.text-warning]="item.estado === 'bajo'">
+                      {{ item.cantidad_actual | number:'1.0-2' }} {{ item.unidad_medida }}
+                    </td>
+                    <td class="text-end text-muted font-monospace">
+                      {{ item.cantidad_minima | number:'1.0-2' }}
+                    </td>
+                    <td class="text-end font-monospace">{{ formatMoneda(item.costo_unitario) }}</td>
+                    <td class="text-end font-monospace fw-semibold">{{ formatMoneda(item.valor_stock) }}</td>
+                    <td class="text-center">
+                      @if (item.estado === 'sin_stock') {
+                        <span class="rr-estado-badge rr-estado-danger">Sin stock</span>
+                      } @else if (item.estado === 'bajo') {
+                        <span class="rr-estado-badge rr-estado-warning">Bajo mínimo</span>
+                      } @else {
+                        <span class="rr-estado-badge rr-estado-ok">OK</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr class="rr-table-total">
+                  <td class="fw-bold" colspan="2">TOTAL ({{ invItemsFiltrados.length }} insumos)</td>
+                  <td colspan="3"></td>
+                  <td class="text-end font-monospace fw-bold">
+                    {{ formatMoneda(invValorFiltrado) }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        }
       </div>
-    }
+
+      <!-- Top consumidos -->
+      <div class="rr-card">
+        <div class="rr-card-header">
+          <h6 class="rr-card-title"><i class="bi bi-arrow-down-circle-fill me-2 text-danger"></i>Más Consumidos (últimos 30 días)</h6>
+        </div>
+        @if (inventario.top_consumidos.length === 0) {
+          <div class="rr-empty sm">
+            <i class="bi bi-box-seam"></i>
+            <span>Sin movimientos de consumo registrados</span>
+          </div>
+        } @else {
+          <div class="rr-top-consumidos">
+            @for (c of inventario.top_consumidos; track c.nombre) {
+              <div class="rr-consumido-row">
+                <span class="rr-consumido-nombre">{{ c.nombre }}</span>
+                <span class="rr-consumido-cant">{{ c.consumido | number:'1.0-2' }} {{ c.unidad }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    } <!-- end inventario -->
 
     <!-- ══════════════════════════════════════════════════════
          TAB: RENDIMIENTO COCINA

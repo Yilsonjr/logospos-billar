@@ -98,6 +98,11 @@
 }
 .rr-apply-btn:hover { background: #4338ca; }
 
+.rr-topbar-actions {
+  display: flex; align-items: center; gap: 6px;
+  margin-left: auto;
+}
+
 .rr-refresh-btn {
   width: 36px; height: 36px;
   border-radius: 8px;
@@ -112,6 +117,26 @@
 .rr-refresh-btn:hover { background: #f1f5f9; color: #4f46e5; }
 .rr-refresh-btn:disabled { opacity: .5; cursor: not-allowed; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Botones de exportación ───────────────────────── */
+.rr-export-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.rr-export-label { display: inline-block; }
+.rr-export-print {
+  background: #f1f5f9; border-color: #e2e8f0; color: #475569;
+}
+.rr-export-print:hover { background: #e2e8f0; color: #1e293b; }
+.rr-export-excel {
+  background: #dcfce7; border-color: #bbf7d0; color: #166534;
+}
+.rr-export-excel:hover { background: #bbf7d0; }
 .spin { animation: spin .8s linear infinite; }
 
 /* ── Loading ──────────────────────────────────────── */
@@ -650,10 +675,127 @@
   border-top: 2px solid #bbf7d0;
 }
 
+/* ── Inventario mejorado ──────────────────────────── */
+.rr-inv-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 0;
+}
+.rr-inv-kpi-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  padding: 1.1rem 1.25rem;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.rr-inv-kpi-card i { font-size: 1.5rem; flex-shrink: 0; }
+.rr-inv-kpi-card .rr-inv-kpi-val   { font-size: 1.2rem; font-weight: 900; display: block; }
+.rr-inv-kpi-card .rr-inv-kpi-label { font-size: 0.7rem; color: #94a3b8; }
+.rr-inv-kpi-blue   { border-color: #bfdbfe; } .rr-inv-kpi-blue i   { color: #2563eb; }
+.rr-inv-kpi-green  { border-color: #bbf7d0; } .rr-inv-kpi-green i  { color: #16a34a; }
+.rr-inv-kpi-yellow { border-color: #fde68a; } .rr-inv-kpi-yellow i { color: #d97706; }
+.rr-inv-kpi-red    { border-color: #fca5a5; } .rr-inv-kpi-red i    { color: #dc2626; }
+.rr-inv-kpi-muted  { border-color: #e2e8f0; } .rr-inv-kpi-muted i  { color: #cbd5e1; }
+
+/* Tarjetas de reposición */
+.rr-reposicion-card { margin-top: 1rem; }
+.rr-reposicion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  padding: 1rem 1.25rem;
+}
+.rr-repos-item {
+  display: flex; align-items: center; gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.rr-repos-critico { background: #fff1f2; border-color: #fecaca; }
+.rr-repos-icon    { flex-shrink: 0; font-size: 1rem; }
+.rr-repos-info    { flex: 1; min-width: 0; }
+.rr-repos-nombre  { font-size: 0.82rem; font-weight: 600; color: #1e293b; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-repos-cat     { font-size: 0.68rem; color: #6b7280; }
+.rr-repos-stock   { text-align: right; flex-shrink: 0; }
+.rr-repos-actual  { font-size: 0.9rem; font-weight: 800; display: block; }
+.rr-repos-min     { font-size: 0.68rem; color: #6b7280; }
+
+/* Toolbar de búsqueda/filtro del inventario */
+.rr-inv-toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.rr-inv-search-wrap {
+  position: relative;
+}
+.rr-inv-search-icon {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  color: #9ca3af; font-size: 0.8rem; pointer-events: none;
+}
+.rr-inv-search {
+  padding: 5px 10px 5px 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  width: 190px;
+}
+.rr-inv-search:focus { outline: none; border-color: #6366f1; }
+
+.rr-inv-filter-pills { display: flex; gap: 4px; }
+.rr-filter-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.72rem; font-weight: 600;
+  cursor: pointer; color: #64748b;
+  transition: all .12s;
+}
+.rr-filter-pill.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+.rr-pill-warn.active   { background: #d97706; border-color: #d97706; color: #fff; }
+.rr-pill-danger.active { background: #dc2626; border-color: #dc2626; color: #fff; }
+
+.rr-inv-sort {
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* Tabla inventario */
+.rr-inv-table th, .rr-inv-table td { font-size: 0.8rem; }
+.rr-inv-proveedor { font-size: 0.68rem; color: #9ca3af; margin-top: 1px; }
+.rr-cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.rr-estado-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.rr-estado-ok      { background: #dcfce7; color: #166534; }
+.rr-estado-warning { background: #fef9c3; color: #854d0e; }
+.rr-estado-danger  { background: #fee2e2; color: #991b1b; }
+.rr-row-warning td { background: #fffbeb !important; }
+.rr-row-danger  td { background: #fff1f2 !important; }
+
 /* ── Responsive ───────────────────────────────────── */
 @media (max-width: 900px) {
   .rr-grid-2 { grid-template-columns: 1fr; }
   .rr-pagos-layout { flex-direction: column; align-items: flex-start; }
+  .rr-export-label { display: none; }
 }
 @media (max-width: 640px) {
   .rr-kpi-grid  { grid-template-columns: 1fr 1fr; padding: 1rem; }
@@ -661,4 +803,24 @@
   .rr-card      { margin: 0 1rem 1rem; }
   .rr-topbar    { padding: 0.75rem 1rem; }
   .rr-periodo-wrap { margin-left: 0; }
+  .rr-inv-search { width: 140px; }
+  .rr-topbar-actions { margin-left: 0; }
+}
+
+/* ── Print / PDF ──────────────────────────────────── */
+@media print {
+  .rr-topbar        { position: static !important; box-shadow: none; border-bottom: 2px solid #000; }
+  .rr-back-btn,
+  .rr-topbar-actions,
+  .rr-periodo-wrap,
+  .rr-custom-dates,
+  .rr-tabs,
+  .rr-inv-toolbar,
+  .rr-reposicion-card { display: none !important; }
+  .rr-page          { background: #fff; padding-bottom: 0; }
+  .rr-card          { box-shadow: none; border: 1px solid #ddd; margin: 0.5rem 0; break-inside: avoid; }
+  .rr-kpi-grid      { display: grid !important; }
+  .rr-inv-kpi-row   { display: grid !important; }
+  table             { font-size: 0.75rem; }
+  thead             { display: table-header-group; }
 }

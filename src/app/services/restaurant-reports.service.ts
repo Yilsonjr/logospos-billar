@@ -50,12 +50,27 @@ export interface MargenPlato {
   fuente_costo: 'receta' | 'estimado' | 'sin_datos';
 }
 
+export interface InsumoReporte {
+  id: string;
+  nombre: string;
+  categoria?: string | null;
+  unidad_medida: string;
+  cantidad_actual: number;
+  cantidad_minima: number;
+  costo_unitario: number;
+  valor_stock: number;
+  estado: 'ok' | 'bajo' | 'sin_stock';
+  proveedor?: string | null;
+  ubicacion?: string | null;
+}
+
 export interface ResumenInventario {
   total_items: number;
   valor_total_stock: number;
   items_bajo_stock: number;
   items_sin_stock: number;
   top_consumidos: { nombre: string; consumido: number; unidad: string }[];
+  items: InsumoReporte[];
 }
 
 export interface GananciaDetalle {
@@ -328,9 +343,10 @@ export class RestaurantReportsService {
   async cargarResumenInventario(): Promise<ResumenInventario> {
     const { data: items } = await this.supabase.client
       .from('restaurant_inventory')
-      .select('nombre, cantidad_actual, cantidad_minima, costo_unitario, unidad_medida')
+      .select('id, nombre, categoria, cantidad_actual, cantidad_minima, costo_unitario, unidad_medida, proveedor, ubicacion')
       .eq('negocio_id', this.negocioId)
-      .eq('activo', true);
+      .eq('activo', true)
+      .order('nombre', { ascending: true });
 
     const inventario = items || [];
 
@@ -360,12 +376,31 @@ export class RestaurantReportsService {
       .sort((a, b) => b.consumido - a.consumido)
       .slice(0, 8);
 
+    const insumos: InsumoReporte[] = inventario.map(i => ({
+      id:              i.id,
+      nombre:          i.nombre,
+      categoria:       i.categoria ?? null,
+      unidad_medida:   i.unidad_medida,
+      cantidad_actual: i.cantidad_actual,
+      cantidad_minima: i.cantidad_minima,
+      costo_unitario:  i.costo_unitario,
+      valor_stock:     i.cantidad_actual * i.costo_unitario,
+      estado:          i.cantidad_actual <= 0
+                         ? 'sin_stock'
+                         : i.cantidad_actual <= i.cantidad_minima
+                           ? 'bajo'
+                           : 'ok',
+      proveedor:       i.proveedor ?? null,
+      ubicacion:       i.ubicacion ?? null,
+    }));
+
     return {
       total_items:        inventario.length,
-      valor_total_stock:  inventario.reduce((s, i) => s + (i.cantidad_actual * i.costo_unitario), 0),
-      items_bajo_stock:   inventario.filter(i => i.cantidad_actual <= i.cantidad_minima && i.cantidad_actual > 0).length,
-      items_sin_stock:    inventario.filter(i => i.cantidad_actual <= 0).length,
-      top_consumidos:     topConsumidos
+      valor_total_stock:  insumos.reduce((s, i) => s + i.valor_stock, 0),
+      items_bajo_stock:   insumos.filter(i => i.estado === 'bajo').length,
+      items_sin_stock:    insumos.filter(i => i.estado === 'sin_stock').length,
+      top_consumidos:     topConsumidos,
+      items:              insumos,
     };
   }
 
