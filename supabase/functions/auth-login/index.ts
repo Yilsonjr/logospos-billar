@@ -80,14 +80,13 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Contraseña incorrecta' }, 401)
     }
 
-    // ── 3. Cargar negocio (para empresa_id multisucursal) ────
-    const { data: negocio } = await supabase
-      .from('negocios')
-      .select('id, empresa_id')
-      .eq('id', usuario.negocio_id)
-      .single()
+    // ── 3. empresa_id (Phase 3 — multisucursal, columna aún no existe) ────
+    // TODO: cuando se agregue la columna ejecutar:
+    //   ALTER TABLE negocios ADD COLUMN IF NOT EXISTS empresa_id UUID DEFAULT NULL;
+    // y cambiar la siguiente línea por una query real.
+    const empresa_id: string | null = null
 
-    const isSuperAdmin = ['Super Admin', 'Desarrollador', 'Developer'].includes(
+    const isSuperAdmin = ['Super Admin', 'Desarrollador', 'Developer', 'Super Administrador'].includes(
       usuario.rol?.nombre ?? ''
     )
 
@@ -123,7 +122,7 @@ Deno.serve(async (req: Request) => {
 
       // Claims personalizados para RLS multi-tenant
       negocio_id:     usuario.negocio_id,
-      empresa_id:     negocio?.empresa_id ?? null,  // para multisucursal
+      empresa_id:     empresa_id,  // Phase 3: null hasta implementar multisucursal
       usuario_id:     usuario.id,
       rol_nombre:     usuario.rol?.nombre ?? '',
       is_super_admin: isSuperAdmin,
