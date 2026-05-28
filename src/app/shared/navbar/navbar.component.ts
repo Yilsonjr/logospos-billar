@@ -139,8 +139,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
       permissions: ['restaurante.mesas'],
       modulo: 'restaurante',
       submenu: [
-        { label: 'Mapa de Mesas',        link: '/restaurante',            icon: 'fa-solid fa-border-all',    permissions: ['restaurante.mesas'],    modulo: 'restaurante' },
+        { label: 'Mapa de Mesas',        link: '/restaurante',              icon: 'fa-solid fa-border-all',    permissions: ['restaurante.mesas'],    modulo: 'restaurante' },
         { label: 'Pantalla Cocina (KDS)', link: '/restaurante/cocina',    icon: 'fa-solid fa-fire-burner',   permissions: ['restaurante.cocina'],   modulo: 'cocina' },
+        { label: 'Reportes',              link: '/restaurante/reportes',  icon: 'fa-solid fa-chart-bar',     permissions: ['restaurante.admin'],    modulo: 'restaurante' },
         { label: 'Configurar',            link: '/restaurante/admin',     icon: 'fa-solid fa-gear',          permissions: ['restaurante.admin'],    modulo: 'restaurante' },
         { label: 'Impresoras de Red',     link: '/restaurante/impresoras', icon: 'fa-solid fa-print',        permissions: ['config.general'],       modulo: 'restaurante' }
       ],
