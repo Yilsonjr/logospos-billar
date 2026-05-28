@@ -86,9 +86,9 @@ Deno.serve(async (req: Request) => {
     // y cambiar la siguiente línea por una query real.
     const empresa_id: string | null = null
 
-    const isSuperAdmin = ['Super Admin', 'Desarrollador', 'Developer', 'Super Administrador'].includes(
-      usuario.rol?.nombre ?? ''
-    )
+    const SUPER_ADMIN_ROLES = ['Super Admin', 'Desarrollador', 'Developer', 'Super Administrador', 'Admin']
+    const isSuperAdmin = usuario.rol_id === 1
+      || SUPER_ADMIN_ROLES.includes(usuario.rol?.nombre ?? '')
 
     // ── 4. Crear sesión en BD ─────────────────────────────────
     const sessionToken  = crypto.randomUUID()
