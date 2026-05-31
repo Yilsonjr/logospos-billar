@@ -64,6 +64,7 @@ export class Dashboard implements OnInit, OnDestroy {
   ordenesActivas: any[] = [];
   chartData: ChartData[] = [];
   modoFiscalActivo = false;
+  negocioNombre = '';
 
   private subscriptions: Subscription[] = [];
   private moduloSubscriptions: Subscription[] = [];
@@ -124,6 +125,7 @@ export class Dashboard implements OnInit, OnDestroy {
       }
 
       this.negocioResuelto = true;
+      this.negocioNombre = negocio.nombre || '';
       this.isLoading = true;
       this.cdr.detectChanges();
 

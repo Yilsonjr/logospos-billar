@@ -1,320 +1,292 @@
-<div class="container-fluid p-2 bg-light d-flex flex-column" style="min-height: calc(100vh - 120px);">
+<div class="dashboard-root">
 
-  <!-- Header (Fijo altura aprox) -->
-  <header class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mb-2">
-    <!-- Búsqueda -->
-    <div class="position-relative w-100" style="max-width: 400px;">
-      <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">
-        <i class="fa-solid fa-search small"></i>
-      </span>
-      <input type="text" class="form-control ps-5 border-0 shadow-sm" placeholder="Buscar...">
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="dash-header">
+    <div class="dash-header-left">
+      <div class="dash-greeting">
+        <h5 class="mb-0 fw-bold">¡Buenos días! 👋</h5>
+        <small class="text-muted">{{ negocioNombre || 'Tu negocio' }}</small>
+      </div>
     </div>
 
-    <!-- Acciones -->
-    <div class="d-flex align-items-center gap-2">
-      <button class="btn btn-white shadow-sm border text-secondary btn-sm" title="Configuración"
-        routerLink="/admin/sistema">
-        <i class="fa-solid fa-cog"></i>
-      </button>
-
-      @if (negociosService.tieneModulo('ventas')) {
-      <button class="btn btn-primary shadow-sm d-flex align-items-center gap-2 fw-bold px-3 btn-sm"
-        routerLink="/ventas/nueva">
-        <i class="fa-solid fa-plus"></i> Nueva Venta
-      </button>
+    <div class="dash-header-right">
+      @if (negociosService.tieneModulo('restaurante')) {
+        <a routerLink="/restaurante" class="btn btn-sm btn-warning fw-bold gap-1 d-flex align-items-center">
+          <i class="fa-solid fa-utensils"></i> Ir al Restaurante
+        </a>
       }
+      @if (negociosService.tieneModulo('ventas')) {
+        <a routerLink="/ventas/nueva" class="btn btn-sm btn-primary fw-bold gap-1 d-flex align-items-center">
+          <i class="fa-solid fa-plus"></i> Nueva Venta
+        </a>
+      }
+      <a routerLink="/admin/sistema" class="btn btn-sm btn-light border">
+        <i class="fa-solid fa-cog text-muted"></i>
+      </a>
     </div>
   </header>
 
-  <!-- Tarjetas de Estadísticas (Fijo altura aprox) -->
-  <section class="row g-2 mb-2">
+  <!-- ── STAT CARDS ─────────────────────────────────────────── -->
+  <section class="stats-grid">
+    @if (isLoading && stats.length === 0) {
+      @for (i of [1,2,3,4]; track i) {
+        <div class="stat-card skeleton-card"></div>
+      }
+    }
     @for (stat of stats; track stat.title) {
-    <div class="col-md-6 col-lg-3">
-      <div class="card border-0 shadow-sm h-100 stat-card">
-        <div class="card-body p-2">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <span class="text-uppercase text-muted fw-bold small tracking-widest"
-              style="font-size: 0.7rem;">{{stat.title}}</span>
-            <div [class]="'p-2 rounded-circle d-flex align-items-center justify-content-center ' + stat.iconBg"
-              style="width: 36px; height: 36px;">
-              <i [class]="'fa-solid ' + stat.icon + ' fs-6'"></i>
-            </div>
-          </div>
-
-          <h3 class="fw-semibold text-dark mb-1">{{stat.value}}</h3>
-
-          <div class="d-flex align-items-center gap-2 small">
-            @if (stat.isUrgent) {
-            <span class="text-danger fw-bold">{{stat.change}}</span>
-            } @else {
-            <span [class]="stat.isPositive ? 'text-success' : 'text-danger'" class="fw-bold d-flex align-items-center">
-              <i [class]="stat.isPositive ? 'fa-solid fa-arrow-up me-1' : 'fa-solid fa-arrow-down me-1'"></i>
-              {{stat.change}}
-            </span>
-            }
+      <div class="stat-card" [class.stat-urgent]="stat.isUrgent">
+        <div class="stat-top">
+          <span class="stat-label">{{ stat.title }}</span>
+          <div class="stat-icon" [class]="stat.iconBg">
+            <i class="fa-solid" [class]="stat.icon"></i>
           </div>
         </div>
-      </div>
-    </div>
-    }
-  </section>
-
-  <!-- Sección Principal -->
-  <section class="row g-2 flex-grow-1" style="min-height: 450px;">
-
-    <!-- Columna Izquierda: Tendencias de Ventas / Restaurante -->
-    @if (negociosService.tieneModulo('ventas') || negociosService.tieneModulo('restaurante')) {
-    <div class="col-lg-8 d-flex flex-column">
-      <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 300px;">
-        <div
-          class="card-header bg-white border-0 pt-3 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div>
-            <h5 class="fw-bold text-dark mb-0">
-              @if (negociosService.tieneModulo('restaurante') && !negociosService.tieneModulo('ventas')) {
-                Ingresos del restaurante
-              } @else {
-                Tendencias de ventas
-              }
-            </h5>
-            <small class="text-muted">Rendimiento en los últimos 7 días</small>
-          </div>
-          <div class="btn-group btn-group-sm">
-            <button class="btn" [class.btn-primary]="selectedPeriod === 'weekly'"
-              [class.btn-outline-light]="selectedPeriod !== 'weekly'" [class.text-dark]="selectedPeriod !== 'weekly'"
-              (click)="setPeriod('weekly')">Semanal</button>
-            <button class="btn btn-primary-outline text-dark"
-              style="opacity: 0.5; pointer-events: none;">Mensual</button>
-            <button class="btn btn-primary-outline text-dark" style="opacity: 0.5; pointer-events: none;">Anual</button>
-          </div>
-        </div>
-
-        <div class="card-body px-3 pb-3 d-flex flex-column overflow-hidden">
-          @if (isLoading) {
-          <div class="d-flex justify-content-center align-items-center flex-grow-1">
-            <div class="spinner-border text-primary" role="status"></div>
-          </div>
-          } @else if (chartData.length === 0) {
-          <div class="text-center flex-grow-1 d-flex flex-column justify-content-center text-muted">
-            <i class="fa-solid fa-chart-line fa-3x mb-3 opacity-25"></i>
-            <p>No hay datos de ventas</p>
-          </div>
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-change" [class.text-danger]="stat.isUrgent" [class.text-success]="!stat.isUrgent && stat.isPositive" [class.text-danger]="!stat.isUrgent && !stat.isPositive">
+          @if (!stat.isUrgent) {
+            <i class="fa-solid fa-xs" [class.fa-arrow-trend-up]="stat.isPositive" [class.fa-arrow-trend-down]="!stat.isPositive"></i>
           } @else {
-          <div class="d-flex align-items-end justify-content-around flex-grow-1 mt-2 border-bottom pb-2 h-100">
-            @for (data of chartData; track data.label) {
-            <div class="d-flex flex-column align-items-center gap-1 flex-grow-1 group"
-              style="max-width: 60px; height: 100%;">
-              <div
-                class="w-100 rounded-top position-relative d-flex justify-content-center bar-container h-100 d-flex align-items-end">
-                <div class="w-100 rounded-top"
-                  style="background: linear-gradient(to top, #3b82f6, #93c5fd); transition: height 0.5s ease; min-height: 4px;"
-                  [style.height.%]="data.percentage" [title]="formatearMoneda(data.value)">
-                </div>
-                <span
-                  class="position-absolute top-0 start-50 translate-middle-x badge bg-dark opacity-0 bar-tooltip mb-2">
-                  {{formatearMoneda(data.value)}}
-                </span>
-              </div>
-              <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{data.label}}</small>
-            </div>
+            <i class="fa-solid fa-triangle-exclamation fa-xs"></i>
+          }
+          {{ stat.change }}
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ── ACCESOS RÁPIDOS (solo restaurante sin ventas) ─────── -->
+  @if (negociosService.tieneModulo('restaurante') && !negociosService.tieneModulo('ventas')) {
+  <section class="quick-actions">
+    <a routerLink="/restaurante" class="quick-btn quick-btn-primary">
+      <i class="fa-solid fa-utensils"></i>
+      <span>Mesas y Órdenes</span>
+    </a>
+    <a routerLink="/restaurante/admin" class="quick-btn quick-btn-secondary">
+      <i class="fa-solid fa-bowl-food"></i>
+      <span>Menú / Platos</span>
+    </a>
+    <a routerLink="/restaurante/reportes" class="quick-btn quick-btn-secondary">
+      <i class="fa-solid fa-chart-bar"></i>
+      <span>Reportes</span>
+    </a>
+    <a routerLink="/admin/usuarios" class="quick-btn quick-btn-secondary">
+      <i class="fa-solid fa-users"></i>
+      <span>Usuarios</span>
+    </a>
+  </section>
+  }
+
+  <!-- ── SECCIÓN PRINCIPAL ──────────────────────────────────── -->
+  <section class="main-grid">
+
+    <!-- Gráfica -->
+    @if (negociosService.tieneModulo('ventas') || negociosService.tieneModulo('restaurante')) {
+    <div class="chart-card">
+      <div class="card-head">
+        <div>
+          <h6 class="fw-bold mb-0">
+            @if (negociosService.tieneModulo('restaurante') && !negociosService.tieneModulo('ventas')) {
+              Ingresos del restaurante
+            } @else {
+              Tendencias de ventas
+            }
+          </h6>
+          <small class="text-muted">Últimos 7 días</small>
+        </div>
+        <div class="period-tabs">
+          <button [class.active]="selectedPeriod === 'weekly'" (click)="setPeriod('weekly')">Semanal</button>
+          <button disabled>Mensual</button>
+          <button disabled>Anual</button>
+        </div>
+      </div>
+
+      <div class="chart-body">
+        @if (isLoading) {
+          <div class="chart-empty">
+            <div class="spinner-border text-primary spinner-border-sm"></div>
+          </div>
+        } @else if (chartData.length === 0) {
+          <div class="chart-empty">
+            <i class="fa-solid fa-chart-line fa-2x text-muted opacity-25 mb-2"></i>
+            <p class="text-muted small mb-2">Sin ventas registradas aún</p>
+            @if (negociosService.tieneModulo('restaurante')) {
+              <a routerLink="/restaurante" class="btn btn-sm btn-outline-warning fw-bold">
+                <i class="fa-solid fa-arrow-right me-1"></i> Abrir restaurante
+              </a>
             }
           </div>
-          }
-        </div>
+        } @else {
+          <div class="chart-bars">
+            @for (data of chartData; track data.label) {
+              <div class="bar-col">
+                <div class="bar-wrap">
+                  <div class="bar-fill" [style.height.%]="data.percentage" [title]="formatearMoneda(data.value)"></div>
+                </div>
+                <span class="bar-label">{{ data.label }}</span>
+              </div>
+            }
+          </div>
+        }
       </div>
     </div>
     }
 
-    <!-- Columna Derecha: Panel de Pestañas (Filtra contenido según módulos) -->
-    <div [class]="negociosService.tieneModulo('ventas') ? 'col-lg-4' : 'col-lg-12'" class="d-flex flex-column">
-      <div class="card border-0 shadow-sm flex-grow-1" style="min-height: 300px;">
+    <!-- Panel lateral -->
+    <div class="side-panel" [class.side-panel-full]="!negociosService.tieneModulo('ventas') && !negociosService.tieneModulo('restaurante')">
 
-        <!-- Header de Pestañas -->
-        <div class="card-header bg-white border-0 pt-2 px-2 pb-0 flex-shrink-0">
-          <ul class="nav nav-tabs card-header-tabs border-bottom-0">
-            @if (negociosService.tieneModulo('inventario')) {
-            <li class="nav-item">
-              <a class="nav-link border-0 fw-bold small text-uppercase py-2" [class.active]="activeTab === 'products'"
-                [class.text-primary]="activeTab === 'products'" [class.text-muted]="activeTab !== 'products'"
-                style="cursor: pointer;" (click)="activeTab = 'products'">
-                <i class="fa-solid fa-star me-1"></i> Top Productos
-              </a>
-            </li>
-            }
-            @if (negociosService.tieneModulo('ventas')) {
-            <li class="nav-item">
-              <a class="nav-link border-0 fw-bold small text-uppercase py-2"
-                [class.active]="activeTab === 'transactions'" [class.text-primary]="activeTab === 'transactions'"
-                [class.text-muted]="activeTab !== 'transactions'" style="cursor: pointer;"
-                (click)="activeTab = 'transactions'">
-                <i class="fa-solid fa-clock-rotate-left me-1"></i> Recientes
-              </a>
-            </li>
-            }
-            @if (negociosService.tieneModulo('restaurante')) {
-            <li class="nav-item">
-              <a class="nav-link border-0 fw-bold small text-uppercase py-2"
-                [class.active]="activeTab === 'orders'" [class.text-primary]="activeTab === 'orders'"
-                [class.text-muted]="activeTab !== 'orders'" style="cursor: pointer;"
-                (click)="activeTab = 'orders'">
-                <i class="fa-solid fa-utensils me-1"></i> Órdenes
-              </a>
-            </li>
-            }
-          </ul>
-        </div>
+      <!-- Tabs -->
+      <div class="side-tabs">
+        @if (negociosService.tieneModulo('inventario')) {
+          <button [class.active]="activeTab === 'products'" (click)="activeTab = 'products'">
+            <i class="fa-solid fa-star me-1"></i> Productos
+          </button>
+        }
+        @if (negociosService.tieneModulo('ventas')) {
+          <button [class.active]="activeTab === 'transactions'" (click)="activeTab = 'transactions'">
+            <i class="fa-solid fa-clock-rotate-left me-1"></i> Recientes
+          </button>
+        }
+        @if (negociosService.tieneModulo('restaurante')) {
+          <button [class.active]="activeTab === 'orders'" (click)="activeTab = 'orders'">
+            <i class="fa-solid fa-utensils me-1"></i> Órdenes
+          </button>
+        }
+      </div>
 
-        <!-- Contenido Scrollable Independiente -->
-        <div class="card-body px-3 py-2 overflow-auto flex-grow-1">
+      <!-- Contenido -->
+      <div class="side-content">
 
-          <!-- ESTADO: Cargando negocio -->
-          @if (!negociosService.tieneModulo('ventas') && !negociosService.tieneModulo('inventario')) {
-          <div class="d-flex flex-column justify-content-center align-items-center h-100 py-5 text-center text-muted">
+        <!-- Sin ningún módulo relevante -->
+        @if (!negociosService.tieneModulo('ventas') && !negociosService.tieneModulo('inventario') && !negociosService.tieneModulo('restaurante')) {
+          <div class="empty-state">
             @if (isLoading) {
-            <div class="spinner-border text-primary mb-3" role="status"></div>
-            <p class="mb-0">Cargando información del negocio...</p>
+              <div class="spinner-border text-primary spinner-border-sm"></div>
+              <p class="mt-2 text-muted small">Cargando...</p>
             } @else {
-            <i class="fa-solid fa-store fa-3x mb-3 opacity-25"></i>
-            <p class="mb-0 small">No hay módulos activos configurados.</p>
+              <i class="fa-solid fa-puzzle-piece fa-2x opacity-25 mb-2"></i>
+              <p class="text-muted small">Configura los módulos de tu negocio</p>
+              <a routerLink="/admin/sistema" class="btn btn-sm btn-outline-primary">Configurar</a>
             }
           </div>
-          }
+        }
 
-          <!-- CONTENIDO TAB 1: PRODUCTOS -->
-          @if (activeTab === 'products' && negociosService.tieneModulo('inventario')) {
-            <!-- ... contenido productos (Mantenemos igual pero bajo @if) ... -->
-            @if (isLoading) {
-            <div class="d-flex justify-content-center py-4">
-              <div class="spinner-border spinner-border-sm text-primary"></div>
-            </div>
-            } @else if (topProducts.length === 0) {
-            <div class="text-center py-4 text-muted small">No hay productos</div>
-            } @else {
-            <div class="list-group list-group-flush">
+        <!-- TAB: Productos -->
+        @if (activeTab === 'products' && negociosService.tieneModulo('inventario')) {
+          @if (isLoading) {
+            <div class="empty-state"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          } @else if (topProducts.length === 0) {
+            <div class="empty-state"><p class="text-muted small">Sin productos registrados</p></div>
+          } @else {
+            <ul class="item-list">
               @for (product of topProducts; track product.name) {
-              <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center gap-2">
-                <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                  style="width: 36px; height: 36px; background: linear-gradient(135deg, #3b82f6, #2563eb); font-size: 0.8rem;">
-                  {{product.initials}}
-                </div>
-                <div class="flex-grow-1 overflow-hidden" style="line-height: 1.2;">
-                  <h6 class="mb-0 text-truncate fw-semibold small">{{product.name}}</h6>
-                  <small class="text-muted" style="font-size: 0.7rem;">{{product.category}}</small>
-                </div>
-                <div class="text-end" style="line-height: 1.2;">
-                  <div class="fw-bold text-dark small">{{product.price}}</div>
-                  <small class="text-success fw-bold" style="font-size: 0.7rem;">{{product.sales}}</small>
-                </div>
-              </div>
+                <li class="item-row">
+                  <div class="item-avatar">{{ product.initials }}</div>
+                  <div class="item-info">
+                    <span class="item-name">{{ product.name }}</span>
+                    <span class="item-sub">{{ product.category }}</span>
+                  </div>
+                  <div class="item-right">
+                    <span class="item-value">{{ product.price }}</span>
+                    <span class="item-badge badge-green">{{ product.sales }}</span>
+                  </div>
+                </li>
               }
-            </div>
-            }
+            </ul>
           }
+        }
 
-          <!-- CONTENIDO TAB 2: TRANSACCIONES -->
-          @if (activeTab === 'transactions' && negociosService.tieneModulo('ventas')) {
-             <!-- ... contenido transacciones ... -->
-             @if (isLoading) {
-             <div class="d-flex justify-content-center py-4">
-               <div class="spinner-border spinner-border-sm text-primary"></div>
-             </div>
-             } @else if (transactions.length === 0) {
-             <div class="text-center py-4 text-muted small">No hay transacciones</div>
-             } @else {
-             <div class="list-group list-group-flush">
-               @for (t of transactions; track t.id) {
-               <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center justify-content-between">
-                 <div class="d-flex flex-column" style="line-height: 1.2;">
-                   <span class="fw-bold text-dark small">#{{t.id}}</span>
-                   <small class="text-muted" style="font-size: 0.75rem;">{{t.customer}}</small>
-                   <small class="text-muted" style="font-size: 0.7rem;">{{t.date}}</small>
-                 </div>
-                 <div class="text-end d-flex flex-column align-items-end" style="line-height: 1.2;">
-                   <span class="fw-bold text-primary small">{{t.total}}</span>
-                   <span class="badge rounded-pill" style="font-size: 0.65rem;"
-                     [class.bg-success-subtle]="t.status === 'completed'" [class.text-success]="t.status === 'completed'"
-                     [class.bg-warning-subtle]="t.status !== 'completed'" [class.text-warning]="t.status !== 'completed'">
-                     {{t.status === 'completed' ? 'PAGADO' : 'PENDIENTE'}}
-                   </span>
-                 </div>
-               </div>
-               }
-             </div>
-             }
+        <!-- TAB: Transacciones -->
+        @if (activeTab === 'transactions' && negociosService.tieneModulo('ventas')) {
+          @if (isLoading) {
+            <div class="empty-state"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          } @else if (transactions.length === 0) {
+            <div class="empty-state">
+              <i class="fa-solid fa-receipt fa-2x opacity-25 mb-2"></i>
+              <p class="text-muted small">Sin ventas hoy</p>
+              <a routerLink="/ventas/nueva" class="btn btn-sm btn-outline-primary">Nueva venta</a>
+            </div>
+          } @else {
+            <ul class="item-list">
+              @for (t of transactions; track t.id) {
+                <li class="item-row">
+                  <div class="item-avatar item-avatar-gray">{{ t.customerInitials }}</div>
+                  <div class="item-info">
+                    <span class="item-name">#{{ t.id }}</span>
+                    <span class="item-sub">{{ t.customer }}</span>
+                  </div>
+                  <div class="item-right">
+                    <span class="item-value">{{ t.total }}</span>
+                    <span class="item-badge" [class.badge-green]="t.status === 'completed'" [class.badge-yellow]="t.status !== 'completed'">
+                      {{ t.status === 'completed' ? 'Pagado' : 'Pendiente' }}
+                    </span>
+                  </div>
+                </li>
+              }
+            </ul>
           }
+        }
 
-          <!-- CONTENIDO TAB 3: ÓRDENES RESTAURANTE -->
-          @if (activeTab === 'orders' && negociosService.tieneModulo('restaurante')) {
-            @if (isLoading) {
-            <div class="d-flex justify-content-center py-4">
-              <div class="spinner-border spinner-border-sm text-primary"></div>
+        <!-- TAB: Órdenes restaurante -->
+        @if (activeTab === 'orders' && negociosService.tieneModulo('restaurante')) {
+          @if (isLoading) {
+            <div class="empty-state"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          } @else if (ordenesActivas.length === 0) {
+            <div class="empty-state">
+              <i class="fa-solid fa-circle-check fa-2x text-success opacity-50 mb-2"></i>
+              <p class="text-muted small">Sin órdenes activas</p>
+              <a routerLink="/restaurante" class="btn btn-sm btn-outline-warning fw-semibold">
+                <i class="fa-solid fa-arrow-right me-1"></i> Ver mesas
+              </a>
             </div>
-            } @else if (ordenesActivas.length === 0) {
-            <div class="text-center py-4 text-muted small">
-              <i class="fa-solid fa-circle-check fa-2x mb-2 opacity-50 text-success d-block"></i>
-              Sin órdenes activas en este momento
-            </div>
-            } @else {
-            <div class="list-group list-group-flush">
+          } @else {
+            <ul class="item-list">
               @for (o of ordenesActivas; track o.id) {
-              <div class="list-group-item border-0 px-0 py-2 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                    style="width:36px;height:36px;background:linear-gradient(135deg,#f59e0b,#d97706);font-size:0.85rem;">
-                    {{ o.mesa?.numero_mesa ?? '#' }}
+                <li class="item-row" style="cursor:pointer" routerLink="/restaurante">
+                  <div class="item-avatar item-avatar-orange">{{ o.mesa?.numero_mesa ?? '#' }}</div>
+                  <div class="item-info">
+                    <span class="item-name">Mesa {{ o.mesa?.numero_mesa ?? '—' }}</span>
+                    <span class="item-sub">{{ o.estado === 'abierta' ? 'Abierta' : o.estado === 'en_cocina' ? 'En cocina' : o.estado === 'lista' ? 'Lista para cobrar' : o.estado }}</span>
                   </div>
-                  <div style="line-height:1.2">
-                    <div class="fw-semibold small">Mesa {{ o.mesa?.numero_mesa ?? '—' }}</div>
-                    <small class="text-muted" style="font-size:0.7rem;">{{ o.estado }}</small>
+                  <div class="item-right">
+                    <span class="item-value">{{ formatearMoneda(o.total) }}</span>
+                    <span class="item-badge"
+                      [class.badge-yellow]="o.estado === 'abierta'"
+                      [class.badge-blue]="o.estado === 'en_cocina'"
+                      [class.badge-green]="o.estado === 'lista' || o.estado === 'pagando'">
+                      {{ o.estado === 'abierta' ? 'Abierta' : o.estado === 'en_cocina' ? 'Cocina' : 'Lista' }}
+                    </span>
                   </div>
-                </div>
-                <div class="text-end" style="line-height:1.2">
-                  <div class="fw-bold text-primary small">{{ formatearMoneda(o.total) }}</div>
-                  <span class="badge rounded-pill"
-                    [class.bg-warning-subtle]="o.estado === 'abierta'"   [class.text-warning]="o.estado === 'abierta'"
-                    [class.bg-info-subtle]="o.estado === 'en_cocina'"    [class.text-info]="o.estado === 'en_cocina'"
-                    [class.bg-success-subtle]="o.estado === 'lista' || o.estado === 'pagando'"
-                    [class.text-success]="o.estado === 'lista' || o.estado === 'pagando'"
-                    style="font-size:0.65rem;">
-                    {{ o.estado === 'abierta' ? 'Abierta' : o.estado === 'en_cocina' ? 'En cocina' : o.estado === 'lista' ? 'Lista' : 'Pagando' }}
-                  </span>
-                </div>
-              </div>
+                </li>
               }
-            </div>
-            }
+            </ul>
           }
+        }
 
-        </div>
       </div>
     </div>
   </section>
 
+  <!-- ── FISCAL ─────────────────────────────────────────────── -->
   @if (modoFiscalActivo) {
-  <section class="mt-2 mb-2">
-    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #fff 0%, #fffbeb 100%);">
-      <div class="card-body p-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-        <div class="d-flex align-items-center gap-3">
-          <div class="rounded-circle p-2 d-flex align-items-center justify-content-center"
-            style="background:#fef3c7; color:#d97706; width:45px; height:45px;">
-            <i class="fa-solid fa-file-invoice-dollar fs-4"></i>
-          </div>
-          <div>
-            <h6 class="fw-bold mb-0" style="color:#92400e;">Gestión Fiscal (DGII)</h6>
-            <small class="text-muted">Genera y exporta tus formatos 606 y 607 mensualmente.</small>
-          </div>
-        </div>
-        <div class="d-flex gap-2 w-100 w-md-auto">
-          <button (click)="generarReporte606()" class="btn btn-sm px-3 flex-fill"
-            style="background:#fde68a; color:#92400e; border:1px solid #fcd34d; font-weight:600;">
-            <i class="fa-solid fa-download me-1"></i> Reporte 606 (Compras)
-          </button>
-          <button (click)="generarReporte607()" class="btn btn-sm px-3 flex-fill"
-            style="background:#fde68a; color:#92400e; border:1px solid #fcd34d; font-weight:600;">
-            <i class="fa-solid fa-download me-1"></i> Reporte 607 (Ventas)
-          </button>
-        </div>
+  <section class="fiscal-bar">
+    <div class="fiscal-info">
+      <div class="fiscal-icon">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
       </div>
+      <div>
+        <span class="fw-bold" style="color:#92400e;">Gestión Fiscal (DGII)</span>
+        <small class="d-block text-muted">Genera y exporta formatos 606 y 607 mensualmente</small>
+      </div>
+    </div>
+    <div class="fiscal-actions">
+      <button (click)="generarReporte606()" class="btn-fiscal">
+        <i class="fa-solid fa-download me-1"></i> Reporte 606
+      </button>
+      <button (click)="generarReporte607()" class="btn-fiscal">
+        <i class="fa-solid fa-download me-1"></i> Reporte 607
+      </button>
     </div>
   </section>
   }
+
 </div>

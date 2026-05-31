@@ -219,77 +219,101 @@
 
 <!-- Modal Crear/Editar -->
 <div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:20px;overflow:hidden">
-            <div class="modal-header text-white p-4" style="background:#0f172a">
-                <h5 class="modal-title fw-bold">
-                    <i class="fa-solid fa-print me-2"></i>
-                    {{ modoModal === 'crear' ? 'Registrar Impresora' : 'Editar Impresora' }}
-                </h5>
-                <button type="button" class="btn-close btn-close-white" (click)="cerrarModal()"></button>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content pm-modal">
+
+            <!-- Header con gradiente -->
+            <div class="pm-header">
+                <div class="pm-header-icon">
+                    <i class="fa-solid fa-print"></i>
+                </div>
+                <div>
+                    <h5 class="pm-header-title">
+                        {{ modoModal === 'crear' ? 'Nueva Impresora' : 'Editar Impresora' }}
+                    </h5>
+                    <small class="pm-header-sub">Configura los parámetros de conexión e impresión</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" (click)="cerrarModal()"></button>
             </div>
-            <div class="modal-body p-4">
+
+            <div class="pm-body">
                 <form (ngSubmit)="guardar()">
-                    <div class="row g-3">
 
-                        <!-- Nombre -->
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Nombre de la impresora</label>
-                            <input type="text" class="form-control" [(ngModel)]="formulario.nombre"
-                                name="nombre" required placeholder="Ej: Cocina Principal">
+                    <!-- ── SECCIÓN 1: Identidad ── -->
+                    <div class="pm-section">
+                        <div class="pm-section-label">
+                            <i class="fa-solid fa-tag me-1"></i> Identidad
                         </div>
+                        <input type="text" class="form-control pm-input-name" [(ngModel)]="formulario.nombre"
+                            name="nombre" required placeholder="Ej: Cocina Principal, Bar, Caja">
+                    </div>
 
-                        <!-- Tipo de estación -->
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Estación / Tipo</label>
-                            <div class="d-flex flex-wrap gap-2 mt-1">
-                                <div *ngFor="let t of tipos">
-                                    <input type="radio" class="btn-check" [id]="'tipo_' + t.value"
-                                        [value]="t.value" [(ngModel)]="formulario.tipo" name="tipo">
-                                    <label class="btn btn-sm btn-outline-secondary" [for]="'tipo_' + t.value">
-                                        <i [class]="'fa-solid ' + t.icon + ' me-1'"></i>{{ t.label }}
-                                    </label>
-                                </div>
+                    <!-- ── SECCIÓN 2: Estación ── -->
+                    <div class="pm-section">
+                        <div class="pm-section-label">
+                            <i class="fa-solid fa-location-dot me-1"></i> Estación / Tipo
+                        </div>
+                        <div class="pm-tipo-grid">
+                            <div *ngFor="let t of tipos">
+                                <input type="radio" class="btn-check" [id]="'tipo_' + t.value"
+                                    [value]="t.value" [(ngModel)]="formulario.tipo" name="tipo">
+                                <label class="pm-tipo-btn" [for]="'tipo_' + t.value">
+                                    <i [class]="'fa-solid ' + t.icon"></i>
+                                    <span>{{ t.label }}</span>
+                                </label>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Tipo de conexión -->
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Tipo de conexión</label>
-                            <div class="d-flex gap-2 mt-1">
-                                <div *ngFor="let tc of tiposConexion">
-                                    <input type="radio" class="btn-check" [id]="'tc_' + tc.value"
-                                        [value]="tc.value" [(ngModel)]="formulario.tipo_conexion" name="tipo_conexion">
-                                    <label class="btn btn-sm btn-outline-primary" [for]="'tc_' + tc.value">
-                                        <i [class]="'fa-solid ' + tc.icon + ' me-1'"></i>{{ tc.label }}
-                                    </label>
-                                </div>
+                    <!-- ── SECCIÓN 3: Conexión ── -->
+                    <div class="pm-section">
+                        <div class="pm-section-label">
+                            <i class="fa-solid fa-network-wired me-1"></i> Tipo de conexión
+                        </div>
+                        <div class="pm-conexion-toggle">
+                            <div *ngFor="let tc of tiposConexion">
+                                <input type="radio" class="btn-check" [id]="'tc_' + tc.value"
+                                    [value]="tc.value" [(ngModel)]="formulario.tipo_conexion" name="tipo_conexion">
+                                <label class="pm-conexion-btn" [for]="'tc_' + tc.value">
+                                    <i [class]="'fa-solid ' + tc.icon"></i>
+                                    {{ tc.label }}
+                                </label>
                             </div>
                         </div>
 
                         <!-- Campos RED -->
                         @if (!esUsb) {
-                            <div class="col-md-8">
-                                <label class="form-label small fw-bold">Dirección IP</label>
-                                <input type="text" class="form-control font-monospace" [(ngModel)]="formulario.ip"
-                                    name="ip" placeholder="192.168.1.10">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold">Puerto TCP</label>
-                                <input type="number" class="form-control font-monospace" [(ngModel)]="formulario.puerto"
-                                    name="puerto" min="1" max="65535">
-                                <small class="text-muted" style="font-size:.65rem">ESC/POS: 9100</small>
+                            <div class="pm-ip-row">
+                                <div class="pm-ip-field">
+                                    <label class="pm-field-label">Dirección IP</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text pm-input-addon">
+                                            <i class="fa-solid fa-wifi"></i>
+                                        </span>
+                                        <input type="text" class="form-control font-monospace"
+                                            [(ngModel)]="formulario.ip" name="ip" placeholder="192.168.1.10">
+                                    </div>
+                                </div>
+                                <div class="pm-port-field">
+                                    <label class="pm-field-label">Puerto TCP</label>
+                                    <input type="number" class="form-control font-monospace text-center"
+                                        [(ngModel)]="formulario.puerto" name="puerto" min="1" max="65535">
+                                    <div class="pm-hint">ESC/POS estándar: 9100</div>
+                                </div>
                             </div>
                         }
 
                         <!-- Campos USB -->
                         @if (esUsb) {
-                            <div class="col-12">
-                                <label class="form-label small fw-bold">Puerto Windows</label>
+                            <div class="pm-usb-row">
+                                <label class="pm-field-label">Puerto Windows (USB/COM)</label>
                                 <div class="input-group">
+                                    <span class="input-group-text pm-input-addon">
+                                        <i class="fa-solid fa-plug"></i>
+                                    </span>
                                     <input type="text" class="form-control font-monospace"
                                         [(ngModel)]="formulario.puerto_usb" name="puerto_usb"
-                                        placeholder="USB001  ó  USB002  ó  COM3">
+                                        placeholder="USB001  ó  COM3">
                                     <button type="button" class="btn btn-outline-secondary"
                                         (click)="detectarImpresorasWindows()" [disabled]="cargandoWindows">
                                         <span *ngIf="cargandoWindows" class="spinner-border spinner-border-sm"></span>
@@ -297,85 +321,117 @@
                                         Detectar
                                     </button>
                                 </div>
-                                <small class="text-muted" style="font-size:.65rem">
-                                    Puedes verlo en Windows: Administrador de dispositivos → Puertos (COM y LPT)
-                                </small>
+                                <div class="pm-hint">Administrador de dispositivos → Puertos (COM y LPT)</div>
 
-                                <!-- Lista de impresoras detectadas -->
                                 @if (impresorasWindows.length > 0) {
-                                    <div class="mt-2 border rounded-3 overflow-hidden">
-                                        <div class="px-3 py-2 bg-light border-bottom">
-                                            <small class="fw-bold text-muted">
-                                                <i class="fa-solid fa-list me-1"></i>
-                                                Impresoras detectadas — haz click para seleccionar
-                                            </small>
+                                    <div class="pm-usb-list">
+                                        <div class="pm-usb-list-header">
+                                            <i class="fa-solid fa-list me-1"></i>
+                                            Detectadas — clic para seleccionar
                                         </div>
                                         <div *ngFor="let imp of impresorasWindows"
-                                            class="d-flex align-items-center gap-2 px-3 py-2 border-bottom"
-                                            style="cursor:pointer"
-                                            [class.bg-primary-subtle]="formulario.puerto_usb === imp.PortName"
+                                            class="pm-usb-item"
+                                            [class.pm-usb-item-selected]="formulario.puerto_usb === imp.PortName"
                                             (click)="seleccionarImpresoraWindows(imp)">
-                                            <i class="fa-solid fa-print text-muted fa-fw"></i>
-                                            <div>
+                                            <i class="fa-solid fa-print fa-fw text-muted"></i>
+                                            <div class="flex-grow-1">
                                                 <div class="small fw-semibold">{{ imp.Name }}</div>
-                                                <code class="text-muted" style="font-size:.7rem">{{ imp.PortName }}</code>
+                                                <code style="font-size:.7rem;color:#64748b">{{ imp.PortName }}</code>
                                             </div>
                                             @if (formulario.puerto_usb === imp.PortName) {
-                                                <i class="fa-solid fa-check text-primary ms-auto"></i>
+                                                <i class="fa-solid fa-circle-check text-primary"></i>
                                             }
                                         </div>
                                     </div>
                                 }
                             </div>
                         }
-
-                        <!-- Opciones comunes -->
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Caracteres / línea</label>
-                            <select class="form-select" [(ngModel)]="formulario.caracteres_por_linea" name="chars">
-                                <option [value]="32">32 (papel 57mm)</option>
-                                <option [value]="42">42 (papel 80mm) — estándar</option>
-                                <option [value]="48">48 (papel 80mm amplio)</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold">Copias</label>
-                            <input type="number" class="form-control" [(ngModel)]="formulario.copies"
-                                name="copies" min="1" max="5">
-                        </div>
-
-                        <div class="col-md-3 d-flex flex-column justify-content-end pb-1">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="chk_corte"
-                                    [(ngModel)]="formulario.corte_automatico" name="corte">
-                                <label class="form-check-label small fw-bold" for="chk_corte">Corte auto</label>
-                            </div>
-                            <div class="form-check form-switch mt-1">
-                                <input class="form-check-input" type="checkbox" id="chk_activa"
-                                    [(ngModel)]="formulario.activa" name="activa">
-                                <label class="form-check-label small fw-bold" for="chk_activa">Activa</label>
-                            </div>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">
-                                Descripción / Ubicación <span class="text-muted fw-normal">(opcional)</span>
-                            </label>
-                            <input type="text" class="form-control" [(ngModel)]="formulario.descripcion"
-                                name="descripcion" placeholder="Ej: Junto al wok, segundo piso">
-                        </div>
-
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <button type="button" class="btn btn-light px-4" (click)="cerrarModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-dark px-5" [disabled]="isSaving">
+                    <!-- ── SECCIÓN 4: Opciones de impresión ── -->
+                    <div class="pm-section">
+                        <div class="pm-section-label">
+                            <i class="fa-solid fa-sliders me-1"></i> Opciones de impresión
+                        </div>
+                        <div class="pm-options-row">
+                            <div class="pm-opt-field">
+                                <label class="pm-field-label">Papel / Caracteres por línea</label>
+                                <select class="form-select" [(ngModel)]="formulario.caracteres_por_linea" name="chars">
+                                    <option [value]="32">32 chars — Papel 57mm</option>
+                                    <option [value]="42">42 chars — Papel 80mm (estándar)</option>
+                                    <option [value]="48">48 chars — Papel 80mm amplio</option>
+                                </select>
+                            </div>
+                            <div class="pm-opt-copies">
+                                <label class="pm-field-label">Copias</label>
+                                <div class="pm-copies-control">
+                                    <button type="button" class="pm-copies-btn"
+                                        (click)="formulario.copies = (formulario.copies ?? 1) > 1 ? (formulario.copies ?? 1) - 1 : 1">
+                                        <i class="fa-solid fa-minus"></i>
+                                    </button>
+                                    <span class="pm-copies-val">{{ formulario.copies ?? 1 }}</span>
+                                    <button type="button" class="pm-copies-btn"
+                                        (click)="formulario.copies = (formulario.copies ?? 1) < 5 ? (formulario.copies ?? 1) + 1 : 5">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Switches -->
+                        <div class="pm-switches">
+                            <label class="pm-switch-card" [class.pm-switch-on]="formulario.corte_automatico">
+                                <div class="pm-switch-icon">
+                                    <i class="fa-solid fa-scissors"></i>
+                                </div>
+                                <div class="pm-switch-text">
+                                    <span class="pm-switch-title">Corte automático</span>
+                                    <small>Cortar papel al finalizar</small>
+                                </div>
+                                <div class="form-check form-switch mb-0 ms-auto">
+                                    <input class="form-check-input" type="checkbox" id="chk_corte"
+                                        [(ngModel)]="formulario.corte_automatico" name="corte">
+                                </div>
+                            </label>
+
+                            <label class="pm-switch-card" [class.pm-switch-on]="formulario.activa">
+                                <div class="pm-switch-icon">
+                                    <i class="fa-solid fa-power-off"></i>
+                                </div>
+                                <div class="pm-switch-text">
+                                    <span class="pm-switch-title">Impresora activa</span>
+                                    <small>Habilitada para recibir órdenes</small>
+                                </div>
+                                <div class="form-check form-switch mb-0 ms-auto">
+                                    <input class="form-check-input" type="checkbox" id="chk_activa"
+                                        [(ngModel)]="formulario.activa" name="activa">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ── SECCIÓN 5: Descripción ── -->
+                    <div class="pm-section pm-section-last">
+                        <div class="pm-section-label">
+                            <i class="fa-solid fa-note-sticky me-1"></i> Ubicación / Nota
+                            <span class="pm-optional">opcional</span>
+                        </div>
+                        <input type="text" class="form-control" [(ngModel)]="formulario.descripcion"
+                            name="descripcion" placeholder="Ej: Junto al wok, segundo piso, barra izquierda">
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="pm-footer">
+                        <button type="button" class="btn btn-light pm-btn-cancel" (click)="cerrarModal()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="pm-btn-save" [disabled]="isSaving">
                             <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
                             <i *ngIf="!isSaving" class="fa-solid fa-floppy-disk me-2"></i>
-                            {{ modoModal === 'crear' ? 'Registrar' : 'Guardar cambios' }}
+                            {{ modoModal === 'crear' ? 'Registrar impresora' : 'Guardar cambios' }}
                         </button>
                     </div>
+
                 </form>
             </div>
         </div>

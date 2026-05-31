@@ -368,16 +368,33 @@
             <div class="col-lg-4 bg-light p-2 border-end d-flex flex-column align-items-center text-center">
 
               <div class="position-relative mb-4 mt-2">
-                <div
-                  class="avatar-placeholder rounded-circle bg-white shadow-sm border-2 border-primary border-opacity-25 d-flex align-items-center justify-content-center text-primary display-4 gradient-text"
-                  style="width: 140px; height: 140px;">
-                  {{ formularioUsuario.nombre.charAt(0) || 'U' }}
-                </div>
-                <!-- Camera Button Hover Effect -->
+                <!-- Input de archivo oculto -->
+                <input type="file" #fotoInput accept="image/*" class="d-none"
+                  (change)="subirFoto($event)">
+
+                <!-- Avatar: imagen si existe, iniciales si no -->
+                @if (formularioUsuario.avatar) {
+                  <img [src]="formularioUsuario.avatar" alt="Avatar"
+                    class="rounded-circle shadow-sm border border-2 border-primary border-opacity-25"
+                    style="width:140px;height:140px;object-fit:cover;">
+                } @else {
+                  <div
+                    class="avatar-placeholder rounded-circle bg-white shadow-sm border-2 border-primary border-opacity-25 d-flex align-items-center justify-content-center text-primary display-4 gradient-text"
+                    style="width: 140px; height: 140px;">
+                    {{ formularioUsuario.nombre.charAt(0) || 'U' }}
+                  </div>
+                }
+
+                <!-- Botón cámara -->
                 <button type="button"
                   class="btn btn-primary rounded-circle position-absolute bottom-0 end-0 shadow border-4 border-white btn-camera"
-                  title="Subir foto">
-                  <i class="fa-solid fa-camera small"></i>
+                  title="Subir foto" [disabled]="subiendoFoto"
+                  (click)="fotoInput.click()">
+                  @if (subiendoFoto) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                  } @else {
+                    <i class="fa-solid fa-camera small"></i>
+                  }
                 </button>
               </div>
 

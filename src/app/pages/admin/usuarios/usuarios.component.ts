@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { UsuariosService } from '../../../services/usuarios.service';
 import { AuthService } from '../../../services/auth.service';
+import { SupabaseService } from '../../../services/supabase.service';
 import { Usuario, Rol, CrearUsuario, ActualizarUsuario } from '../../../models/usuario.model';
 import Swal from 'sweetalert2';
 
@@ -50,6 +51,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   // Estados
   isLoading = false;
   isSaving = false;
+  subiendoFoto = false;
   subscriptions: Subscription[] = [];
 
   // Estadísticas
@@ -64,6 +66,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   constructor(
     private usuariosService: UsuariosService,
     private authService: AuthService,
+    private supabaseService: SupabaseService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) { }
@@ -245,11 +248,12 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       apellido: usuario.apellido,
       email: usuario.email,
       username: usuario.username,
-      password: '', // No mostrar contraseña actual
+      password: '',
       telefono: usuario.telefono || '',
       rol_id: usuario.rol_id,
       negocio_id: usuario.negocio_id || this.authService.getNegocioId() || '',
-      activo: usuario.activo
+      activo: usuario.activo,
+      avatar: usuario.avatar || ''
     };
     this.mostrarModal = true;
   }
@@ -444,6 +448,57 @@ export class UsuariosComponent implements OnInit, OnDestroy {
           icon: 'error'
         });
       }
+    }
+  }
+
+  // ==================== FOTO DE PERFIL ====================
+
+  async subirFoto(event: Event): Promise<void> {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      Swal.fire('⚠️ Archivo muy grande', 'La imagen no debe superar 2 MB', 'warning');
+      return;
+    }
+
+    this.subiendoFoto = true;
+    this.cdr.detectChanges();
+
+    try {
+      const ext = file.name.split('.').pop();
+      const userId = this.usuarioSeleccionado?.id || 'nuevo';
+      const path = `avatars/${userId}_${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await this.supabaseService.client.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = this.supabaseService.client.storage
+        .from('avatars')
+        .getPublicUrl(path);
+
+      this.formularioUsuario.avatar = data.publicUrl;
+
+      // Si es edición, guardar en BD inmediatamente
+      if (this.modoModal === 'editar' && this.usuarioSeleccionado?.id) {
+        await this.supabaseService.client
+          .from('usuarios')
+          .update({ avatar: data.publicUrl })
+          .eq('id', this.usuarioSeleccionado.id);
+        await this.usuariosService.cargarUsuarios();
+      }
+
+      this.cdr.detectChanges();
+    } catch (e: any) {
+      Swal.fire('❌ Error al subir foto', e.message || 'Intenta de nuevo', 'error');
+    } finally {
+      this.subiendoFoto = false;
+      // Limpiar el input para permitir subir la misma imagen de nuevo
+      (event.target as HTMLInputElement).value = '';
+      this.cdr.detectChanges();
     }
   }
 
