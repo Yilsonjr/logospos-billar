@@ -840,6 +840,7 @@
 }
 .inv-filter-pill:hover { border-color: #6366f1; color: #4f46e5; background: #f0f0ff; }
 .inv-filter-pill.active { background: #eef2ff; border-color: #6366f1; color: #4f46e5; }
+.inv-pill-success.active { background: #f0fdf4; border-color: #4ade80; color: #16a34a; }
 .inv-pill-warning.active { background: #fffbeb; border-color: #f59e0b; color: #d97706; }
 .inv-pill-danger.active  { background: #fff1f2; border-color: #f87171; color: #dc2626; }
 .inv-pill-count {

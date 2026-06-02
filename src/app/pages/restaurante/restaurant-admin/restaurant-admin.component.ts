@@ -96,9 +96,9 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   get invBusqueda(): string { return this._invBusqueda; }
   set invBusqueda(v: string) { this._invBusqueda = v; this._invPagina = 0; }
 
-  private _invFiltroStock: 'todos' | 'bajo' | 'sin_stock' = 'todos';
-  get invFiltroStock(): 'todos' | 'bajo' | 'sin_stock' { return this._invFiltroStock; }
-  set invFiltroStock(v: 'todos' | 'bajo' | 'sin_stock') { this._invFiltroStock = v; this._invPagina = 0; }
+  private _invFiltroStock: 'todos' | 'con_stock' | 'bajo' | 'sin_stock' = 'todos';
+  get invFiltroStock(): 'todos' | 'con_stock' | 'bajo' | 'sin_stock' { return this._invFiltroStock; }
+  set invFiltroStock(v: 'todos' | 'con_stock' | 'bajo' | 'sin_stock') { this._invFiltroStock = v; this._invPagina = 0; }
 
   private _invCategoria = '';
   get invCategoria(): string { return this._invCategoria; }
@@ -151,6 +151,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
         || (item.ubicacion || '').toLowerCase().includes(q);
       const matchStock =
         this._invFiltroStock === 'todos'     ? true :
+        this._invFiltroStock === 'con_stock' ? item.cantidad_actual > 0 :
         this._invFiltroStock === 'bajo'      ? item.stock_bajo === true :
         this._invFiltroStock === 'sin_stock' ? item.cantidad_actual <= 0 : true;
       const matchCat = !this._invCategoria || item.categoria === this._invCategoria;
@@ -286,6 +287,10 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
 
   get countStockBajo(): number {
     return this.inventarioItems.filter(i => i.stock_bajo).length;
+  }
+
+  get countConStock(): number {
+    return this.inventarioItems.filter(i => i.cantidad_actual > 0).length;
   }
 
   get countSinStock(): number {

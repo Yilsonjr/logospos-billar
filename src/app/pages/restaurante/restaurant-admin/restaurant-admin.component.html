@@ -863,6 +863,11 @@
               (click)="invFiltroStock = 'todos'">
               Todos <span class="inv-pill-count">{{ inventarioItems.length }}</span>
             </button>
+            <button class="inv-filter-pill inv-pill-success" [class.active]="invFiltroStock === 'con_stock'"
+              (click)="invFiltroStock = 'con_stock'">
+              <i class="fa-solid fa-circle-check"></i> Con stock
+              <span class="inv-pill-count">{{ countConStock }}</span>
+            </button>
             <button class="inv-filter-pill inv-pill-warning" [class.active]="invFiltroStock === 'bajo'"
               (click)="invFiltroStock = 'bajo'">
               <i class="fa-solid fa-triangle-exclamation"></i> Stock bajo
