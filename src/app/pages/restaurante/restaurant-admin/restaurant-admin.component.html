@@ -285,7 +285,13 @@
       <div class="ra-cat-grid">
         @for (cat of categorias; track trackById($index, cat)) {
           <div class="ra-cat-card">
-            <div class="ra-cat-icon">{{ cat.icono || '🍽️' }}</div>
+            <div class="ra-cat-icon">
+              @if (cat.icono?.startsWith('fa-')) {
+                <i [class]="cat.icono"></i>
+              } @else {
+                {{ cat.icono || '🍽️' }}
+              }
+            </div>
             <div class="ra-cat-info">
               <div class="fw-bold">{{ cat.nombre }}</div>
               <div class="text-muted small">{{ cat.descripcion || 'Sin descripción' }}</div>
