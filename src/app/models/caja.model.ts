@@ -61,10 +61,12 @@ export interface ResumenCaja {
   caja: Caja;
   movimientos: MovimientoCaja[];
   arqueo?: ArqueoCaja;
-  total_ventas: number;
+  total_ventas: number;           // efectivo + tarjeta (solo informativo)
+  total_ventas_efectivo: number;  // solo ventas cobradas en efectivo
+  total_ventas_tarjeta: number;   // solo ventas cobradas con tarjeta
   total_entradas: number;
   total_salidas: number;
-  efectivo_disponible: number;
+  efectivo_disponible: number;    // monto_inicial + ventas_efectivo + entradas - salidas
 }
 
 // Tipos para crear

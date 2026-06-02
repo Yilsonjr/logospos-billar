@@ -223,8 +223,9 @@
         </div>
         <div class="col-6 col-md-3">
           <div class="bg-white p-3 rounded-xl border-bottom border-success border-4 text-center shadow-xs">
-            <span class="d-block text-success fw-700 x-small text-uppercase mb-1">Ventas (+)</span>
-            <span class="d-block fw-900 text-slate-700">{{ formatearMoneda(cajaSeleccionada.total_ventas) }}</span>
+            <span class="d-block text-success fw-700 x-small text-uppercase mb-1">Ventas Efectivo</span>
+            <span class="d-block fw-900 text-slate-700">{{ formatearMoneda(cajaSeleccionada.total_ventas_efectivo) }}</span>
+            <span class="d-block x-small text-slate-400">Tarjeta: {{ formatearMoneda(cajaSeleccionada.total_ventas_tarjeta) }}</span>
           </div>
         </div>
         <div class="col-6 col-md-3">

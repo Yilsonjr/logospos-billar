@@ -323,11 +323,7 @@ export class CajaService {
       const movimientos = await this.obtenerMovimientos(cajaId);
       const arqueo = await this.obtenerArqueo(cajaId);
 
-      // Calcular totales
-      const total_ventas = movimientos
-        .filter(m => m.tipo === 'venta')
-        .reduce((sum, m) => sum + m.monto, 0);
-
+      // Totales de entradas y salidas (no ventas)
       const total_entradas = movimientos
         .filter(m => m.tipo === 'entrada')
         .reduce((sum, m) => sum + m.monto, 0);
@@ -336,7 +332,32 @@ export class CajaService {
         .filter(m => m.tipo === 'salida')
         .reduce((sum, m) => sum + m.monto, 0);
 
-      const efectivo_disponible = caja.monto_inicial + total_ventas + total_entradas - total_salidas;
+      // Ventas separadas por método de pago.
+      // Para cajas cerradas usamos los valores guardados en el cierre (más precisos).
+      // Para cajas abiertas derivamos del concepto del movimiento.
+      let total_ventas_efectivo: number;
+      let total_ventas_tarjeta: number;
+
+      if (caja.estado === 'cerrada' &&
+          caja.total_ventas_efectivo != null &&
+          caja.total_ventas_tarjeta != null) {
+        total_ventas_efectivo = caja.total_ventas_efectivo;
+        total_ventas_tarjeta  = caja.total_ventas_tarjeta;
+      } else {
+        total_ventas_efectivo = 0;
+        total_ventas_tarjeta  = 0;
+        movimientos
+          .filter(m => m.tipo === 'venta')
+          .forEach(m => {
+            const c = m.concepto.toLowerCase();
+            if (c.includes('(efectivo)'))     total_ventas_efectivo += m.monto;
+            else if (c.includes('(tarjeta)')) total_ventas_tarjeta  += m.monto;
+          });
+      }
+
+      const total_ventas = total_ventas_efectivo + total_ventas_tarjeta;
+      // Solo el efectivo entra a la caja física
+      const efectivo_disponible = caja.monto_inicial + total_ventas_efectivo + total_entradas - total_salidas;
 
       console.log('✅ [CajaService] Resumen generado exitosamente');
 
@@ -345,6 +366,8 @@ export class CajaService {
         movimientos,
         arqueo: arqueo || undefined,
         total_ventas,
+        total_ventas_efectivo,
+        total_ventas_tarjeta,
         total_entradas,
         total_salidas,
         efectivo_disponible
