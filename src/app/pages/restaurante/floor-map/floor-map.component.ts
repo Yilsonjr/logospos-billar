@@ -37,6 +37,9 @@ export class FloorMapComponent implements OnInit, OnDestroy {
 
   modoOffline = false;
 
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly POLLING_MS = 15_000;
+
   constructor(
     private tablesService: RestaurantTablesService,
     private offlineService: OfflineService,
@@ -45,14 +48,30 @@ export class FloorMapComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     await this.cargarDatos();
-    // Solo suscribir cambios en tiempo real si estamos online
     if (this.offlineService.isOnline) {
-      this.tablesService.suscribirCambios(() => this.cargarDatos());
+      this.tablesService.suscribirCambios(() => this.actualizarSilencioso());
+      // Polling de respaldo por si Realtime no está habilitado en el proyecto
+      this.pollingInterval = setInterval(() => this.actualizarSilencioso(), this.POLLING_MS);
     }
   }
 
   ngOnDestroy(): void {
     this.tablesService.desuscribir();
+    if (this.pollingInterval) clearInterval(this.pollingInterval);
+  }
+
+  /** Recarga datos sin mostrar el spinner de carga completo */
+  private async actualizarSilencioso(): Promise<void> {
+    try {
+      const [zonas, mesas] = await Promise.all([
+        this.tablesService.cargarZonas(),
+        this.tablesService.cargarMesasConOrden()
+      ]);
+      this.zonas = zonas;
+      this.mesas = mesas;
+      this.filtrarPorZona();
+      this.cdr.detectChanges();
+    } catch { /* ignorar errores silenciosos */ }
   }
 
   async cargarDatos(): Promise<void> {
