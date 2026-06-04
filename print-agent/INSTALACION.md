@@ -1,131 +1,126 @@
-# LogosPOS — Manual de Instalación del Agente de Impresión
+# LogosPOS — Agente de Impresión Local
 
-Guía para instalar el agente de impresión en cualquier PC con impresora térmica,
-ya sea en una nueva sucursal, restaurante o punto de venta.
-
----
-
-## Dos formas de instalar
-
-| Modo | Requiere Node.js | Archivos a copiar |
-|------|-----------------|-------------------|
-| **Ejecutable .exe** (recomendado) | ❌ No | `dist/print-agent.exe` + `instalar-servicio.bat` |
-| Script Node.js | ✅ Sí (v20+) | Carpeta `print-agent/` completa |
+Servidor HTTP que corre en el PC del negocio y recibe comandos de la app web para imprimir en impresoras térmicas (red TCP o USB).
 
 ---
 
-## Opción A — Ejecutable .exe (sin Node.js)
+## Requisitos antes de empezar
 
-### Paso 1 — Copiar archivos al PC
+| Requisito | Detalle |
+|-----------|---------|
+| Windows 10 u 11 | 64-bit |
+| Node.js v20+ | Solo si usas el script. Descargar: https://nodejs.org |
+| Conexión a Internet | Para descargar NSSM automáticamente la primera vez |
+| Impresora térmica | Conectada por red (TCP/IP) o por USB |
 
-Copia solo estos dos archivos a `C:\LogosPOS\`:
+> **NSSM** se descarga automáticamente al ejecutar el instalador. No necesitas descargarlo manualmente.
+
+---
+
+## Paso 1 — Copiar archivos al PC del negocio
+
+Copia la carpeta `print-agent` completa al PC donde están las impresoras. Recomendado:
+
 ```
-C:\LogosPOS\
-  print-agent.exe
+C:\LogosPOS\print-agent\
+```
+
+La estructura debe quedar así:
+```
+C:\LogosPOS\print-agent\
+  server.js
+  package.json
   instalar-servicio.bat
-```
-
-### Paso 2 — Generar certificado HTTPS
-
-```powershell
-cd C:\LogosPOS
-.\print-agent.exe --gen-cert
-```
-
-### Paso 3 — Instalar como servicio Windows
-
-Abre **PowerShell como Administrador**:
-
-```powershell
-cd C:\LogosPOS
-.\instalar-servicio.bat
+  instalar-servicio.ps1
+  desinstalar-servicio.bat
+  desinstalar-servicio.ps1
+  gen-cert.js
+  INSTALACION.md
 ```
 
 ---
 
-## Opción B — Script Node.js
+## Paso 2 — Instalar como servicio Windows
 
-### Paso 1 — Requisitos
+1. Abre la carpeta `C:\LogosPOS\print-agent\` en el Explorador
+2. Haz **clic derecho** en `instalar-servicio.bat`
+3. Selecciona **"Ejecutar como administrador"**
+4. El script hace automáticamente:
+   - Detecta si hay `print-agent.exe` o `server.js`
+   - Descarga NSSM si no está presente
+   - Registra el servicio `LogosPOS-PrintAgent`
+   - Abre el puerto 3000 en el Firewall de Windows
+   - Inicia el servicio
 
-| Requisito | Versión | Descarga |
-|-----------|---------|----------|
-| Windows   | 10 / 11 | — |
-| Node.js   | 20 LTS+ | https://nodejs.org |
-
-### Paso 2 — Copiar el agente al PC
-
-Copia la carpeta `print-agent` a `C:\LogosPOS\print-agent\`.
-
-### Paso 3 — Instalar como servicio Windows
-
-Abre **PowerShell como Administrador**:
-
-```powershell
-cd C:\LogosPOS\print-agent
-.\instalar-servicio.bat
+5. Al finalizar debe mostrar:
+```
+  Instalacion completada exitosamente
+  Agente activo en:  http://localhost:3000
 ```
 
-El servicio `LogosPOS-PrintAgent` quedará registrado y se iniciará automáticamente con Windows.
+### Verificar que funciona
 
-### Comandos útiles del servicio
-
-```powershell
-net start  LogosPOS-PrintAgent   # Iniciar
-net stop   LogosPOS-PrintAgent   # Detener
-net start  LogosPOS-PrintAgent   # Reiniciar (después de detener)
-```
-
-Para verificar que está corriendo:
+Abre el navegador en ese mismo PC y ve a:
 ```
 http://localhost:3000/health
 ```
-Debe mostrar: `{"status":"ok","agent":"LogosPOS Print Agent",...}`
+
+Debe responder:
+```json
+{"status":"ok","agent":"LogosPOS Print Agent","version":"1.0.0"}
+```
+
+Si no responde, revisa el paso de solución de problemas al final.
 
 ---
 
-## Paso 3 — Crear túnel HTTPS con Cloudflare
+## Paso 3 — Exponer el agente a internet (Cloudflare Tunnel)
 
-El túnel permite que la app web (HTTPS) se comunique con el agente local sin bloqueos del navegador.
+La app web corre en HTTPS. Para que pueda comunicarse con el agente local necesitas un túnel.
 
 ### 3.1 Instalar cloudflared
 
+Abre PowerShell como Administrador y ejecuta:
 ```powershell
 winget install --id Cloudflare.cloudflared
 ```
 
-### 3.2 Autenticarse (abre el navegador)
+Cierra y abre PowerShell de nuevo para que reconozca el comando.
+
+### 3.2 Autenticarse en Cloudflare
 
 ```powershell
 cloudflared tunnel login
 ```
 
-Inicia sesión con tu cuenta de Cloudflare (gratuita en https://cloudflare.com).
+Se abre el navegador. Inicia sesión en tu cuenta de Cloudflare (gratuita en https://cloudflare.com) y autoriza.
 
-### 3.3 Crear el túnel (usa un nombre descriptivo por local)
+### 3.3 Crear el túnel (una sola vez por local)
 
 ```powershell
 cloudflared tunnel create print-agent-nombre-del-local
 ```
 
-Ejemplo para una segunda sucursal:
+Ejemplo:
 ```powershell
-cloudflared tunnel create print-agent-sucursal-norte
+cloudflared tunnel create print-agent-burgos
 ```
 
-Anota el **UUID del túnel** que aparece en la salida.
+Anota el **UUID** que aparece. Ejemplo: `a1b2c3d4-...`
 
-### 3.4 Crear el archivo de configuración
+### 3.4 Crear archivo de configuración
 
-Crea el archivo `C:\Users\USUARIO\.cloudflared\config.yml` con este contenido
-(reemplaza `<UUID>` con el UUID del paso anterior):
+Crea el archivo `C:\Users\TU_USUARIO\.cloudflared\config.yml` con este contenido exacto (reemplaza `<UUID>`):
 
 ```yaml
 tunnel: <UUID>
-credentials-file: C:\Users\USUARIO\.cloudflared\<UUID>.json
+credentials-file: C:\Users\TU_USUARIO\.cloudflared\<UUID>.json
 
 ingress:
   - service: http://localhost:3000
 ```
+
+> **Importante:** reemplaza `TU_USUARIO` con tu nombre de usuario de Windows (el que aparece en `C:\Users\`)
 
 ### 3.5 Instalar el túnel como servicio Windows
 
@@ -142,136 +137,168 @@ cloudflared tunnel info print-agent-nombre-del-local
 
 La URL será del tipo:
 ```
-https://<uuid>.cfargotunnel.com
+https://a1b2c3d4-xxxx.cfargotunnel.com
 ```
 
-Guarda esta URL — es la que vas a configurar en la app. **Es permanente y no cambia aunque reinicies el PC.**
+Esta URL **nunca cambia** aunque reinicies el PC. Guárdala.
+
+### 3.7 Verificar el túnel
+
+Desde cualquier dispositivo con internet:
+```
+https://TU-URL.cfargotunnel.com/health
+```
+
+Debe responder el mismo JSON de antes. Si no responde, el túnel no está activo.
 
 ---
 
-## Paso 4 — Generar certificado HTTPS (opcional pero recomendado)
-
-Solo necesario si vas a usar el agente desde `http://localhost` además del túnel:
-
-```powershell
-cd C:\LogosPOS\print-agent
-node gen-cert.js
-```
-
-Reinicia el agente después:
-```powershell
-net stop LogosPOS-PrintAgent
-net start LogosPOS-PrintAgent
-```
-
----
-
-## Paso 5 — Configurar en la app LogosPOS
+## Paso 4 — Configurar en la app LogosPOS
 
 1. Inicia sesión con el usuario del negocio
-2. Ve a **Restaurante → Impresoras** (o la ruta `/restaurante/impresoras`)
-3. En el campo **URL del agente**, pega la URL del túnel:
+2. Ve a **Restaurante → Impresoras**
+3. En la sección **"Agente de Impresión Local"**, pega la URL del túnel:
    ```
-   https://<uuid>.cfargotunnel.com
+   https://TU-URL.cfargotunnel.com
    ```
-4. Haz click en **Guardar**
-5. Haz click en **↺** (verificar) — debe aparecer el badge verde **"Agente conectado"**
+4. Clic en **Guardar**
+5. Clic en el botón **↺** (actualizar/verificar)
+6. Debe aparecer el badge verde **"Agente conectado"**
+
+Si aparece rojo, la URL no está correcta o el servicio no está corriendo.
 
 ---
 
-## Paso 6 — Agregar impresoras
+## Paso 5 — Agregar impresoras
 
-Por cada impresora física del local:
+Por cada impresora física:
 
-1. Click en **Nueva Impresora**
+1. Clic en **Nueva Impresora**
 2. Completa el formulario:
 
-| Campo | Impresora de red | Impresora USB |
-|-------|-----------------|---------------|
-| Tipo conexión | Red / TCP-IP | USB (local) |
-| IP | 192.168.x.x | — |
-| Puerto TCP | 9100 (ESC/POS estándar) | — |
-| Puerto Windows | — | USB001 / USB002 / COM3 |
-| Tipo estación | Cocina / Caja / Barra / Comanda | Igual |
+**Impresora de red (TCP/IP):**
+- Tipo de conexión: **Red / TCP-IP**
+- Dirección IP: `192.168.x.x` (IP de la impresora en la red local)
+- Puerto TCP: `9100` (estándar ESC/POS)
 
-3. Para impresoras USB, haz click en **Detectar** para listar las instaladas en Windows
-4. Guarda y usa el botón **Prueba** para verificar que imprime correctamente
+**Impresora USB:**
+- Tipo de conexión: **USB (local)**
+- Clic en **Detectar** para listar las impresoras instaladas en Windows
+- Selecciona la que corresponde
+
+3. Asigna el tipo de estación (Cocina, Caja, Barra, etc.)
+4. Clic en **Registrar impresora**
+5. Usa el botón **Prueba** para verificar que imprime
 
 ---
 
-## Esquema por sucursal
+## Comandos útiles
 
-Cada local/negocio tiene su propia configuración independiente:
+```powershell
+# Ver estado del agente
+net start LogosPOS-PrintAgent
 
+# Detener el agente
+net stop LogosPOS-PrintAgent
+
+# Reiniciar el agente
+net stop LogosPOS-PrintAgent && net start LogosPOS-PrintAgent
+
+# Ver logs del agente
+Get-Content "C:\LogosPOS\print-agent\logs\agent.log" -Tail 50
+
+# Ver errores del agente
+Get-Content "C:\LogosPOS\print-agent\logs\agent-error.log" -Tail 50
+
+# Ver estado del túnel
+net start cloudflared
 ```
-Negocio A — Restaurante Centro
-  URL agente → https://abc123.cfargotunnel.com
-  Impresoras:
-    Cocina  → 192.168.1.10:9100
-    Caja    → USB001
-
-Negocio B — Restaurante Norte
-  URL agente → https://xyz789.cfargotunnel.com
-  Impresoras:
-    Cocina  → 192.168.0.20:9100
-    Caja    → 192.168.0.21:9100
-```
-
-Cada negocio tiene su propio agente, su propia URL de túnel y sus propias impresoras. No interfieren entre sí.
 
 ---
 
 ## Solución de problemas
 
-### El agente no inicia
+### ❌ "Agente desconectado" en la app
 
-```powershell
-# Ver logs del servicio
-Get-EventLog -LogName Application -Source NSSM -Newest 20
+Verifica en orden:
 
-# O ejecutar manualmente para ver el error en consola
-cd C:\LogosPOS\print-agent
-node server.js
-```
+1. **¿Está corriendo el agente?**
+   ```powershell
+   Get-Service LogosPOS-PrintAgent
+   ```
+   Si no está `Running`: `net start LogosPOS-PrintAgent`
 
-### Error: puerto 3000 ocupado
+2. **¿Está corriendo el túnel?**
+   ```powershell
+   Get-Service cloudflared
+   ```
+   Si no está `Running`: `net start cloudflared`
 
-El agente intenta automáticamente los puertos 3001–3005. Si cambia de puerto,
-actualiza la URL del agente en la app (agrega el nuevo puerto al final de la URL del túnel no aplica — el túnel siempre apunta al 3000).
+3. **¿Responde el health localmente?**
+   Abre en el PC del agente: `http://localhost:3000/health`
 
-Forzar el puerto en la configuración del servicio:
-```
-Variable de entorno: PRINT_AGENT_PORT=3001
-```
+4. **¿Responde el health por el túnel?**
+   Desde otro dispositivo: `https://TU-URL.cfargotunnel.com/health`
 
-### El badge aparece rojo ("Agente desconectado")
+5. **¿La URL en la app es correcta?**
+   Sin `/` al final, con `https://`.
 
-1. Verifica que el servicio esté corriendo: `net start LogosPOS-PrintAgent`
-2. Verifica que el túnel esté activo: `net start cloudflared`
-3. Prueba la URL del túnel directamente en el navegador: `https://<uuid>.cfargotunnel.com/health`
+---
 
-### La impresora no imprime (USB)
+### ❌ El instalador falla en "Descargando NSSM"
 
-1. Verifica que la impresora esté encendida y conectada
-2. En la app, usa **Detectar** para confirmar el puerto (USB001, USB002, etc.)
-3. El puerto puede cambiar si desconectas y reconectas el USB — vuelve a detectar
+El PC no tiene internet durante la instalación. Solución manual:
 
-### La impresora no imprime (red)
+1. Descarga desde otro PC: https://nssm.cc/release/nssm-2.24.zip
+2. Extrae el archivo
+3. Copia `nssm-2.24\win64\nssm.exe` a `C:\LogosPOS\print-agent\nssm\nssm.exe`
+4. Vuelve a ejecutar `instalar-servicio.bat` como Administrador
 
-1. Verifica que la impresora esté en la misma red que el PC del agente
-2. Prueba el ping desde el PC: `ping 192.168.x.x`
-3. En la app, usa el botón **Ping** en la tarjeta de la impresora para probar la conexión TCP
+---
+
+### ❌ La impresora USB no imprime
+
+1. Verifica que Windows reconoce la impresora:
+   - Panel de Control → Dispositivos e Impresoras
+   - La impresora debe aparecer ahí
+2. En la app, usa **Detectar** para ver el nombre exacto de Windows
+3. Si cambias el cable USB de puerto, el nombre puede cambiar — vuelve a detectar
+4. Prueba imprimiendo una página de prueba desde Windows primero
+
+---
+
+### ❌ La impresora de red no imprime
+
+1. Verifica que el PC del agente y la impresora están en la **misma red WiFi/LAN**
+2. Prueba haciendo ping desde PowerShell:
+   ```powershell
+   ping 192.168.x.x
+   ```
+3. Verifica que el puerto 9100 está abierto:
+   ```powershell
+   Test-NetConnection -ComputerName 192.168.x.x -Port 9100
+   ```
+   Debe decir `TcpTestSucceeded: True`
+4. En la app usa el botón **Ping** en la tarjeta de la impresora
+
+---
+
+### ❌ Error "puerto 3000 ocupado"
+
+El agente intenta automáticamente los puertos 3001-3005. Si cambia de puerto:
+- Actualiza la URL del agente en la app agregando el puerto: `https://TU-URL.cfargotunnel.com:3001`
+- O libera el puerto 3000 cerrando el programa que lo usa
 
 ---
 
 ## Desinstalar
 
 ```powershell
-# Desinstalar agente
+# Desinstalar el agente
 cd C:\LogosPOS\print-agent
 .\desinstalar-servicio.bat
 
-# Desinstalar túnel
+# Desinstalar el túnel
 net stop cloudflared
 cloudflared service uninstall
 cloudflared tunnel delete print-agent-nombre-del-local
@@ -279,4 +306,24 @@ cloudflared tunnel delete print-agent-nombre-del-local
 
 ---
 
-*LogosPOS — Módulo de Impresión v1.0*
+## Por sucursal
+
+Cada local necesita su propio PC con agente y su propio túnel:
+
+```
+Burgos Centro
+  Agente: http://localhost:3000 (en el PC de ese local)
+  Túnel: https://abc123.cfargotunnel.com
+  Configurado en la app bajo el negocio "Burgos Centro"
+
+Burgos Norte
+  Agente: http://localhost:3000 (en OTRO PC)
+  Túnel: https://xyz789.cfargotunnel.com
+  Configurado en la app bajo el negocio "Burgos Norte"
+```
+
+Los túneles no interfieren entre sí.
+
+---
+
+*LogosPOS Print Agent v1.0 — Soporte: ing.jimrod@gmail.com*
