@@ -114,10 +114,14 @@ export class UsuariosService {
   async actualizarUsuario(id: number, usuario: ActualizarUsuario): Promise<Usuario> {
     try {
       // Si viene una contraseña en la actualización, hay que hashearla
-      let datosActualizados = { ...usuario };
+      let datosActualizados: any = { ...usuario };
       if (usuario.password) {
         datosActualizados.password = await bcrypt.hash(usuario.password, 10);
       }
+      // Excluir campos undefined/null vacíos para evitar errores si la columna no existe en BD
+      Object.keys(datosActualizados).forEach(k => {
+        if (datosActualizados[k] === undefined) delete datosActualizados[k];
+      });
 
       const { data, error } = await this.supabaseService.client
         .from('usuarios')
