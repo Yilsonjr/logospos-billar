@@ -694,14 +694,20 @@
                     @if (guardandoMod) { <span class="spinner-border spinner-border-sm"></span> }
                     @else { <i class="fa-solid fa-plus"></i> Agregar }
                   </button>
-                  <button class="btn btn-outline-warning btn-sm" (click)="guardarComoPlantilla()"
-                    [disabled]="guardandoPlantilla || !modForm.grupo_nombre.trim()"
-                    title="Guardar el grupo actual como plantilla reutilizable">
-                    @if (guardandoPlantilla) { <span class="spinner-border spinner-border-sm"></span> }
-                    @else { <i class="fa-solid fa-bookmark"></i> }
-                  </button>
                 </div>
               </div>
+
+              <!-- Botón guardar plantilla — siempre visible -->
+              @if (modForm.grupo_nombre.trim()) {
+                <div class="mt-2">
+                  <button class="btn btn-warning btn-sm w-100 fw-bold" (click)="guardarComoPlantilla()"
+                    [disabled]="guardandoPlantilla">
+                    @if (guardandoPlantilla) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    @else { <i class="fa-solid fa-bookmark me-1"></i> }
+                    Guardar "{{ modForm.grupo_nombre }}" como plantilla reutilizable
+                  </button>
+                </div>
+              }
             </div>
           </div>
             </div><!-- /plato-acomp-scroll -->
