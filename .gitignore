@@ -1,66 +1,76 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# Compiled output
+# ── Compilados Angular ───────────────────────────────────────
 /dist
 /tmp
 /out-tsc
-/bazel-out
+/.angular/cache
 
-# Node
+# ── Node ─────────────────────────────────────────────────────
 /node_modules
 npm-debug.log
 yarn-error.log
 
-# IDEs and editors
+# ── IDEs ─────────────────────────────────────────────────────
 .idea/
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# Visual Studio Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
+.history/
+*.sublime-workspace
 
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-__screenshots__/
-
-# System files
+# ── Sistema ──────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+/coverage
+testem.log
+__screenshots__/
+
+# ── Archivos locales / trabajo ────────────────────────────────
+build_output.txt
+scratch/
+.agents/
+
+# ── Variables de entorno y secretos ──────────────────────────
+.env
+.env.*
+*.env
+*secret*
+*credentials*
+
+# ── Claude Code (memoria local) ───────────────────────────────
+.claude/
+
+# ── Scripts SQL sensibles (RLS, seeds, migraciones internas) ──
 schema.sql
 database/seed_staging.sql
-database/restaurant/02_tablas_operacion.sql
-database/restaurant/01_tablas_base.sql
-database/restaurant/04_triggers_funciones.sql
-database/restaurant/03_rls_politicas.sql
-database/restaurant/05_impresoras_ruteo.sql
-database/restaurant/06_notas_historial_negocios.sql
-database/restaurant/check_scripts_ejecutados.sql
-scratch/check_db_health.sql
-schema.sql
-
-# Claude Code memory (local only)
-.claude/
-scratch/check_db_health.sql
+database/seed_restaurant_data.sql
 database/fix_rls_main_tables.sql
 database/migration_add_negocio_id.sql
-database/seed_restaurant_data.sql
+database/rpc_ventas_fiscal.sql
+database/fix_secuencias_ncf.sql
+database/phase2_rls_jwt_isolation.sql
+database/restaurant/01_tablas_base.sql
+database/restaurant/02_tablas_operacion.sql
+database/restaurant/03_rls_politicas.sql
+database/restaurant/04_triggers_funciones.sql
+database/restaurant/05_impresoras_ruteo.sql
+database/restaurant/06_notas_historial_negocios.sql
+database/restaurant/07_costo_estimado_enviar_cocina.sql
+database/restaurant/08_fiscal_order_payments.sql
+database/restaurant/08_tipo_orden.sql
+database/restaurant/09_precios_incluyen_impuesto.sql
+database/restaurant/10_modo_impuesto.sql
+database/restaurant/11_formato_ticket.sql
+database/restaurant/12_credito_restaurante.sql
+database/restaurant/12_cuentas_credito.sql
+database/restaurant/13_reservas_mesa.sql
+database/restaurant/14_insumos_imagen_migrar_bebidas.sql
+database/restaurant/15_inventario_categoria_vendible.sql
+database/restaurant/check_scripts_ejecutados.sql
+database/restaurant/repair_tipo_orden.sql
 
-# Print agent — generados localmente, no van al repo
+# ── Print Agent ───────────────────────────────────────────────
 print-agent/certs/
 print-agent/logs/
 print-agent/node_modules/
@@ -68,22 +78,5 @@ print-agent/dist/
 print-agent/sea-prep.blob
 print-agent/instalar-tunnel.bat
 print-agent/instalar-tunnel.ps1
-database/rpc_ventas_fiscal.sql
-.gitignore
 print-agent/instalar-servicio.ps1
-.gitignore
 print-agent/INSTALAR-EN-NEGOCIO.md
-database/restaurant/08_fiscal_order_payments.sql
-.gitignore
-database/restaurant/08_tipo_orden.sql
-database/restaurant/09_precios_incluyen_impuesto.sql
-database/restaurant/10_modo_impuesto.sql
-database/restaurant/11_formato_ticket.sql
-database/restaurant/repair_tipo_orden.sql
-database/restaurant/12_credito_restaurante.sql
-database/restaurant/12_cuentas_credito.sql
-database/restaurant/13_reservas_mesa.sql
-database/fix_secuencias_ncf.sql
-database/restaurant/14_insumos_imagen_migrar_bebidas.sql
-database/restaurant/15_inventario_categoria_vendible.sql
-database/phase2_rls_jwt_isolation.sql
