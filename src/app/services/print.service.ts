@@ -431,13 +431,13 @@ export class PrintService {
     const fmt   = (n: number) => `RD$ ${n.toFixed(2)}`;
 
     // Cabecera
-    push(...INIT, ...ALIGN_CENTER, ...BOLD_ON, ...FONT_DOUBLE);
+    push(...INIT, ...ALIGN_CENTER, ...BOLD_ON);
     if (negocioNombre.length <= Math.floor(chars / 2)) {
       push(...FONT_DOUBLE); linea(negocioNombre); push(...FONT_NORMAL);
     } else {
       linea(negocioNombre);
     }
-    push(...FONT_NORMAL, ...BOLD_OFF);
+    push(...BOLD_OFF);
     sep('=');
 
     // Info orden
