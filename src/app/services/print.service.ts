@@ -602,6 +602,79 @@ export class PrintService {
   }
 
   /**
+   * Imprime un comprobante de movimiento de caja (entrada/salida de efectivo).
+   * Usa la impresora tipo 'caja'. Retorna true si imprimió, false si no hay agente.
+   */
+  async imprimirMovimientoCaja(datos: {
+    monto:      number;
+    concepto:   string;
+    metodo:     string;
+    referencia: string;
+    tipo:       'entrada' | 'salida';
+    cajero:     string;
+    caja_id:    number;
+  }): Promise<boolean> {
+    const url = this.agentUrl;
+    if (!url) return false;
+
+    let impresoras: RestaurantPrinter[] = [];
+    try { impresoras = await this.cargarImpresoras(); } catch { return false; }
+
+    const cajaP = impresoras.find(p => p.tipo === 'caja' && p.activa);
+    if (!cajaP) return false;
+
+    const chars  = cajaP.caracteres_por_linea || 42;
+    const buf: number[] = [];
+    const push   = (...b: number[]) => buf.push(...b);
+    const texto  = (str: string)    => buf.push(...this.encodeText(str));
+    const linea  = (str = '')       => { texto(str); push(LF); };
+    const sep    = (c = '-')        => linea(c.repeat(chars));
+    const fila   = (izq: string, der: string) => {
+      const sp = Math.max(1, chars - izq.length - der.length);
+      linea(izq + ' '.repeat(sp) + der);
+    };
+    const fmt    = (v: number) => `RD$ ${new Intl.NumberFormat('es-DO').format(v)}`;
+    const negocioNombre = (this.negociosService as any)['negocioSubject']?.value?.nombre || 'LogosPOS';
+    const ahora  = new Date().toLocaleString('es-DO', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    push(...INIT, ...ALIGN_CENTER, ...BOLD_ON);
+    if (negocioNombre.length <= Math.floor(chars / 2)) {
+      push(...FONT_DOUBLE); linea(negocioNombre); push(...FONT_NORMAL);
+    } else {
+      linea(negocioNombre);
+    }
+    push(...BOLD_OFF);
+    linea(datos.tipo === 'entrada' ? 'ENTRADA DE EFECTIVO' : 'SALIDA DE EFECTIVO');
+    linea('-- COMPROBANTE INTERNO --');
+    sep('=');
+
+    push(...ALIGN_LEFT);
+    fila('Fecha:', ahora);
+    fila('Cajero:', datos.cajero);
+    fila('Caja #:', String(datos.caja_id));
+    sep();
+
+    fila('Concepto:', datos.concepto);
+    fila('Metodo:', datos.metodo.charAt(0).toUpperCase() + datos.metodo.slice(1));
+    if (datos.referencia) fila('Ref.:', datos.referencia);
+    sep('=');
+
+    push(...ALIGN_CENTER, ...BOLD_ON, ...FONT_DOUBLE);
+    linea(fmt(datos.monto));
+    push(...FONT_NORMAL, ...BOLD_OFF);
+    sep('=');
+    linea();
+
+    if (cajaP.corte_automatico) push(...CUT_FULL);
+
+    await this.enviarAlAgente(url, cajaP.ip, cajaP.puerto, buf, cajaP.copies, cajaP.tipo_conexion, cajaP.puerto_usb);
+    return true;
+  }
+
+  /**
    * Imprime el resumen de cierre de caja en la impresora tipo 'caja'.
    * Retorna true si imprimió en térmica, false si no hay agente/impresora.
    */

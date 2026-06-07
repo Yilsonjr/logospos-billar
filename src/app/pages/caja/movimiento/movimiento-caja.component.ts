@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { CajaService } from '../../../services/caja.service';
 import { Caja, CrearMovimientoCaja, CONCEPTOS_ENTRADA, CONCEPTOS_SALIDA } from '../../../models/caja.model';
+import { PrintService } from '../../../services/print.service';
+import { NegociosService } from '../../../services/negocios.service';
 import Swal from 'sweetalert2';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -25,7 +27,6 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
   metodo: 'efectivo' | 'tarjeta' = 'efectivo';
   referencia: string = '';
   notas: string = '';
-  usuario: string = 'admin';
 
   conceptos: readonly string[] = [];
   movimientosRecientes: any[] = [];
@@ -35,11 +36,27 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
 
   constructor(
     private cajaService: CajaService,
+    private printService: PrintService,
+    private negociosService: NegociosService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private authService: AuthService
   ) { }
+
+  // ── Computed ──────────────────────────────────────────────────
+  get totalTipo(): number {
+    return this.movimientosRecientes
+      .filter(m => m.tipo === this.tipo)
+      .reduce((s, m) => s + m.monto, 0);
+  }
+
+  get ultimoMovimiento(): string {
+    const ultimo = this.movimientosRecientes[0];
+    if (!ultimo) return '—';
+    const fecha = new Date(ultimo.created_at || ultimo.fecha || '');
+    return fecha.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+  }
 
   async ngOnInit() {
     await this.cargarDatos();
@@ -105,9 +122,7 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
     }
   }
 
-  abrirModal() {
-    this.mostrarModal = true;
-  }
+  abrirModal() { this.mostrarModal = true; }
 
   cerrarModal() {
     this.mostrarModal = false;
@@ -126,42 +141,45 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Guardar valores ANTES de hacer cualquier cosa
-    const montoRegistrado = this.monto;
+    const montoRegistrado   = this.monto;
     const conceptoRegistrado = this.concepto;
+    const metodoRegistrado  = this.metodo;
+    const referenciaReg     = this.referencia;
 
     try {
       const usuarioId = this.authService.usuarioActual?.id || 1;
-      const conceptoFinal = this.metodo ? `${conceptoRegistrado} (${this.metodo.charAt(0).toUpperCase() + this.metodo.slice(1)})` : conceptoRegistrado;
+      const conceptoFinal = `${conceptoRegistrado} (${metodoRegistrado.charAt(0).toUpperCase() + metodoRegistrado.slice(1)})`;
 
-      const movimiento: any = {
-        caja_id: this.cajaActual.id!,
-        tipo: this.tipo,
-        concepto: conceptoFinal,
-        monto: montoRegistrado,
-        referencia: this.referencia || undefined,
+      await this.cajaService.registrarMovimiento({
+        caja_id:    this.cajaActual.id!,
+        tipo:       this.tipo,
+        concepto:   conceptoFinal,
+        monto:      montoRegistrado,
+        referencia: referenciaReg || undefined,
         usuario_id: usuarioId
-      };
+      } as any);
 
-      await this.cajaService.registrarMovimiento(movimiento);
-
-      // Cerrar modal
       this.mostrarModal = false;
+      this.limpiarFormulario();
+      await this.cargarMovimientosRecientes();
       this.cdr.detectChanges();
 
-      // Limpiar formulario
-      this.limpiarFormulario();
+      // Imprimir ticket en la impresora de caja
+      this.imprimirTicketMovimiento({
+        monto:       montoRegistrado,
+        concepto:    conceptoFinal,
+        metodo:      metodoRegistrado,
+        referencia:  referenciaReg,
+        tipo:        this.tipo,
+        cajero:      this.cajaActual.usuario_apertura,
+        caja_id:     this.cajaActual.id!
+      });
 
-      // Recargar movimientos
-      await this.cargarMovimientosRecientes();
-
-      // Esperar antes de mostrar SweetAlert
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Mostrar mensaje de éxito
       await Swal.fire({
         title: `✅ ${this.tipo === 'entrada' ? 'Entrada' : 'Salida'} Registrada`,
-        html: `Monto: ${this.formatearMoneda(montoRegistrado)}<br>Concepto: ${conceptoRegistrado}`,
+        html: `<b>${this.formatearMoneda(montoRegistrado)}</b><br><small>${conceptoRegistrado}</small>`,
         icon: 'success',
         timer: 2500,
         timerProgressBar: true,
@@ -170,12 +188,10 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
 
     } catch (error) {
       console.error('Error al registrar movimiento:', error);
-
       this.mostrarModal = false;
       this.cdr.detectChanges();
 
       await new Promise(resolve => setTimeout(resolve, 100));
-
       await Swal.fire({
         title: 'Error',
         text: 'Error al registrar el movimiento. Intenta nuevamente.',
@@ -185,11 +201,30 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Ticket de impresión ───────────────────────────────────────
+  private async imprimirTicketMovimiento(datos: {
+    monto: number;
+    concepto: string;
+    metodo: string;
+    referencia: string;
+    tipo: 'entrada' | 'salida';
+    cajero: string;
+    caja_id: number;
+  }) {
+    try {
+      const impreso = await this.printService.imprimirMovimientoCaja(datos);
+      if (!impreso) console.warn('[MovimientoCaja] Sin impresora de caja configurada — ticket omitido');
+    } catch (err) {
+      console.warn('[MovimientoCaja] Error al imprimir ticket:', err);
+    }
+  }
+
   limpiarFormulario() {
     this.monto = null;
     this.concepto = '';
     this.referencia = '';
     this.notas = '';
+    this.metodo = 'efectivo';
   }
 
   formatearMoneda(valor: number): string {
@@ -198,11 +233,8 @@ export class MovimientoCajaComponent implements OnInit, OnDestroy {
 
   formatearFecha(fecha: string): string {
     return new Date(fecha).toLocaleString('es-DO', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   }
 }

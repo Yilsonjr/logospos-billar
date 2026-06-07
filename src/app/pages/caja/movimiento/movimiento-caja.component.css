@@ -1,7 +1,57 @@
-:host {
-    display: block;
-    min-height: 100%;
+:host { display: block; min-height: 100%; }
+
+/* ── Header compacto ─────────────────────────────── */
+.mov-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem; border-radius: 14px; background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
 }
+.mov-icon {
+  width: 40px; height: 40px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.mov-icon-entrada { background: #dcfce7; color: #16a34a; }
+.mov-icon-salida  { background: #fee2e2; color: #dc2626; }
+
+.mov-btn-nuevo {
+  padding: .45rem 1.1rem; border-radius: 8px; font-size: .85rem;
+  font-weight: 600; border: none; cursor: pointer; transition: all .2s;
+}
+.btn-e { background: #16a34a; color: #fff; }
+.btn-e:hover { background: #15803d; }
+.btn-s { background: #dc2626; color: #fff; }
+.btn-s:hover { background: #b91c1c; }
+
+/* ── Resumen ─────────────────────────────────────── */
+.mov-stats-row {
+  display: flex; align-items: center; background: #fff; border-radius: 12px;
+  padding: .75rem 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); gap: 0;
+}
+.mov-stat { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: .25rem .5rem; }
+.mov-stat-label { font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: #94a3b8; }
+.mov-stat-val { font-size: .95rem; font-weight: 700; color: #1e293b; }
+.val-entrada { color: #16a34a; }
+.val-salida  { color: #dc2626; }
+.val-neutral { color: #334155; }
+.mov-stat-divider { width: 1px; height: 36px; background: #e2e8f0; flex-shrink: 0; }
+
+/* ── Row icons ───────────────────────────────────── */
+.mov-row-icon {
+  width: 28px; height: 28px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.icon-row-e { background: #dcfce7; color: #16a34a; }
+.icon-row-s { background: #fee2e2; color: #dc2626; }
+
+/* ── Empty state ─────────────────────────────────── */
+.mov-empty { display: flex; flex-direction: column; align-items: center; }
+.mov-empty-icon {
+  width: 56px; height: 56px; border-radius: 16px; display: flex;
+  align-items: center; justify-content: center;
+}
+.empty-e { background: #f0fdf4; color: #86efac; }
+.empty-s { background: #fef2f2; color: #fca5a5; }
 
 /* === Dashboard Cards === */
 .card {
