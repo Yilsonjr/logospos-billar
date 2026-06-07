@@ -111,26 +111,30 @@ export class RestaurantReportsService {
 
   filtroParaPeriodo(periodo: PeriodoReporte, custom?: { desde: string; hasta: string }): FiltroFecha {
     const ahora = new Date();
-    const hoy = ahora.toISOString().split('T')[0];
+
+    // Usar hora local del navegador (no UTC) para que los cortes de día
+    // coincidan con la medianoche del negocio y no con la medianoche UTC.
+    const hoyInicio = new Date(ahora); hoyInicio.setHours(0, 0, 0, 0);
+    const hoyFin    = new Date(ahora); hoyFin.setHours(23, 59, 59, 999);
 
     if (periodo === 'hoy') {
-      return { desde: `${hoy}T00:00:00`, hasta: `${hoy}T23:59:59` };
+      return { desde: hoyInicio.toISOString(), hasta: hoyFin.toISOString() };
     }
     if (periodo === 'semana') {
       const lunes = new Date(ahora);
       lunes.setDate(ahora.getDate() - ((ahora.getDay() + 6) % 7));
-      const desde = lunes.toISOString().split('T')[0];
-      return { desde: `${desde}T00:00:00`, hasta: `${hoy}T23:59:59` };
+      lunes.setHours(0, 0, 0, 0);
+      return { desde: lunes.toISOString(), hasta: hoyFin.toISOString() };
     }
     if (periodo === 'mes') {
-      const desde = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-01`;
-      return { desde: `${desde}T00:00:00`, hasta: `${hoy}T23:59:59` };
+      const primerDia = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+      primerDia.setHours(0, 0, 0, 0);
+      return { desde: primerDia.toISOString(), hasta: hoyFin.toISOString() };
     }
     // personalizado
-    return {
-      desde: `${custom!.desde}T00:00:00`,
-      hasta: `${custom!.hasta}T23:59:59`
-    };
+    const desdeDate = new Date(custom!.desde); desdeDate.setHours(0, 0, 0, 0);
+    const hastaDate = new Date(custom!.hasta); hastaDate.setHours(23, 59, 59, 999);
+    return { desde: desdeDate.toISOString(), hasta: hastaDate.toISOString() };
   }
 
   // ============================================================

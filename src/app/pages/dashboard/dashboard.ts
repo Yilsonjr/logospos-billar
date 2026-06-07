@@ -276,24 +276,30 @@ export class Dashboard implements OnInit, OnDestroy {
   async cargarStatsRestaurante() {
     const negocioId = localStorage.getItem('logos_negocio_id') || '';
     const hoyInicio = new Date();
-    hoyInicio.setHours(0, 0, 0, 0);
+    hoyInicio.setHours(0, 0, 0, 0);   // medianoche hora local
+    const hoyFin = new Date();
+    hoyFin.setHours(23, 59, 59, 999); // fin del día hora local
 
-    // 1. Ventas del día desde pagos confirmados
+    // 1. Ventas del día desde órdenes cerradas (misma fuente que Reportes)
     try {
-      const { data: pagos } = await this.supabaseService.client
-        .from('restaurant_order_payments')
-        .select('monto, created_at')
-        .eq('pagado', true)
-        .gte('created_at', hoyInicio.toISOString());
+      const { data: ordenes } = await this.supabaseService.client
+        .from('restaurant_orders')
+        .select('total, hora_cierre')
+        .eq('negocio_id', negocioId)
+        .eq('estado', 'cerrada')
+        .gte('hora_cierre', hoyInicio.toISOString())
+        .lte('hora_cierre', hoyFin.toISOString());
 
-      const totalHoy = pagos?.reduce((s, p) => s + p.monto, 0) || 0;
+      const totalHoy = ordenes?.reduce((s, o) => s + (o.total || 0), 0) || 0;
       this.upsertStat({
         title: 'Ventas de Hoy', value: this.formatearMoneda(totalHoy),
         change: 'Ingresos del día', isPositive: true,
         icon: 'fa-money-bill-wave', iconBg: 'bg-primary-subtle text-primary'
       });
-      this.actualizarChartRestaurante(pagos || []);
-    } catch (e) { console.warn('Error cargando pagos restaurante:', e); }
+      this.actualizarChartRestaurante(
+        (ordenes || []).map(o => ({ monto: o.total || 0, created_at: o.hora_cierre || '' }))
+      );
+    } catch (e) { console.warn('Error cargando ventas restaurante:', e); }
 
     // 2. Órdenes activas + historial reciente
     try {
