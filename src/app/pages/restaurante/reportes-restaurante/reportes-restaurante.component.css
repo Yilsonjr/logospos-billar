@@ -807,6 +807,10 @@
   .rr-topbar-actions { margin-left: 0; }
 }
 
+/* ── Print header (solo visible al imprimir) ───────── */
+.rr-print-header { display: none; padding: 0 0 1rem 0; border-bottom: 2px solid #000; margin-bottom: 1rem; }
+.rr-print-header h2 { font-size: 1.2rem; font-weight: 700; }
+
 /* ── Print / PDF ──────────────────────────────────── */
 @media print {
   .rr-topbar        { position: static !important; box-shadow: none; border-bottom: 2px solid #000; }

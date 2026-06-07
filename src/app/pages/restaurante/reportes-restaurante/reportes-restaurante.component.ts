@@ -326,7 +326,12 @@ export class ReportesRestauranteComponent implements OnInit {
   // ============================================================
 
   imprimirReporte(): void {
-    window.print();
+    document.body.classList.add('printing-report');
+    setTimeout(() => {
+      window.print();
+      // Esperar a que el diálogo cierre antes de limpiar
+      setTimeout(() => document.body.classList.remove('printing-report'), 500);
+    }, 200);
   }
 
   periodoLabel(): string {
