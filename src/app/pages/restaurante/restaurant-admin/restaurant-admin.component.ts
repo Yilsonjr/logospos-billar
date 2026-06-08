@@ -11,6 +11,7 @@ import { PrintService } from '../../../services/print.service';
 import { AuthService } from '../../../services/auth.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { CuentasCobrarService } from '../../../services/cuentas-cobrar.service';
+import { CajaService } from '../../../services/caja.service';
 import { AnulacionesService } from '../../../services/anulaciones.service';
 import { ModalAnulacionComponent, AnulacionConfirmada } from '../../../shared/modal-anulacion/modal-anulacion.component';
 import { environment } from '../../../environment/environment';
@@ -317,6 +318,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     private supabaseService: SupabaseService,
     private cuentasCobrarService: CuentasCobrarService,
     private anulacionesService: AnulacionesService,
+    private cajaService: CajaService,
     private route: ActivatedRoute,
     public cdr: ChangeDetectorRef
   ) {}
@@ -1141,6 +1143,31 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
         datos.motivoCategoria,
         datos.motivoDetalle
       );
+
+      // Revertir el movimiento de caja si hay una caja abierta
+      try {
+        const caja = await this.cajaService.verificarCajaAbierta();
+        if (caja) {
+          const mesaLabel = this.ordenParaAnular.mesa
+            ? `Mesa ${this.ordenParaAnular.mesa.numero_mesa}`
+            : `Orden #${this.ordenParaAnular.id.slice(-6).toUpperCase()}`;
+          const formaPago = pago.forma_pago || pago.metodo_pago || 'efectivo';
+          const metodoLabel = formaPago === 'tarjeta' ? '(Tarjeta)'
+            : formaPago === 'transferencia' ? '(Transferencia)'
+            : formaPago === 'cheque' ? '(Cheque)'
+            : '(Efectivo)';
+          await this.cajaService.registrarMovimiento({
+            caja_id: caja.id,
+            tipo: 'salida',
+            concepto: `Anulación ${mesaLabel} ${metodoLabel}`,
+            monto: pago.monto || this.ordenParaAnular.total || 0,
+            referencia: this.ordenParaAnular.id,
+            usuario_id: this.authService.usuarioActual?.id || 1
+          });
+        }
+      } catch (cajaErr) {
+        console.warn('No se pudo revertir en caja:', cajaErr);
+      }
 
       this.ordenParaAnular = null;
 
