@@ -419,10 +419,17 @@ export class PrintService {
       propina: number;
       formaPago: string;
       negocioNombre: string;
+      negocioRnc?: string;
+      ncf?: string;
+      tipoNcf?: string;
+      rncCliente?: string;
+      nombreClienteFiscal?: string;
+      esReimpresion?: boolean;
     },
     logoBytes: number[] = []
   ): number[] {
-    const { orden, propina, formaPago, negocioNombre } = params;
+    const { orden, propina, formaPago, negocioNombre, negocioRnc,
+            ncf, tipoNcf, rncCliente, nombreClienteFiscal, esReimpresion } = params;
     const chars = printer.caracteres_por_linea || 42;
     const buf: number[] = [];
 
