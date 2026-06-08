@@ -194,6 +194,40 @@
     border-top: 1px solid #000;
 }
 
+.receipt-fiscal {
+    margin: 8px 0;
+}
+
+.fiscal-title {
+    font-size: 0.95em;
+    margin-bottom: 4px;
+}
+
+.fiscal-tipo {
+    font-size: 0.85em;
+    margin: 2px 0;
+}
+
+.fiscal-ncf {
+    font-size: 1em;
+    letter-spacing: 1px;
+    margin: 4px 0;
+}
+
+.fiscal-rnc,
+.fiscal-rnc-cliente,
+.fiscal-cliente-nombre {
+    font-size: 0.8em;
+    margin: 2px 0;
+    color: #555;
+}
+
+.fiscal-doc-note {
+    font-size: 0.78em;
+    margin-top: 6px;
+    color: #777;
+}
+
 .receipt-footer {
     text-align: center;
     margin-top: 25px;

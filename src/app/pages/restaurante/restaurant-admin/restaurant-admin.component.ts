@@ -266,6 +266,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   cargandoDetalle = false;
   busquedaOrden = '';
   negocioNombre = '';
+  negocioRnc = '';
   negocioFormatoTicket: '58mm' | '80mm' = '80mm';
   negocioModoImpuesto: 'sin_impuesto' | 'encima' | 'incluido' = 'sin_impuesto';
   negocioTasaItbis = 0;
@@ -319,6 +320,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     const negocio = await this.negociosService.cargarNegocio().catch(() => null);
     if (negocio) {
       this.negocioNombre = negocio.nombre || '';
+      this.negocioRnc = negocio.rnc || '';
       this.negocioFormatoTicket = negocio.formato_ticket ?? '80mm';
       this.negocioModoImpuesto = negocio.modo_impuesto ?? 'sin_impuesto';
       this.negocioTasaItbis = negocio.tasa_itbis ?? 0;
@@ -1138,6 +1140,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     const ncf = pago?.ncf || null;
     const tipoNcf = pago?.tipo_ncf || '';
     const rncCliente = pago?.rnc_cliente || '';
+    const nombreClienteFiscal = pago?.nombre_cliente_fiscal || '';
 
     const identificador = orden.mesa
       ? `Mesa ${orden.mesa.numero_mesa}`
@@ -1151,7 +1154,8 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       ? `<div class="div"></div><p class="c bold" style="font-size:${fuentePx-1}px">COMPROBANTE FISCAL</p>
          <p class="c" style="font-size:${fuentePx-1}px">Tipo: ${tipoNcf}</p>
          <p class="c bold" style="letter-spacing:1px">${ncf}</p>
-         ${rncCliente ? `<p class="c small">RNC: ${rncCliente}</p>` : ''}`
+         ${rncCliente ? `<p class="c small">RNC cliente: ${rncCliente}</p>` : ''}
+         ${nombreClienteFiscal ? `<p class="c small">${nombreClienteFiscal}</p>` : ''}`
       : '';
     const piePagina = ncf
       ? `<p class="small c">─── DOCUMENTO FISCAL ───</p>`
@@ -1173,6 +1177,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   .small { font-size:${fuentePx-2}px; color:#555; }
 </style></head><body>
 <h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
+${this.negocioRnc ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
 <div class="div"></div>
 <p>${identificador} &nbsp;|&nbsp; #${orden.id.slice(-6).toUpperCase()}</p>
 <p class="small">${this.formatearFecha(orden.hora_cierre || orden.updated_at)}</p>

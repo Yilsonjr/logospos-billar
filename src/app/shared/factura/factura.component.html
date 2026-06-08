@@ -55,13 +55,13 @@
                     <td>FECHA:</td>
                     <td class="text-right">{{ formatearFecha(venta.created_at || '') }}</td>
                 </tr>
-                <tr *ngIf="venta.ncf">
-                    <td>NCF:</td>
-                    <td class="text-right fw-bold">{{ venta.ncf }}</td>
-                </tr>
                 <tr>
                     <td>CLIENTE:</td>
-                    <td class="text-right">{{ venta.cliente_nombre || 'CONSUMIDOR FINAL' }}</td>
+                    <td class="text-right">{{ venta.nombre_cliente_fiscal || venta.cliente_nombre || 'CONSUMIDOR FINAL' }}</td>
+                </tr>
+                <tr *ngIf="venta.rnc_cliente">
+                    <td>RNC cliente:</td>
+                    <td class="text-right">{{ venta.rnc_cliente }}</td>
                 </tr>
             </table>
         </div>
@@ -134,6 +134,20 @@
                 </tr>
             </table>
         </div>
+
+        <!-- Comprobante Fiscal -->
+        <ng-container *ngIf="venta.ncf">
+            <div class="separator"></div>
+            <div class="receipt-fiscal text-center">
+                <p class="fiscal-title fw-bold">COMPROBANTE FISCAL</p>
+                <p class="fiscal-tipo" *ngIf="venta.tipo_ncf">Tipo: {{ venta.tipo_ncf }}</p>
+                <p class="fiscal-ncf fw-bold">{{ venta.ncf }}</p>
+                <p class="fiscal-rnc" *ngIf="negocio?.rnc">RNC emisor: {{ negocio!.rnc }}</p>
+                <p class="fiscal-rnc-cliente" *ngIf="venta.rnc_cliente">RNC cliente: {{ venta.rnc_cliente }}</p>
+                <p class="fiscal-cliente-nombre" *ngIf="venta.nombre_cliente_fiscal">{{ venta.nombre_cliente_fiscal }}</p>
+                <p class="fiscal-doc-note">─── DOCUMENTO FISCAL ───</p>
+            </div>
+        </ng-container>
 
         <div class="receipt-footer" *ngIf="negocio">
             <div class="separator"></div>
