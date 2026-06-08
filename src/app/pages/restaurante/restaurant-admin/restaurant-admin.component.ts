@@ -1154,7 +1154,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       ? `<div class="div"></div><p class="c bold" style="font-size:${fuentePx-1}px">COMPROBANTE FISCAL</p>
          <p class="c" style="font-size:${fuentePx-1}px">Tipo: ${tipoNcf}</p>
          <p class="c bold" style="letter-spacing:1px">${ncf}</p>
-         ${rncCliente ? `<p class="c small">RNC cliente: ${rncCliente}</p>` : ''}
+         ${rncCliente ? `<p class="c small">RNC: ${rncCliente}</p>` : ''}
          ${nombreClienteFiscal ? `<p class="c small">${nombreClienteFiscal}</p>` : ''}`
       : '';
     const piePagina = ncf
@@ -1178,6 +1178,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
 </style></head><body>
 <h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
 ${this.negocioRnc ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
+${ncfSection}
 <div class="div"></div>
 <p>${identificador} &nbsp;|&nbsp; #${orden.id.slice(-6).toUpperCase()}</p>
 <p class="small">${this.formatearFecha(orden.hora_cierre || orden.updated_at)}</p>
@@ -1189,7 +1190,6 @@ ${this.negocioRnc ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
   ${itbisRow}${propinaRow}
   <tr class="total"><td>TOTAL (${formaPago})</td><td class="r">RD$ ${total.toFixed(2)}</td></tr>
 </table>
-${ncfSection}
 <div class="div"></div>
 ${piePagina}
 <p class="small">¡Gracias por su visita!</p>
