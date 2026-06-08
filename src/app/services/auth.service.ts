@@ -291,6 +291,11 @@ export class AuthService {
     return this.authStateSubject.value.usuario?.negocio_id || localStorage.getItem('logos_negocio_id');
   }
 
+  // Obtener id del usuario autenticado
+  getUserId(): string | null {
+    return this.authStateSubject.value.usuario?.id?.toString() || null;
+  }
+
   // Verificar si es el administrador global del sistema
   isSuperAdmin(): boolean {
     const negocioId = this.getNegocioId();

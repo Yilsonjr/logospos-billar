@@ -15,7 +15,8 @@ export interface Venta {
   total: number;
   metodo_pago: 'efectivo' | 'tarjeta' | 'credito' | 'mixto';
   tipo_venta: 'contado' | 'credito';
-  estado: 'completada' | 'cancelada' | 'pendiente';
+  estado: 'completada' | 'cancelada' | 'pendiente' | 'anulada';
+  ncf_referencia?: string | null;   // B04 que anuló esta venta
   notas?: string | null;
   ncf?: string | null;
   tipo_ncf?: string | null;
@@ -104,6 +105,7 @@ export const METODOS_PAGO = [
 // Estados de venta
 export const ESTADOS_VENTA = [
   { valor: 'completada', etiqueta: 'Completada', color: 'green' },
-  { valor: 'cancelada', etiqueta: 'Cancelada', color: 'red' },
-  { valor: 'pendiente', etiqueta: 'Pendiente', color: 'yellow' }
+  { valor: 'cancelada',  etiqueta: 'Cancelada',  color: 'red'    },
+  { valor: 'pendiente',  etiqueta: 'Pendiente',  color: 'yellow' },
+  { valor: 'anulada',    etiqueta: 'Anulada',    color: 'gray'   }
 ] as const;

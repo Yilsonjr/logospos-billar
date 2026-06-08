@@ -253,6 +253,8 @@
               <td class="py-3 text-center">
                 @if (venta.estado === 'completada') {
                 <span class="badge rounded-pill bg-success"><i class="fa-solid fa-check me-1"></i>Completada</span>
+                } @else if (venta.estado === 'anulada') {
+                <span class="badge rounded-pill bg-secondary"><i class="fa-solid fa-ban me-1"></i>Anulada</span>
                 } @else {
                 <span class="badge rounded-pill bg-danger"><i class="fa-solid fa-ban me-1"></i>Cancelada</span>
                 }
@@ -486,3 +488,14 @@
 <!-- Simulación de Factura para imprimir -->
 <app-factura *ngIf="mostrarFactura && ventaParaFactura" [venta]="ventaParaFactura" (cerrar)="mostrarFactura = false">
 </app-factura>
+
+<!-- Modal Anulación -->
+@if (ventaParaAnular) {
+  <app-modal-anulacion
+    [titulo]="'Anular venta'"
+    [referencia]="ventaParaAnular.numero_venta"
+    [procesando]="procesandoAnulacion"
+    (confirmar)="confirmarAnulacion($event)"
+    (cancelar)="ventaParaAnular = undefined">
+  </app-modal-anulacion>
+}

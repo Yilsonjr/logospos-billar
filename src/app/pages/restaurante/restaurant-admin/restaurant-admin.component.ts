@@ -11,6 +11,8 @@ import { PrintService } from '../../../services/print.service';
 import { AuthService } from '../../../services/auth.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { CuentasCobrarService } from '../../../services/cuentas-cobrar.service';
+import { AnulacionesService } from '../../../services/anulaciones.service';
+import { ModalAnulacionComponent, AnulacionConfirmada } from '../../../shared/modal-anulacion/modal-anulacion.component';
 import { environment } from '../../../environment/environment';
 import {
   RestaurantZone, RestaurantTable, MenuCategory, MenuItem,
@@ -24,7 +26,7 @@ type Tab = 'zonas' | 'mesas' | 'categorias' | 'platos' | 'inventario' | 'compras
 @Component({
   selector: 'app-restaurant-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PrintersAdminComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PrintersAdminComponent, ModalAnulacionComponent],
   templateUrl: './restaurant-admin.component.html',
   styleUrl: './restaurant-admin.component.css'
 })
@@ -265,6 +267,8 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   ordenSeleccionada: any = null;
   cargandoDetalle = false;
   busquedaOrden = '';
+  ordenParaAnular: any = null;
+  procesandoAnulacion = false;
   negocioNombre = '';
   negocioRnc = '';
   negocioFormatoTicket: '58mm' | '80mm' = '80mm';
@@ -312,6 +316,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private supabaseService: SupabaseService,
     private cuentasCobrarService: CuentasCobrarService,
+    private anulacionesService: AnulacionesService,
     private route: ActivatedRoute,
     public cdr: ChangeDetectorRef
   ) {}
@@ -1115,6 +1120,44 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
       Swal.fire('Error', e.message, 'error');
     } finally {
       this.cargandoDetalle = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  abrirModalAnulacion(orden: any): void {
+    this.ordenParaAnular = orden;
+    this.ordenSeleccionada = null;
+  }
+
+  async confirmarAnulacion(datos: AnulacionConfirmada): Promise<void> {
+    if (!this.ordenParaAnular) return;
+    this.procesandoAnulacion = true;
+    try {
+      const pago = this.ordenParaAnular.pagos?.[0];
+      if (!pago?.id) throw new Error('La orden no tiene pago registrado.');
+
+      const resultado = await this.anulacionesService.anularOrden(
+        pago.id,
+        datos.motivoCategoria,
+        datos.motivoDetalle
+      );
+
+      this.ordenParaAnular = null;
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Cobro anulado',
+        html: resultado.ncf_b04
+          ? `La orden fue anulada. Nota de crédito generada: <strong>${resultado.ncf_b04}</strong>`
+          : 'La orden fue anulada correctamente.',
+        confirmButtonText: 'Aceptar'
+      });
+
+      await this.cargarTab('ordenes');
+    } catch (e: any) {
+      await Swal.fire('Error al anular', e.message, 'error');
+    } finally {
+      this.procesandoAnulacion = false;
       this.cdr.detectChanges();
     }
   }

@@ -4,17 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
 import { VentasService } from '../../../services/ventas.service';
 import { FiscalService } from '../../../services/fiscal.service';
+import { AnulacionesService } from '../../../services/anulaciones.service';
 import { Venta, VentaCompleta } from '../../../models/ventas.model';
 import { TIPOS_COMPROBANTE } from '../../../models/fiscal.model';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { FacturaComponent } from '../../../shared/factura/factura.component';
+import { ModalAnulacionComponent, AnulacionConfirmada } from '../../../shared/modal-anulacion/modal-anulacion.component';
 
 @Component({
   selector: 'app-historial-ventas',
   standalone: true,
-  imports: [CommonModule, FormsModule, FacturaComponent],
+  imports: [CommonModule, FormsModule, FacturaComponent, ModalAnulacionComponent],
   templateUrl: './historial-ventas.component.html',
   styleUrl: './historial-ventas.component.css'
 })
@@ -44,12 +46,15 @@ export class HistorialVentasComponent implements OnInit, OnDestroy {
   ventaParaFactura?: VentaCompleta;
 
   tiposNcf = TIPOS_COMPROBANTE;
+  ventaParaAnular?: Venta;
+  procesandoAnulacion = false;
 
   private subscriptions: Subscription[] = [];
 
   constructor(
     private ventasService: VentasService,
     private fiscalService: FiscalService,
+    private anulacionesService: AnulacionesService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) { }
@@ -190,51 +195,39 @@ export class HistorialVentasComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  async cancelarVenta(venta: Venta) {
-    const result = await Swal.fire({
-      title: '¿Anular factura?',
-      text: `¿Estás seguro de cancelar la venta ${venta.numero_venta}? Esta acción revertirá el stock y el balance del cliente.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, anular',
-      cancelButtonText: 'No, mantener',
-      reverseButtons: true
-    });
+  cancelarVenta(venta: Venta) {
+    this.ventaParaAnular = venta;
+  }
 
-    if (!result.isConfirmed) return;
-
+  async confirmarAnulacion(datos: AnulacionConfirmada): Promise<void> {
+    if (!this.ventaParaAnular) return;
+    this.procesandoAnulacion = true;
     try {
-      // Mostrar loading
-      Swal.fire({
-        title: 'Anulando...',
-        text: 'Por favor espere',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
+      const resultado = await this.anulacionesService.anularVenta(
+        this.ventaParaAnular.id!,
+        datos.motivoCategoria,
+        datos.motivoDetalle
+      );
 
-      await this.ventasService.cancelarVenta(venta.id!);
+      this.ventaParaAnular = undefined;
 
       await Swal.fire({
-        title: '¡Anulada!',
-        text: 'La venta ha sido cancelada exitosamente.',
         icon: 'success',
-        timer: 2000,
+        title: '¡Venta anulada!',
+        html: resultado.ncf_b04
+          ? `Nota de crédito generada: <strong>${resultado.ncf_b04}</strong>`
+          : 'La venta fue anulada correctamente.',
+        timer: 3000,
         showConfirmButton: false
       });
 
       await this.cargarVentas();
       this.cerrarDetalles();
-    } catch (error) {
-      console.error('Error al cancelar venta:', error);
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo anular la factura. Intente de nuevo.',
-        icon: 'error'
-      });
+    } catch (error: any) {
+      await Swal.fire('Error', error.message || 'No se pudo anular la venta.', 'error');
+    } finally {
+      this.procesandoAnulacion = false;
+      this.cdr.detectChanges();
     }
   }
 
