@@ -234,10 +234,36 @@
 
                         <!-- RNC del cliente (solo B01) -->
                         @if (cuenta.tipo_ncf === 'B01') {
-                          <input type="text" class="form-control form-control-sm mb-1"
-                            [(ngModel)]="cuenta.rnc_cliente"
-                            placeholder="RNC del cliente (9 dígitos)"
-                            maxlength="11">
+                          <div class="input-group input-group-sm mb-1">
+                            <input type="text" class="form-control form-control-sm"
+                              [(ngModel)]="cuenta.rnc_cliente"
+                              (blur)="lookupRnc(cuenta)"
+                              (ngModelChange)="rncLookupStatus[cuenta.numero] = null"
+                              placeholder="RNC del cliente (9 dígitos)"
+                              maxlength="11"
+                              [class.is-valid]="rncLookupStatus[cuenta.numero] === 'found'"
+                              [class.is-invalid]="rncLookupStatus[cuenta.numero] === 'notfound'">
+                            @if (rncLookupStatus[cuenta.numero] === 'found') {
+                              <span class="input-group-text text-success bg-success-subtle border-success">
+                                <i class="bi bi-check-circle-fill"></i>
+                              </span>
+                            }
+                            @if (rncLookupStatus[cuenta.numero] === 'notfound') {
+                              <span class="input-group-text text-warning bg-warning-subtle border-warning">
+                                <i class="bi bi-search"></i>
+                              </span>
+                            }
+                          </div>
+                          @if (rncLookupStatus[cuenta.numero] === 'found') {
+                            <div class="form-text text-success mb-1">
+                              <i class="bi bi-person-check me-1"></i>Cliente encontrado
+                            </div>
+                          }
+                          @if (rncLookupStatus[cuenta.numero] === 'notfound') {
+                            <div class="form-text text-warning mb-1">
+                              <i class="bi bi-info-circle me-1"></i>RNC no registrado — ingresa el nombre manualmente
+                            </div>
+                          }
                           <input type="text" class="form-control form-control-sm"
                             [(ngModel)]="cuenta.nombre_cliente_fiscal"
                             placeholder="Nombre / Razón social">

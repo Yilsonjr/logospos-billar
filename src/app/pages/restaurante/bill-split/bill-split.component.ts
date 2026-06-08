@@ -51,6 +51,9 @@ export class BillSplitComponent implements OnInit {
   configFiscal: ConfiguracionFiscal | null = null;
   readonly tiposComprobante = TIPOS_COMPROBANTE.filter(t => t.codigo !== 'B03' && t.codigo !== 'B04');
 
+  // Estado de lookup RNC por cuenta (key = cuenta.numero)
+  rncLookupStatus: Record<number, 'found' | 'notfound' | null> = {};
+
   readonly formasPago: FormaPago[] = ['efectivo', 'tarjeta', 'transferencia', 'cheque', 'mixto', 'credito'];
   clienteCredito = '';
   clienteCreditoId: number | null = null;  // ID si es cliente registrado
@@ -503,6 +506,21 @@ export class BillSplitComponent implements OnInit {
   formatModificadores(modificadores: any[]): string {
     if (!modificadores || !modificadores.length) return '';
     return modificadores.map(m => m.nombre).join(', ');
+  }
+
+  lookupRnc(cuenta: CuentaComensal): void {
+    const rnc = cuenta.rnc_cliente?.trim() || '';
+    if (!rnc) { this.rncLookupStatus[cuenta.numero] = null; return; }
+    const cliente = this.clientesService.buscarPorRnc(rnc);
+    if (cliente) {
+      if (!cuenta.nombre_cliente_fiscal) {
+        cuenta.nombre_cliente_fiscal = cliente.nombre;
+      }
+      this.rncLookupStatus[cuenta.numero] = 'found';
+    } else {
+      this.rncLookupStatus[cuenta.numero] = 'notfound';
+    }
+    this.cdr.markForCheck();
   }
 
   private imprimirTicketCuenta(cuenta: CuentaComensal, ncf?: string | null): void {

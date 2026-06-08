@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { METODOS_PAGO } from '../../../models/ventas.model';
 import { Cliente } from '../../../models/clientes.model';
 import { ConfiguracionFiscal, TIPOS_COMPROBANTE } from '../../../models/fiscal.model';
+import { ClientesService } from '../../../services/clientes.service';
 
 @Component({
     selector: 'app-modal-pago',
@@ -22,10 +23,14 @@ export class ModalPagoComponent implements OnInit, OnChanges {
     @Output() tipoComprobanteChange = new EventEmitter<string>();
     @Output() rncClienteChange = new EventEmitter<string>();
     tiposComprobante = TIPOS_COMPROBANTE.filter(t => t.codigo !== 'B03' && t.codigo !== 'B04');
+    nombreClienteFiscal = '';
+    rncLookupStatus: 'found' | 'notfound' | null = null;
     // ==============
 
     @Output() confirmarPago = new EventEmitter<any>();
     @Output() cancelar = new EventEmitter<void>();
+
+    constructor(private clientesService: ClientesService) {}
 
     metodoPago: 'efectivo' | 'tarjeta' | 'credito' | 'mixto' = 'efectivo';
     montoEfectivo: number | null = null;
@@ -44,12 +49,29 @@ export class ModalPagoComponent implements OnInit, OnChanges {
             if (rnc) {
                 this.tipoComprobante = 'B01';
                 this.rncCliente = rnc;
+                this.nombreClienteFiscal = this.clienteSeleccionado?.nombre || '';
+                this.rncLookupStatus = 'found';
                 this.tipoComprobanteChange.emit(this.tipoComprobante);
                 this.rncClienteChange.emit(this.rncCliente);
             } else {
                 this.tipoComprobante = 'B02';
+                this.rncCliente = '';
+                this.nombreClienteFiscal = '';
+                this.rncLookupStatus = null;
                 this.tipoComprobanteChange.emit(this.tipoComprobante);
             }
+        }
+    }
+
+    lookupRnc(): void {
+        const rnc = this.rncCliente?.trim() || '';
+        if (!rnc) { this.rncLookupStatus = null; return; }
+        const cliente = this.clientesService.buscarPorRnc(rnc);
+        if (cliente) {
+            if (!this.nombreClienteFiscal) this.nombreClienteFiscal = cliente.nombre;
+            this.rncLookupStatus = 'found';
+        } else {
+            this.rncLookupStatus = 'notfound';
         }
     }
 
@@ -129,7 +151,8 @@ export class ModalPagoComponent implements OnInit, OnChanges {
             cambio: this.cambio,
             // Fiscal — solo se incluyen si modo_fiscal está activo
             tipoComprobante: this.configFiscal?.modo_fiscal ? this.tipoComprobante : undefined,
-            rncCliente: this.configFiscal?.modo_fiscal ? this.rncCliente : undefined
+            rncCliente: this.configFiscal?.modo_fiscal ? this.rncCliente : undefined,
+            nombreClienteFiscal: this.configFiscal?.modo_fiscal ? this.nombreClienteFiscal : undefined
         });
     }
 }

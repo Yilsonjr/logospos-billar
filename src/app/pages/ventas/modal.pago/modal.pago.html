@@ -192,13 +192,33 @@
                         <label class="form-label fw-bold small mb-1" style="color:#92400e;">
                             <i class="fa-solid fa-building me-1"></i> RNC del Cliente
                         </label>
-                        <input type="text" class="form-control border-warning" [(ngModel)]="rncCliente"
-                            (ngModelChange)="rncClienteChange.emit($event)" placeholder="000-00000-0 (9 dígitos)"
-                            maxlength="11">
-                        <div class="form-text text-warning-emphasis">
+                        <div class="input-group">
+                            <input type="text" class="form-control border-warning" [(ngModel)]="rncCliente"
+                                (ngModelChange)="rncClienteChange.emit($event); rncLookupStatus = null"
+                                (blur)="lookupRnc()"
+                                placeholder="000-00000-0 (9 dígitos)"
+                                maxlength="11"
+                                [class.is-valid]="rncLookupStatus === 'found'"
+                                [class.is-invalid]="rncLookupStatus === 'notfound'">
+                            <span *ngIf="rncLookupStatus === 'found'" class="input-group-text text-success bg-success-subtle border-success">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </span>
+                            <span *ngIf="rncLookupStatus === 'notfound'" class="input-group-text text-warning bg-warning-subtle border-warning">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                        </div>
+                        <div *ngIf="rncLookupStatus === 'found'" class="form-text text-success">
+                            <i class="fa-solid fa-user-check me-1"></i>Cliente encontrado
+                        </div>
+                        <div *ngIf="rncLookupStatus === 'notfound'" class="form-text text-warning-emphasis">
+                            <i class="fa-solid fa-circle-info me-1"></i>RNC no registrado — ingresa el nombre manualmente
+                        </div>
+                        <div *ngIf="!rncLookupStatus" class="form-text text-warning-emphasis">
                             <i class="fa-solid fa-circle-info me-1"></i>
                             Requerido para emitir Factura de Crédito Fiscal (B01)
                         </div>
+                        <input type="text" class="form-control border-warning mt-1" [(ngModel)]="nombreClienteFiscal"
+                            placeholder="Nombre / Razón social">
                     </div>
                 </div>
                 <!-- ================================================================ -->

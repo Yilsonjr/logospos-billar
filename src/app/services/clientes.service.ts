@@ -250,6 +250,16 @@ export class ClientesService {
     );
   }
 
+  // Buscar cliente por RNC (normaliza guiones y espacios)
+  buscarPorRnc(rnc: string): Cliente | undefined {
+    const normalizar = (s: string) => s.replace(/[-\s]/g, '').toLowerCase();
+    const rncNorm = normalizar(rnc);
+    if (!rncNorm) return undefined;
+    return this.clientesSubject.value.find(
+      c => c.rnc && normalizar(c.rnc) === rncNorm
+    );
+  }
+
   // Obtener cliente general (para ventas sin cliente específico)
   async getClienteGeneral(): Promise<Cliente | null> {
     try {

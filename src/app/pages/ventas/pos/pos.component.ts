@@ -86,6 +86,7 @@ export class PosComponent implements OnInit, OnDestroy {
   configFiscal: ConfiguracionFiscal | null = null;
   tipoComprobante: string = 'B02'; // Consumidor Final por defecto
   rncCliente: string = '';
+  nombreClienteFiscal: string = '';
   tiposComprobante = TIPOS_COMPROBANTE;
 
   // Subscriptions
@@ -574,6 +575,7 @@ export class PosComponent implements OnInit, OnDestroy {
     this.montoEfectivo = datos.montoEfectivo;
     this.montoTarjeta = datos.montoTarjeta;
     this.cambio = datos.cambio;
+    if (datos.nombreClienteFiscal) this.nombreClienteFiscal = datos.nombreClienteFiscal;
 
     this.procesarVenta();
   }
@@ -683,7 +685,7 @@ export class PosComponent implements OnInit, OnDestroy {
         ncf: ncfGenerado,
         tipo_ncf: this.configFiscal?.modo_fiscal ? this.tipoComprobante : undefined,
         rnc_cliente: this.rncCliente || this.clienteSeleccionado?.rnc,
-        nombre_cliente_fiscal: this.clienteSeleccionado?.nombre,
+        nombre_cliente_fiscal: this.nombreClienteFiscal || this.clienteSeleccionado?.nombre,
         mesa_id: this.mesaId,
         pedido_id: this.pedidoId,
 
@@ -761,7 +763,8 @@ export class PosComponent implements OnInit, OnDestroy {
       this.montoTarjeta = 0;
       this.cambio = 0;
       this.mostrarPago = false;
-      this.rncCliente = ''; // Limpiar RNC
+      this.rncCliente = '';
+      this.nombreClienteFiscal = '';
       this.tipoComprobante = 'B02'; // Resetear a consumidor final
       this.mesaId = undefined;
       this.pedidoId = undefined;
