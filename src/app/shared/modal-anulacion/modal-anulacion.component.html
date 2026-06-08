@@ -1,84 +1,181 @@
-<div class="modal-overlay" (click)="cancelar.emit()">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:480px;" (click)="$event.stopPropagation()">
-    <div class="modal-content shadow-lg border-0 rounded-4">
+<div class="anulacion-overlay" (click)="cancelar.emit()">
+  <div class="anulacion-card" (click)="$event.stopPropagation()">
 
-      <!-- Header -->
-      <div class="modal-header border-0 pb-0 pt-4 px-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="rounded-3 p-2" style="background:#fee2e2;">
-            <i class="fa-solid fa-ban text-danger fs-5"></i>
-          </div>
-          <div>
-            <h5 class="fw-bold mb-0 text-danger">{{ titulo }}</h5>
-            <small class="text-muted" *ngIf="referencia">{{ referencia }}</small>
-          </div>
-        </div>
-        <button type="button" class="btn-close" (click)="cancelar.emit()"></button>
+    <!-- Header -->
+    <div class="anulacion-header">
+      <div class="header-icon">
+        <i class="fa-solid fa-ban"></i>
+      </div>
+      <div class="header-text">
+        <h5>{{ titulo }}</h5>
+        <span *ngIf="referencia">{{ referencia }}</span>
+      </div>
+      <button class="btn-close btn-close-white opacity-75" (click)="cancelar.emit()"></button>
+    </div>
+
+    <!-- Body -->
+    <div class="anulacion-body">
+
+      <!-- Advertencia -->
+      <div class="aviso">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <p>Esta acción <strong>no se puede deshacer</strong>. El stock será restaurado y si la venta tenía NCF se generará una Nota de Crédito (B04).</p>
       </div>
 
-      <!-- Body -->
-      <div class="modal-body px-4 pt-3 pb-2">
-
-        <!-- Advertencia -->
-        <div class="alert alert-warning d-flex gap-2 align-items-start py-2 mb-3">
-          <i class="fa-solid fa-triangle-exclamation mt-1 flex-shrink-0"></i>
-          <div class="small">
-            Esta acción <strong>no se puede deshacer</strong>. El stock será restaurado
-            y si la venta tenía NCF se generará una Nota de Crédito (B04).
-          </div>
-        </div>
-
-        <!-- Motivo categoría -->
-        <div class="mb-3">
-          <label class="form-label fw-semibold small text-uppercase text-muted mb-1">
-            Motivo de anulación <span class="text-danger">*</span>
-          </label>
-          <div class="d-grid gap-2">
-            <button *ngFor="let m of motivos" type="button"
-              class="btn text-start px-3 py-2 rounded-3 border"
-              [class.btn-danger]="motivoCategoria === m.valor"
-              [class.text-white]="motivoCategoria === m.valor"
-              [class.btn-outline-secondary]="motivoCategoria !== m.valor"
-              (click)="motivoCategoria = m.valor">
-              <i class="fa-solid fa-circle-dot me-2 small"></i>{{ m.etiqueta }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Detalle opcional -->
-        <div class="mb-1">
-          <label class="form-label fw-semibold small text-uppercase text-muted mb-1">
-            Detalle adicional (opcional)
-          </label>
-          <textarea class="form-control" rows="2" [(ngModel)]="motivoDetalle"
-            placeholder="Describe brevemente el motivo…" maxlength="300"></textarea>
-        </div>
-
+      <!-- Motivos como chips -->
+      <div class="motivos-label">Motivo de anulación <span class="req">*</span></div>
+      <div class="motivos-grid">
+        <button *ngFor="let m of motivos" type="button"
+          class="motivo-chip"
+          [class.activo]="motivoCategoria === m.valor"
+          (click)="motivoCategoria = m.valor">
+          {{ m.etiqueta }}
+        </button>
       </div>
 
-      <!-- Footer -->
-      <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex gap-2 justify-content-end">
-        <button type="button" class="btn btn-outline-secondary px-4"
-          [disabled]="procesando" (click)="cancelar.emit()">
-          Cancelar
-        </button>
-        <button type="button" class="btn btn-danger px-4 fw-bold"
-          [disabled]="!puedeConfirmar" (click)="onConfirmar()">
-          <span *ngIf="procesando" class="spinner-border spinner-border-sm me-2"></span>
-          <i *ngIf="!procesando" class="fa-solid fa-ban me-2"></i>
-          {{ procesando ? 'Anulando…' : 'Confirmar anulación' }}
-        </button>
+      <!-- Detalle opcional -->
+      <div class="detalle-wrap">
+        <label>Detalle adicional <span class="opc">(opcional)</span></label>
+        <textarea [(ngModel)]="motivoDetalle"
+          placeholder="Describe brevemente el motivo…"
+          maxlength="300" rows="2"></textarea>
       </div>
 
     </div>
+
+    <!-- Footer -->
+    <div class="anulacion-footer">
+      <button class="btn-cancelar" [disabled]="procesando" (click)="cancelar.emit()">
+        Cancelar
+      </button>
+      <button class="btn-confirmar" [disabled]="!puedeConfirmar" (click)="onConfirmar()">
+        <span *ngIf="procesando" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="!procesando" class="fa-solid fa-ban me-1"></i>
+        {{ procesando ? 'Anulando…' : 'Confirmar anulación' }}
+      </button>
+    </div>
+
   </div>
 </div>
 
 <style>
-.modal-overlay {
+.anulacion-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.5);
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center;
   z-index: 1060;
+  padding: 16px;
 }
+
+.anulacion-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%; max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+
+/* Header */
+.anulacion-header {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  padding: 16px 20px;
+  color: #fff;
+}
+.header-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,.2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.header-text { flex: 1; }
+.header-text h5 { margin: 0; font-size: 15px; font-weight: 700; }
+.header-text span { font-size: 12px; opacity: .85; }
+
+/* Body */
+.anulacion-body { padding: 20px; }
+
+.aviso {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 13px; color: #92400e;
+}
+.aviso i { margin-top: 2px; flex-shrink: 0; color: #d97706; }
+.aviso p { margin: 0; line-height: 1.5; }
+
+/* Motivos */
+.motivos-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: #6b7280; margin-bottom: 10px;
+}
+.req { color: #dc2626; }
+
+.motivos-grid {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 16px;
+}
+.motivo-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 13px; color: #374151;
+  cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.motivo-chip:hover {
+  border-color: #fca5a5; background: #fff1f2; color: #dc2626;
+}
+.motivo-chip.activo {
+  border-color: #dc2626; background: #dc2626; color: #fff;
+  font-weight: 600;
+}
+
+/* Detalle */
+.detalle-wrap label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: #6b7280; display: block; margin-bottom: 6px;
+}
+.opc { text-transform: none; font-weight: 400; color: #9ca3af; }
+.detalle-wrap textarea {
+  width: 100%; border: 1.5px solid #e5e7eb;
+  border-radius: 10px; padding: 10px 12px;
+  font-size: 13px; resize: none; outline: none;
+  transition: border-color .15s;
+}
+.detalle-wrap textarea:focus { border-color: #dc2626; }
+
+/* Footer */
+.anulacion-footer {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+.btn-cancelar {
+  padding: 8px 20px; border-radius: 8px;
+  border: 1.5px solid #e5e7eb; background: #fff;
+  font-size: 13px; font-weight: 500; color: #6b7280;
+  cursor: pointer; transition: all .15s;
+}
+.btn-cancelar:hover:not(:disabled) { border-color: #9ca3af; color: #374151; }
+.btn-cancelar:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-confirmar {
+  padding: 8px 20px; border-radius: 8px;
+  border: none; background: #dc2626; color: #fff;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center;
+}
+.btn-confirmar:hover:not(:disabled) { background: #b91c1c; }
+.btn-confirmar:disabled { opacity: .5; cursor: not-allowed; }
 </style>

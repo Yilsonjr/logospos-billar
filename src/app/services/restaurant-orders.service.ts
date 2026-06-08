@@ -464,7 +464,7 @@ export class RestaurantOrdersService {
   async obtenerHistorial(limite = 50): Promise<RestaurantOrder[]> {
     const { data, error } = await this.supabaseService.client
       .from('restaurant_orders')
-      .select('*, mesa:restaurant_tables(numero_mesa)')
+      .select('*, mesa:restaurant_tables(numero_mesa), pagos:restaurant_order_payments(*)')
       .eq('negocio_id', this.negocioId)
       .in('estado', ['cerrada', 'cancelada'])
       .order('hora_cierre', { ascending: false })
