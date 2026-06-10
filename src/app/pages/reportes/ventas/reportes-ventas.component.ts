@@ -5,6 +5,7 @@ import { VentasService } from '../../../services/ventas.service';
 import { FiscalService } from '../../../services/fiscal.service';
 import { Venta } from '../../../models/ventas.model';
 import { Subscription } from 'rxjs';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 @Component({
     selector: 'app-reportes-ventas',
@@ -41,8 +42,7 @@ export class ReportesVentasComponent implements OnInit, OnDestroy {
         private cdr: ChangeDetectorRef
     ) {
         // Inicializar fechas: Desde inicio (ej: 2024-01-01) hasta hoy
-        const hoy = new Date();
-        this.fechaFin = hoy.toISOString().split('T')[0];
+        this.fechaFin = sdFechaHoy();
         this.fechaInicio = '2024-01-01'; // "Desde su inicio"
     }
 

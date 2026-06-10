@@ -15,6 +15,7 @@ import {
   CATEGORIAS_CUENTA_PAGAR
 } from '../../models/cuentas-pagar.model';
 import Swal from 'sweetalert2';
+import { sdFechaHoy } from '../../utils/fecha-sd';
 
 @Component({
   selector: 'app-cuentas-pagar',
@@ -205,7 +206,7 @@ export class CuentasPagarComponent implements OnInit, OnDestroy {
           cuenta_id: cuenta.id!,
           monto: cuenta.monto_pendiente,
           metodo_pago: 'Efectivo',
-          fecha_pago: new Date().toISOString().split('T')[0],
+          fecha_pago: sdFechaHoy(),
           notas: 'Pago completo registrado desde interfaz'
         });
 

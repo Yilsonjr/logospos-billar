@@ -16,6 +16,7 @@ import {
   OrderWithItems, OrderItemWithMenuItem, CuentaComensal, FormaPago
 } from '../../../models/restaurant.models';
 import Swal from 'sweetalert2';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 @Component({
   selector: 'app-bill-split',
@@ -46,6 +47,7 @@ export class BillSplitComponent implements OnInit {
   modoImpuesto: 'sin_impuesto' | 'encima' | 'incluido' = 'sin_impuesto';
   negocioNombre = '';
   negocioRnc = '';
+  negocioTelefono = '';
   formatoTicket: '58mm' | '80mm' = '80mm';
 
   // Fiscal
@@ -83,8 +85,9 @@ export class BillSplitComponent implements OnInit {
       ]);
       this.tasaItbis = negocio?.tasa_itbis ?? 0;
       this.modoImpuesto = negocio?.modo_impuesto ?? 'sin_impuesto';
-      this.negocioNombre = negocio?.nombre || '';
-      this.negocioRnc    = negocio?.rnc    || '';
+      this.negocioNombre    = negocio?.nombre    || '';
+      this.negocioRnc       = negocio?.rnc       || '';
+      this.negocioTelefono  = negocio?.telefono  || '';
       this.formatoTicket = negocio?.formato_ticket ?? '80mm';
       this.fiscalService.config$.subscribe(c => this.configFiscal = c);
       this.orden = await this.ordersService.obtenerOrdenPorId(this.orderId);
@@ -388,7 +391,7 @@ export class BillSplitComponent implements OnInit {
               monto_total: cuenta.total,
               monto_pagado: 0,
               monto_pendiente: cuenta.total,
-              fecha_venta: new Date().toISOString().split('T')[0],
+              fecha_venta: sdFechaHoy(),
               estado: 'pendiente'
             });
           } else {
@@ -422,11 +425,12 @@ export class BillSplitComponent implements OnInit {
           orden: this.orden,
           propina: cuenta.propina,
           formaPago: cuenta.forma_pago,
-          negocioNombre: this.negocioNombre,
-          negocioRnc:          this.negocioRnc || undefined,
-          ncf:                 ncf || undefined,
-          tipoNcf:             cuenta.tipo_ncf || undefined,
-          rncCliente:          cuenta.rnc_cliente || undefined,
+          negocioNombre:       this.negocioNombre,
+          negocioRnc:          this.negocioRnc       || undefined,
+          negocioTelefono:     this.negocioTelefono  || undefined,
+          ncf:                 ncf                   || undefined,
+          tipoNcf:             cuenta.tipo_ncf       || undefined,
+          rncCliente:          cuenta.rnc_cliente    || undefined,
           nombreClienteFiscal: cuenta.nombre_cliente_fiscal || undefined,
         });
       } catch {
@@ -616,6 +620,8 @@ export class BillSplitComponent implements OnInit {
   @media print { body { width: ${ancho}; } }
 </style></head><body>
 <h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
+${this.negocioRnc      ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
+${this.negocioTelefono ? `<p class="small">Tel: ${this.negocioTelefono}</p>` : ''}
 ${tituloSeccion}
 <div class="div"></div>
 <p>${mesa}  |  Orden #${ordenRef}</p>
@@ -669,7 +675,7 @@ ${piePagina}
 <p class="c bold" style="font-size:${fuentePx - 1}px">COMPROBANTE FISCAL</p>
 <p class="c" style="font-size:${fuentePx - 1}px">Tipo: ${tipoNcf || ''}</p>
 <p class="c bold" style="letter-spacing:1px">${ncf}</p>
-${rncCliente ? `<p class="c small">RNC: ${rncCliente}</p>` : ''}` : '';
+${rncCliente ? `<p class="c small">RNC Cliente: ${rncCliente}</p>` : ''}` : '';
 
     const piePagina = ncf
       ? `<p class="small c">─── DOCUMENTO FISCAL ───</p>`
@@ -693,6 +699,8 @@ ${rncCliente ? `<p class="c small">RNC: ${rncCliente}</p>` : ''}` : '';
   @media print { body { width: ${ancho}; } }
 </style></head><body>
 <h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
+${this.negocioRnc      ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
+${this.negocioTelefono ? `<p class="small">Tel: ${this.negocioTelefono}</p>` : ''}
 <div class="div"></div>
 <p>${this.orden.mesa ? `Mesa ${this.orden.mesa.numero_mesa}  |  ` : ''}Orden #${this.orden.id.slice(-6).toUpperCase()}</p>
 <div class="div"></div>

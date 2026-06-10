@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CuentaPorCobrar, METODOS_PAGO_CUENTA } from '../../../models/cuentas-cobrar.model';
 import { CuentasCobrarService } from '../../../services/cuentas-cobrar.service';
 import Swal from 'sweetalert2';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 @Component({
   selector: 'app-modal-pago',
@@ -27,7 +28,7 @@ export class ModalPagoComponent implements OnInit {
     this.pagoForm = this.fb.group({
       monto: ['', [Validators.required, Validators.min(0.01)]],
       metodo_pago: ['Efectivo', Validators.required],
-      fecha_pago: [new Date().toISOString().split('T')[0], Validators.required],
+      fecha_pago: [sdFechaHoy(), Validators.required],
       referencia: [''],
       notas: ['']
     });

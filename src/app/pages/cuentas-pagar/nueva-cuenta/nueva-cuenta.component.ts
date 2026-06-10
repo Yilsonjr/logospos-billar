@@ -13,6 +13,7 @@ import {
 } from '../../../models/cuentas-pagar.model';
 import { Proveedor } from '../../../models/proveedores.model';
 import Swal from 'sweetalert2';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 @Component({
   selector: 'app-nueva-cuenta',
@@ -26,7 +27,7 @@ export class NuevaCuentaComponent implements OnInit {
     proveedor_id: 0,
     concepto: '',
     monto_total: 0,
-    fecha_factura: new Date().toISOString().split('T')[0],
+    fecha_factura: sdFechaHoy(),
     fecha_vencimiento: '',
     prioridad: 'media',
     categoria: 'Mercancía',

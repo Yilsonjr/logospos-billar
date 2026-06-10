@@ -272,6 +272,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   procesandoAnulacion = false;
   negocioNombre = '';
   negocioRnc = '';
+  negocioTelefono = '';
   negocioFormatoTicket: '58mm' | '80mm' = '80mm';
   negocioModoImpuesto: 'sin_impuesto' | 'encima' | 'incluido' = 'sin_impuesto';
   negocioTasaItbis = 0;
@@ -326,8 +327,9 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     const negocio = await this.negociosService.cargarNegocio().catch(() => null);
     if (negocio) {
-      this.negocioNombre = negocio.nombre || '';
-      this.negocioRnc = negocio.rnc || '';
+      this.negocioNombre    = negocio.nombre    || '';
+      this.negocioRnc       = negocio.rnc       || '';
+      this.negocioTelefono  = negocio.telefono  || '';
       this.negocioFormatoTicket = negocio.formato_ticket ?? '80mm';
       this.negocioModoImpuesto = negocio.modo_impuesto ?? 'sin_impuesto';
       this.negocioTasaItbis = negocio.tasa_itbis ?? 0;
@@ -1157,7 +1159,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
             : formaPago === 'cheque' ? '(Cheque)'
             : '(Efectivo)';
           await this.cajaService.registrarMovimiento({
-            caja_id: caja.id,
+            caja_id: caja.id!,
             tipo: 'anulacion',
             concepto: `Anulación ${mesaLabel} ${metodoLabel}`,
             monto: pago.monto || this.ordenParaAnular.total || 0,
@@ -1193,7 +1195,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     // Intentar impresora térmica de caja primero
     try {
       const imprimioTermica = await this.printService.reimprimirReciboRestaurant(
-        orden, this.negocioNombre, this.negocioRnc
+        orden, this.negocioNombre, this.negocioRnc, this.negocioTelefono
       );
       if (imprimioTermica) return;
     } catch (e: any) {
@@ -1258,7 +1260,8 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   .small { font-size:${fuentePx-2}px; color:#555; }
 </style></head><body>
 <h2>${this.negocioNombre || 'RESTAURANTE'}</h2>
-${this.negocioRnc ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
+${this.negocioRnc      ? `<p class="small">RNC: ${this.negocioRnc}</p>` : ''}
+${this.negocioTelefono ? `<p class="small">Tel: ${this.negocioTelefono}</p>` : ''}
 ${ncfSection}
 <div class="div"></div>
 <p>${identificador} &nbsp;|&nbsp; #${orden.id.slice(-6).toUpperCase()}</p>

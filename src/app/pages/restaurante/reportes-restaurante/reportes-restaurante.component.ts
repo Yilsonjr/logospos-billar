@@ -9,6 +9,7 @@ import {
   PagoPorMetodo, MargenPlato, ResumenInventario, InsumoReporte,
   GananciasResumen
 } from '../../../services/restaurant-reports.service';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 interface RendimientoCocina {
   tiempoPromedioMinutos: number;
@@ -71,8 +72,8 @@ export class ReportesRestauranteComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Inicializar fechas personalizadas con hoy
-    const hoy = new Date().toISOString().split('T')[0];
+    // Inicializar fechas personalizadas con hoy (hora Santo Domingo)
+    const hoy = sdFechaHoy();
     this.fechaDesde = hoy;
     this.fechaHasta = hoy;
     this.cargarTodo();

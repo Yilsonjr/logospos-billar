@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { sdFechaHoy, sdInicioDelDia, sdFinDelDia, sdFechaDeTimestamp } from '../../utils/fecha-sd';
 
 interface StatCard {
   title: string;
@@ -275,10 +276,8 @@ export class Dashboard implements OnInit, OnDestroy {
 
   async cargarStatsRestaurante() {
     const negocioId = localStorage.getItem('logos_negocio_id') || '';
-    const hoyInicio = new Date();
-    hoyInicio.setHours(0, 0, 0, 0);   // medianoche hora local
-    const hoyFin = new Date();
-    hoyFin.setHours(23, 59, 59, 999); // fin del día hora local
+    const inicioHoy = sdInicioDelDia();
+    const finHoy    = sdFinDelDia();
 
     // 1. Ventas del día desde órdenes cerradas (misma fuente que Reportes)
     try {
@@ -287,8 +286,8 @@ export class Dashboard implements OnInit, OnDestroy {
         .select('total, hora_cierre')
         .eq('negocio_id', negocioId)
         .eq('estado', 'cerrada')
-        .gte('hora_cierre', hoyInicio.toISOString())
-        .lte('hora_cierre', hoyFin.toISOString());
+        .gte('hora_cierre', inicioHoy)
+        .lte('hora_cierre', finHoy);
 
       const totalHoy = ordenes?.reduce((s, o) => s + (o.total || 0), 0) || 0;
       this.upsertStat({
@@ -365,29 +364,22 @@ export class Dashboard implements OnInit, OnDestroy {
 
   async actualizarVentasStats(ventas: any[]) {
     if (!this.negociosService.tieneModulo('ventas')) return;
-    const ahora = new Date();
-    const hoy = `${ahora.getFullYear()}-${(ahora.getMonth() + 1).toString().padStart(2, '0')}-${ahora.getDate().toString().padStart(2, '0')}`;
-    
+    const hoy = sdFechaHoy();
+    const inicioHoyVentas = sdInicioDelDia();
+
     // 1. Total de ventas POS hoy
     const totalVentasHoyPOS = ventas
-      .filter(v => {
-        const fechaVenta = new Date(v.created_at);
-        const fechaLocal = `${fechaVenta.getFullYear()}-${(fechaVenta.getMonth() + 1).toString().padStart(2, '0')}-${fechaVenta.getDate().toString().padStart(2, '0')}`;
-        return fechaLocal === hoy && v.estado === 'completada';
-      })
+      .filter(v => sdFechaDeTimestamp(v.created_at) === hoy && v.estado === 'completada')
       .reduce((sum, v) => sum + v.total, 0);
 
     // 2. Total de pagos del Restaurante hoy (desde restaurant_order_payments)
     let totalVentasHoyRestaurante = 0;
     try {
-      const inicioHoy = new Date();
-      inicioHoy.setHours(0, 0, 0, 0);
-
       const { data: pagosRest } = await this.supabaseService.client
         .from('restaurant_order_payments')
         .select('monto')
         .eq('pagado', true)
-        .gte('created_at', inicioHoy.toISOString());
+        .gte('created_at', inicioHoyVentas);
 
       totalVentasHoyRestaurante = pagosRest?.reduce((sum, p) => sum + p.monto, 0) || 0;
     } catch (err) {

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
 import { CajaService } from '../../../services/caja.service';
 import { Caja } from '../../../models/caja.model';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 @Component({
     selector: 'app-reportes-caja',
@@ -29,12 +30,12 @@ export class ReportesCajaComponent implements OnInit {
         private cajaService: CajaService,
         private authService: AuthService
     ) {
-        const hoy = new Date();
-        const hace30dias = new Date();
+        const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }));
+        const hace30dias = new Date(hoy);
         hace30dias.setDate(hoy.getDate() - 30);
 
-        this.fechaFin = hoy.toISOString().split('T')[0];
-        this.fechaInicio = hace30dias.toISOString().split('T')[0];
+        this.fechaFin = sdFechaHoy();
+        this.fechaInicio = hace30dias.toLocaleDateString('en-CA');
     }
 
     ngOnInit() {

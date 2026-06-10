@@ -5,6 +5,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { CajaService } from '../../../services/caja.service';
 import { Caja, ResumenCaja } from '../../../models/caja.model';
 import { Subscription, filter } from 'rxjs';
+import { sdFechaHoy, sdFechaDeTimestamp } from '../../../utils/fecha-sd';
 
 @Component({
   selector: 'app-historial-caja',
@@ -63,12 +64,12 @@ export class HistorialCajaComponent implements OnInit, OnDestroy {
   }
 
   inicializarFechas() {
-    const hoy = new Date();
-    const hace30Dias = new Date();
+    const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }));
+    const hace30Dias = new Date(hoy);
     hace30Dias.setDate(hoy.getDate() - 30);
 
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = hace30Dias.toISOString().split('T')[0];
+    this.fechaFin = sdFechaHoy();
+    this.fechaInicio = hace30Dias.toLocaleDateString('en-CA');
   }
 
   async cargarHistorial() {
@@ -89,7 +90,7 @@ export class HistorialCajaComponent implements OnInit, OnDestroy {
 
     if (this.fechaInicio && this.fechaFin) {
       resultado = resultado.filter(c => {
-        const fechaCaja = new Date(c.fecha_apertura).toISOString().split('T')[0];
+        const fechaCaja = sdFechaDeTimestamp(c.fecha_apertura);
         return fechaCaja >= this.fechaInicio && fechaCaja <= this.fechaFin;
       });
     }

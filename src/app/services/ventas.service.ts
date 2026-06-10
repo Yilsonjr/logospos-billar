@@ -8,6 +8,7 @@ import { OfflineService } from './offline.service'; // Import OfflineService
 import { Venta, VentaDetalle, CrearVenta, VentaCompleta } from '../models/ventas.model';
 import { BehaviorSubject } from 'rxjs';
 import { CrearMovimientoCaja } from '../models/caja.model';
+import { sdFechaHoy, sdInicioDelDia, sdFinDelDia } from '../utils/fecha-sd';
 
 @Injectable({
   providedIn: 'root'
@@ -396,15 +397,13 @@ export class VentasService {
   // Obtener total de ventas del día
   async obtenerTotalVentasHoy(): Promise<number> {
     try {
-      const hoy = new Date().toISOString().split('T')[0];
-
       const negocioId = this.authService.getNegocioId();
       const { data, error } = await this.supabaseService.client
         .from('ventas')
         .select('total')
         .eq('negocio_id', negocioId)
-        .gte('created_at', `${hoy}T00:00:00`)
-        .lte('created_at', `${hoy}T23:59:59`)
+        .gte('created_at', sdInicioDelDia())
+        .lte('created_at', sdFinDelDia())
         .eq('estado', 'completada');
 
       if (error) throw error;

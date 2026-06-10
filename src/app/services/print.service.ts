@@ -220,6 +220,12 @@ export class PrintService {
     propina: number;
     formaPago: string;
     negocioNombre: string;
+    negocioRnc?: string;
+    negocioTelefono?: string;
+    ncf?: string;
+    tipoNcf?: string;
+    rncCliente?: string;
+    nombreClienteFiscal?: string;
   }): Promise<boolean> {
     const url = this.agentUrl;
     if (!url) return false;
@@ -420,6 +426,7 @@ export class PrintService {
       formaPago: string;
       negocioNombre: string;
       negocioRnc?: string;
+      negocioTelefono?: string;
       ncf?: string;
       tipoNcf?: string;
       rncCliente?: string;
@@ -428,7 +435,7 @@ export class PrintService {
     },
     logoBytes: number[] = []
   ): number[] {
-    const { orden, propina, formaPago, negocioNombre, negocioRnc,
+    const { orden, propina, formaPago, negocioNombre, negocioRnc, negocioTelefono,
             ncf, tipoNcf, rncCliente, nombreClienteFiscal, esReimpresion } = params;
     const chars = printer.caracteres_por_linea || 42;
     const buf: number[] = [];
@@ -453,7 +460,8 @@ export class PrintService {
       linea(negocioNombre);
     }
     push(...BOLD_OFF);
-    if (negocioRnc) linea(`RNC: ${negocioRnc}`);
+    if (negocioRnc)       linea(`RNC: ${negocioRnc}`);
+    if (negocioTelefono)  linea(`Tel: ${negocioTelefono}`);
 
     // Comprobante fiscal en cabecera (si aplica)
     if (ncf) {
@@ -461,7 +469,7 @@ export class PrintService {
       push(...BOLD_ON); linea('COMPROBANTE FISCAL'); push(...BOLD_OFF);
       if (tipoNcf) linea(`Tipo: ${tipoNcf}`);
       push(...BOLD_ON); linea(ncf); push(...BOLD_OFF);
-      if (rncCliente)          linea(`RNC: ${rncCliente}`);
+      if (rncCliente)          linea(`RNC Cliente: ${rncCliente}`);
       if (nombreClienteFiscal) linea(nombreClienteFiscal);
     }
 
@@ -515,7 +523,11 @@ export class PrintService {
 
     // Pie
     push(...ALIGN_CENTER);
-    if (ncf) linea('--- DOCUMENTO FISCAL ---');
+    if (ncf) {
+      linea('--- DOCUMENTO FISCAL ---');
+    } else {
+      linea('-- DOCUMENTO NO FISCAL --');
+    }
     linea('Gracias por su visita!');
     if (esReimpresion) {
       const ts = new Date().toLocaleString('es-DO', { dateStyle: 'short', timeStyle: 'short' });
@@ -531,7 +543,7 @@ export class PrintService {
   // Reimpresión térmica de orden de restaurante
   // ============================================================
 
-  async reimprimirReciboRestaurant(orden: any, negocioNombre: string, negocioRnc?: string): Promise<boolean> {
+  async reimprimirReciboRestaurant(orden: any, negocioNombre: string, negocioRnc?: string, negocioTelefono?: string): Promise<boolean> {
     const url = this.agentUrl;
     if (!url) return false;
 
@@ -556,6 +568,7 @@ export class PrintService {
       formaPago:           pago?.forma_pago || pago?.metodo_pago || 'efectivo',
       negocioNombre,
       negocioRnc,
+      negocioTelefono,
       ncf:                 pago?.ncf || undefined,
       tipoNcf:             pago?.tipo_ncf || undefined,
       rncCliente:          pago?.rnc_cliente || undefined,

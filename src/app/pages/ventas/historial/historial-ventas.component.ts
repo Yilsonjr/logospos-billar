@@ -12,6 +12,7 @@ import { filter } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { FacturaComponent } from '../../../shared/factura/factura.component';
 import { ModalAnulacionComponent, AnulacionConfirmada } from '../../../shared/modal-anulacion/modal-anulacion.component';
+import { sdFechaHoy, sdFechaDeTimestamp } from '../../../utils/fecha-sd';
 
 @Component({
   selector: 'app-historial-ventas',
@@ -108,12 +109,12 @@ export class HistorialVentasComponent implements OnInit, OnDestroy {
   }
 
   inicializarFechas() {
-    const hoy = new Date();
-    const hace30Dias = new Date();
+    const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }));
+    const hace30Dias = new Date(hoy);
     hace30Dias.setDate(hoy.getDate() - 30);
 
-    this.fechaFin = hoy.toISOString().split('T')[0];
-    this.fechaInicio = hace30Dias.toISOString().split('T')[0];
+    this.fechaFin = sdFechaHoy();
+    this.fechaInicio = hace30Dias.toLocaleDateString('en-CA');
   }
 
   async cargarVentas() {
@@ -151,7 +152,7 @@ export class HistorialVentasComponent implements OnInit, OnDestroy {
 
     if (this.fechaInicio && this.fechaFin) {
       resultado = resultado.filter(v => {
-        const fechaVenta = new Date(v.created_at || '').toISOString().split('T')[0];
+        const fechaVenta = sdFechaDeTimestamp(v.created_at || new Date().toISOString());
         return fechaVenta >= this.fechaInicio && fechaVenta <= this.fechaFin;
       });
     }

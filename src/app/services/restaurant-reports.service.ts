@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { sdFechaHoy, sdInicioDelDia, sdFinDelDia } from '../utils/fecha-sd';
 
 export type PeriodoReporte = 'hoy' | 'semana' | 'mes' | 'personalizado';
 
@@ -110,31 +111,27 @@ export class RestaurantReportsService {
   // ============================================================
 
   filtroParaPeriodo(periodo: PeriodoReporte, custom?: { desde: string; hasta: string }): FiltroFecha {
-    const ahora = new Date();
-
-    // Usar hora local del navegador (no UTC) para que los cortes de día
-    // coincidan con la medianoche del negocio y no con la medianoche UTC.
-    const hoyInicio = new Date(ahora); hoyInicio.setHours(0, 0, 0, 0);
-    const hoyFin    = new Date(ahora); hoyFin.setHours(23, 59, 59, 999);
+    const hoy = sdFechaHoy();
 
     if (periodo === 'hoy') {
-      return { desde: hoyInicio.toISOString(), hasta: hoyFin.toISOString() };
+      return { desde: sdInicioDelDia(hoy), hasta: sdFinDelDia(hoy) };
     }
     if (periodo === 'semana') {
-      const lunes = new Date(ahora);
-      lunes.setDate(ahora.getDate() - ((ahora.getDay() + 6) % 7));
-      lunes.setHours(0, 0, 0, 0);
-      return { desde: lunes.toISOString(), hasta: hoyFin.toISOString() };
+      // Calcular el lunes de esta semana en hora SD
+      const ahoraSd = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }));
+      const diasDesdeElLunes = (ahoraSd.getDay() + 6) % 7;
+      const lunesSd = new Date(ahoraSd);
+      lunesSd.setDate(ahoraSd.getDate() - diasDesdeElLunes);
+      const lunesStr = lunesSd.toLocaleDateString('en-CA');
+      return { desde: sdInicioDelDia(lunesStr), hasta: sdFinDelDia(hoy) };
     }
     if (periodo === 'mes') {
-      const primerDia = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-      primerDia.setHours(0, 0, 0, 0);
-      return { desde: primerDia.toISOString(), hasta: hoyFin.toISOString() };
+      const ahoraSd = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santo_Domingo' }));
+      const primerDiaStr = `${ahoraSd.getFullYear()}-${String(ahoraSd.getMonth() + 1).padStart(2, '0')}-01`;
+      return { desde: sdInicioDelDia(primerDiaStr), hasta: sdFinDelDia(hoy) };
     }
     // personalizado
-    const desdeDate = new Date(custom!.desde); desdeDate.setHours(0, 0, 0, 0);
-    const hastaDate = new Date(custom!.hasta); hastaDate.setHours(23, 59, 59, 999);
-    return { desde: desdeDate.toISOString(), hasta: hastaDate.toISOString() };
+    return { desde: sdInicioDelDia(custom!.desde), hasta: sdFinDelDia(custom!.hasta) };
   }
 
   // ============================================================

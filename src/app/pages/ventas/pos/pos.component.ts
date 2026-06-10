@@ -26,6 +26,7 @@ import { FacturaComponent } from '../../../shared/factura/factura.component';
 import { VentaCompleta } from '../../../models/ventas.model';
 import { CajaService } from '../../../services/caja.service';
 import { Caja } from '../../../models/caja.model';
+import { sdFechaHoy } from '../../../utils/fecha-sd';
 
 @Component({
   selector: 'app-pos',
@@ -798,8 +799,8 @@ export class PosComponent implements OnInit, OnDestroy {
         monto_total: this.total,
         monto_pagado: 0,
         monto_pendiente: this.total,
-        fecha_venta: new Date().toISOString().split('T')[0],
-        fecha_vencimiento: fechaVencimiento.toISOString().split('T')[0],
+        fecha_venta: sdFechaHoy(),
+        fecha_vencimiento: fechaVencimiento.toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' }),
         estado: 'pendiente',
         notas: `Venta a crédito - Factura ${venta.numero_venta}`
       };
