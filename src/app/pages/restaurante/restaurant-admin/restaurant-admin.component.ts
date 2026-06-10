@@ -267,7 +267,6 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   historialOrdenes: any[] = [];
   ordenSeleccionada: any = null;
   cargandoDetalle = false;
-  busquedaOrden = '';
   ordenParaAnular: any = null;
   procesandoAnulacion = false;
   negocioNombre = '';
@@ -276,7 +275,32 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
   negocioFormatoTicket: '58mm' | '80mm' = '80mm';
   negocioModoImpuesto: 'sin_impuesto' | 'encima' | 'incluido' = 'sin_impuesto';
   negocioTasaItbis = 0;
-  filtroEstadoOrden = '';
+
+  // Filtros y paginación de órdenes
+  private _busquedaOrden = '';
+  get busquedaOrden(): string { return this._busquedaOrden; }
+  set busquedaOrden(v: string) { this._busquedaOrden = v; this._ordenPagina = 0; }
+
+  private _filtroEstadoOrden = '';
+  get filtroEstadoOrden(): string { return this._filtroEstadoOrden; }
+  set filtroEstadoOrden(v: string) { this._filtroEstadoOrden = v; this._ordenPagina = 0; }
+
+  readonly ORDEN_PAGE_SIZE = 20;
+  private _ordenPagina = 0;
+  get ordenPagina(): number { return this._ordenPagina; }
+
+  get ordenesPaginadas(): any[] {
+    const inicio = this._ordenPagina * this.ORDEN_PAGE_SIZE;
+    return this.ordenesFiltradas.slice(inicio, inicio + this.ORDEN_PAGE_SIZE);
+  }
+
+  get ordenTotalPaginas(): number {
+    return Math.ceil(this.ordenesFiltradas.length / this.ORDEN_PAGE_SIZE);
+  }
+
+  cambiarPaginaOrden(delta: number): void {
+    this._ordenPagina = Math.max(0, Math.min(this.ordenTotalPaginas - 1, this._ordenPagina + delta));
+  }
 
   readonly unidades = [
     // Conteo

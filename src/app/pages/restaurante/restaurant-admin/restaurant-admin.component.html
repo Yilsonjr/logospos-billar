@@ -1684,6 +1684,14 @@
           <span>No se encontraron órdenes registradas en este período.</span>
         </div>
       } @else {
+        <!-- Contador de resultados -->
+        <div class="px-3 py-2 text-muted small border-bottom">
+          {{ ordenesFiltradas.length }} orden(es) encontrada(s)
+          @if (ordenTotalPaginas > 1) {
+            — página {{ ordenPagina + 1 }} de {{ ordenTotalPaginas }}
+          }
+        </div>
+
         <div class="ra-table-wrap">
           <table class="ra-table">
             <thead>
@@ -1699,7 +1707,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (orden of ordenesFiltradas; track trackById($index, orden)) {
+              @for (orden of ordenesPaginadas; track trackById($index, orden)) {
                 <tr class="align-middle">
                   <td class="font-monospace text-secondary small fw-bold">#{{ orden.id.substring(0, 8) }}</td>
                   <td>
@@ -1743,6 +1751,23 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Paginación -->
+        @if (ordenTotalPaginas > 1) {
+          <div class="inv-paginacion">
+            <button class="inv-pag-btn" (click)="cambiarPaginaOrden(-1)" [disabled]="ordenPagina === 0">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span class="inv-pag-info">
+              {{ ordenPagina + 1 }} / {{ ordenTotalPaginas }}
+              <span class="inv-pag-total">({{ ordenesFiltradas.length }} órdenes)</span>
+            </span>
+            <button class="inv-pag-btn" (click)="cambiarPaginaOrden(1)" [disabled]="ordenPagina >= ordenTotalPaginas - 1">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        }
+
       }
     </div>
 
