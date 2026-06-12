@@ -1,0 +1,47 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.table-responsive {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+}
+
+.modal-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 95%;
+  max-width: 700px;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-panel-header {
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+
+.modal-panel-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-panel-footer {
+  flex-shrink: 0;
+}

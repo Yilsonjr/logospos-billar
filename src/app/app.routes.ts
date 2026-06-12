@@ -21,6 +21,7 @@ import { CuentasPagarComponent } from './pages/cuentas-pagar/cuentas-pagar.compo
 import { NuevaCuentaComponent } from './pages/cuentas-pagar/nueva-cuenta/nueva-cuenta.component';
 import { DetalleCuentaPagarComponent } from './pages/cuentas-pagar/detalle/detalle-cuenta-pagar.component';
 import { PlanPagosComponent } from './pages/cuentas-pagar/plan-pagos/plan-pagos.component';
+import { GastosComponent } from './pages/gastos/gastos.component';
 import { AperturaCajaComponent } from './pages/caja/apertura/apertura-caja.component';
 import { CierreCajaComponent } from './pages/caja/cierre/cierre-caja.component';
 import { MovimientoCajaComponent } from './pages/caja/movimiento/movimiento-caja.component';
@@ -314,6 +315,14 @@ export const routes: Routes = [
         component: ReportesRestauranteComponent,
         canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
         data: { permissions: ['restaurante.admin', 'restaurante.reportes'], modulo: 'restaurante' }
+    },
+
+    // Gastos Operativos
+    {
+        path: 'gastos',
+        component: GastosComponent,
+        canActivate: [AuthGuard, PermissionGuard, ModuloGuard],
+        data: { permissions: ['caja.ver'], modulo: 'caja' }
     },
 
     // Redirecciones

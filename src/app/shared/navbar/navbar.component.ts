@@ -199,6 +199,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
       expanded: false
     },
     {
+      label: 'Gastos Operativos',
+      icon: 'fa-solid fa-receipt',
+      link: '/gastos',
+      active: false,
+      permissions: ['caja.ver'],
+      modulo: 'caja'
+    },
+    {
       label: 'Administración',
       icon: 'fa-solid fa-user-gear',
       link: '/admin',

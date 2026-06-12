@@ -1,0 +1,315 @@
+<div class="container-fluid py-4 min-vh-100 bg-light">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <h2 class="fw-bold text-dark mb-0">
+        <i class="fa-solid fa-receipt me-2 text-danger"></i>Gastos Operativos
+      </h2>
+      <p class="text-muted mb-0 small">Registro y control de egresos del negocio</p>
+    </div>
+    <button (click)="abrirFormulario()" class="btn btn-danger d-flex align-items-center gap-2 shadow-sm">
+      <i class="fa-solid fa-plus"></i> Registrar Gasto
+    </button>
+  </div>
+
+  <!-- Resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem;">Hoy</span>
+            <div class="bg-danger bg-opacity-10 text-danger p-2 rounded">
+              <i class="fa-solid fa-calendar-day fs-5"></i>
+            </div>
+          </div>
+          <h4 class="fw-bold text-dark mb-0">RD${{ resumen.total_hoy | number:'1.2-2' }}</h4>
+          <small class="text-muted">Total gastado hoy</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem;">Esta Semana</span>
+            <div class="bg-warning bg-opacity-10 text-warning p-2 rounded">
+              <i class="fa-solid fa-calendar-week fs-5"></i>
+            </div>
+          </div>
+          <h4 class="fw-bold text-dark mb-0">RD${{ resumen.total_semana | number:'1.2-2' }}</h4>
+          <small class="text-muted">Últimos 7 días</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem;">Este Mes</span>
+            <div class="bg-primary bg-opacity-10 text-primary p-2 rounded">
+              <i class="fa-solid fa-calendar-alt fs-5"></i>
+            </div>
+          </div>
+          <h4 class="fw-bold text-dark mb-0">RD${{ resumen.total_mes | number:'1.2-2' }}</h4>
+          <small class="text-muted">{{ resumen.cantidad_registros }} registro(s)</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <span class="text-uppercase text-muted fw-bold d-block mb-2" style="font-size: 0.72rem;">Top Categoría</span>
+          @if (resumen.por_categoria.length > 0) {
+            <h6 class="fw-bold text-dark mb-0 text-truncate">{{ resumen.por_categoria[0].categoria }}</h6>
+            <small class="text-danger fw-bold">RD${{ resumen.por_categoria[0].total | number:'1.2-2' }}</small>
+          } @else {
+            <span class="text-muted small">Sin datos</span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-bold text-muted mb-1">Desde</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="filtros.fecha_desde">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label small fw-bold text-muted mb-1">Hasta</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="filtros.fecha_hasta">
+        </div>
+        <div class="col-12 col-md-2">
+          <label class="form-label small fw-bold text-muted mb-1">Categoría</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filtros.categoria">
+            <option value="">Todas</option>
+            @for (cat of categorias; track cat.nombre) {
+              <option [value]="cat.nombre">{{ cat.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-12 col-md-2">
+          <label class="form-label small fw-bold text-muted mb-1">Método de Pago</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filtros.metodo_pago">
+            <option value="">Todos</option>
+            @for (m of metodosPago; track m.valor) {
+              <option [value]="m.valor">{{ m.etiqueta }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-12 col-md-2">
+          <label class="form-label small fw-bold text-muted mb-1">Buscar</label>
+          <input type="text" class="form-control form-control-sm" placeholder="Descripción, proveedor..."
+            [(ngModel)]="busqueda" (keyup.enter)="aplicarFiltros()">
+        </div>
+        <div class="col-12 col-md-auto">
+          <button (click)="aplicarFiltros()" class="btn btn-primary btn-sm w-100">
+            <i class="fa-solid fa-search me-1"></i> Filtrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      @if (isLoading) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-danger" role="status"></div>
+          <p class="text-muted mt-2 small">Cargando gastos...</p>
+        </div>
+      } @else if (gastos.length === 0) {
+        <div class="text-center py-5">
+          <i class="fa-solid fa-receipt fs-1 text-muted mb-3 d-block"></i>
+          <p class="text-muted">No hay gastos registrados en este período.</p>
+          <button (click)="abrirFormulario()" class="btn btn-outline-danger btn-sm">
+            <i class="fa-solid fa-plus me-1"></i> Registrar primer gasto
+          </button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="small text-muted fw-bold">Fecha</th>
+                <th class="small text-muted fw-bold">Categoría</th>
+                <th class="small text-muted fw-bold">Descripción</th>
+                <th class="small text-muted fw-bold">Proveedor</th>
+                <th class="small text-muted fw-bold">Comprobante</th>
+                <th class="small text-muted fw-bold">Método</th>
+                <th class="small text-muted fw-bold text-end">Monto</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (g of gastosPaginados; track g.id) {
+                <tr>
+                  <td class="small text-nowrap">{{ g.fecha }}</td>
+                  <td>
+                    <div class="fw-bold small">{{ g.categoria }}</div>
+                    @if (g.subcategoria) {
+                      <div class="text-muted" style="font-size: 0.72rem;">{{ g.subcategoria }}</div>
+                    }
+                  </td>
+                  <td class="small">{{ g.descripcion }}</td>
+                  <td class="small text-muted">{{ g.proveedor || '—' }}</td>
+                  <td class="small text-muted">{{ g.numero_comprobante || '—' }}</td>
+                  <td>
+                    @if (getMetodoPago(g.metodo_pago); as mp) {
+                      <span class="badge bg-{{ mp.color }} bg-opacity-10 text-{{ mp.color }} small">
+                        <i class="fa-solid {{ mp.icono }} me-1"></i>{{ mp.etiqueta }}
+                      </span>
+                    }
+                  </td>
+                  <td class="text-end fw-bold text-danger small text-nowrap">
+                    RD${{ g.monto | number:'1.2-2' }}
+                  </td>
+                  <td class="text-end">
+                    <button (click)="eliminar(g)" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar">
+                      <i class="fa-solid fa-trash-alt"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="table-light">
+              <tr>
+                <td colspan="6" class="small fw-bold text-muted">
+                  {{ gastos.length }} registro(s)
+                </td>
+                <td class="text-end fw-bold text-danger">
+                  RD${{ resumen.total_mes | number:'1.2-2' }}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        @if (totalPaginas > 1) {
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+            <small class="text-muted">
+              Página {{ pagina + 1 }} de {{ totalPaginas }}
+            </small>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" [disabled]="pagina === 0" (click)="cambiarPagina(-1)">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" [disabled]="pagina >= totalPaginas - 1" (click)="cambiarPagina(1)">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Registrar Gasto -->
+@if (mostrarFormulario) {
+  <div class="modal-backdrop-custom" (click)="cerrarFormulario()"></div>
+  <div class="modal-panel shadow-lg">
+    <div class="modal-panel-header bg-danger text-white d-flex justify-content-between align-items-center px-4 py-3">
+      <h5 class="mb-0 fw-bold">
+        <i class="fa-solid fa-plus me-2"></i>Registrar Gasto
+      </h5>
+      <button class="btn btn-sm btn-outline-light" (click)="cerrarFormulario()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-panel-body p-4">
+      <div class="row g-3">
+
+        <!-- Fecha -->
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-bold">Fecha <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" [(ngModel)]="nuevoGasto.fecha">
+        </div>
+
+        <!-- Categoría -->
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-bold">Categoría <span class="text-danger">*</span></label>
+          <select class="form-select" [(ngModel)]="nuevoGasto.categoria" (ngModelChange)="onCategoriaChange()">
+            <option value="">Seleccionar categoría...</option>
+            @for (cat of categorias; track cat.nombre) {
+              <option [value]="cat.nombre">{{ cat.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Subcategoría -->
+        <div class="col-12 col-md-4">
+          <label class="form-label small fw-bold">Subcategoría</label>
+          <select class="form-select" [(ngModel)]="nuevoGasto.subcategoria" [disabled]="!nuevoGasto.categoria">
+            <option value="">Sin subcategoría</option>
+            @for (sub of subcategoriasDisponibles; track sub) {
+              <option [value]="sub">{{ sub }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Descripción -->
+        <div class="col-12">
+          <label class="form-label small fw-bold">Descripción <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" placeholder="Ej: Pago de electricidad EDEESTE..." [(ngModel)]="nuevoGasto.descripcion">
+        </div>
+
+        <!-- Proveedor -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-bold">Proveedor / Beneficiario</label>
+          <input type="text" class="form-control" placeholder="Nombre del proveedor..." [(ngModel)]="nuevoGasto.proveedor">
+        </div>
+
+        <!-- Número comprobante -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-bold">No. Comprobante / Factura</label>
+          <input type="text" class="form-control" placeholder="No. de recibo o factura..." [(ngModel)]="nuevoGasto.numero_comprobante">
+        </div>
+
+        <!-- Monto -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-bold">Monto (RD$) <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00" [(ngModel)]="nuevoGasto.monto">
+        </div>
+
+        <!-- Método de Pago -->
+        <div class="col-12 col-md-6">
+          <label class="form-label small fw-bold">Método de Pago <span class="text-danger">*</span></label>
+          <select class="form-select" [(ngModel)]="nuevoGasto.metodo_pago">
+            @for (m of metodosPago; track m.valor) {
+              <option [value]="m.valor">{{ m.etiqueta }}</option>
+            }
+          </select>
+          @if (nuevoGasto.metodo_pago === 'efectivo') {
+            <div class="alert alert-warning mt-2 py-2 px-3 small mb-0">
+              <i class="fa-solid fa-info-circle me-1"></i>
+              Este gasto se registrará como salida de efectivo en la caja activa.
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-panel-footer d-flex justify-content-end gap-2 px-4 py-3 border-top bg-light">
+      <button class="btn btn-outline-secondary" (click)="cerrarFormulario()" [disabled]="guardando">
+        Cancelar
+      </button>
+      <button class="btn btn-danger" (click)="guardarGasto()" [disabled]="guardando">
+        @if (guardando) {
+          <span class="spinner-border spinner-border-sm me-1"></span> Guardando...
+        } @else {
+          <i class="fa-solid fa-save me-1"></i> Guardar Gasto
+        }
+      </button>
+    </div>
+  </div>
+}
