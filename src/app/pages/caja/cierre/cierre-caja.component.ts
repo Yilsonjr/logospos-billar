@@ -158,9 +158,8 @@ export class CierreCajaComponent implements OnInit, OnDestroy {
 
   calcularMontoEsperado() {
     if (!this.cajaActual) return;
-    this.montoEsperado = this.cajaActual.monto_inicial +
+    this.montoEsperado =
       this.ventasEfectivo +
-      this.ventasTarjeta +
       this.totalEntradas -
       this.totalSalidas -
       this.anulacionesEfectivo;
