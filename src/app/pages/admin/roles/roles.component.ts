@@ -451,9 +451,13 @@ export class RolesComponent implements OnInit, OnDestroy {
     let creados = 0;
     const errores: string[] = [];
 
+    const negocioId = this.authService.getNegocioId();
+
     for (const predefinido of ROLES_PREDEFINIDOS) {
       try {
-        const rolExistente = this.roles.find(r => r.nombre === predefinido.nombre);
+        // Buscar solo entre roles del negocio actual (no globales con negocio_id null)
+        const rolesDelNegocio = this.roles.filter(r => r.negocio_id === negocioId);
+        const rolExistente = rolesDelNegocio.find(r => r.nombre === predefinido.nombre);
         const datos: CrearRol = {
           nombre: predefinido.nombre,
           descripcion: predefinido.descripcion,

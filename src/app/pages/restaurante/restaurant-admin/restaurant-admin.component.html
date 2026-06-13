@@ -407,7 +407,7 @@
                 <div class="pf-section-label mb-1"><i class="fa-solid fa-tags"></i> Categoría</div>
                 <select class="form-select form-select-sm" [(ngModel)]="platoForm.categoria_id">
                   @for (cat of categorias; track cat.id) {
-                    <option [value]="cat.id">{{ cat.icono }} {{ cat.nombre }}</option>
+                    <option [value]="cat.id">{{ cat.icono && !cat.icono.startsWith('fa-') ? (cat.icono + ' ') : '' }}{{ cat.nombre }}</option>
                   }
                 </select>
               </div>
