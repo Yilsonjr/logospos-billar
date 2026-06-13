@@ -339,7 +339,7 @@ export class RestaurantAdminComponent implements OnInit, OnDestroy {
     private inventoryService: InventoryRestaurantService,
     private negociosService: NegociosService,
     private printService: PrintService,
-    private authService: AuthService,
+    public authService: AuthService,
     private supabaseService: SupabaseService,
     private cuentasCobrarService: CuentasCobrarService,
     private anulacionesService: AnulacionesService,
